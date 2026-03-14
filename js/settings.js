@@ -486,11 +486,12 @@
     next.aiConfig =
       next.aiConfig && typeof next.aiConfig === "object"
         ? {
+            provider: normalizeAiProvider(next.aiConfig.provider),
             baseUrl: String(next.aiConfig.baseUrl || "").trim(),
             apiKey: String(next.aiConfig.apiKey || "").trim(),
             model: String(next.aiConfig.model || "").trim(),
           }
-        : { baseUrl: "", apiKey: "", model: "" }
+        : { provider: "custom", baseUrl: "", apiKey: "", model: "" }
 
     next.unknownTerms = Array.isArray(next.unknownTerms)
       ? next.unknownTerms.map((s) => String(s || "").trim()).filter(Boolean)
@@ -562,10 +563,17 @@
     return raw
   }
 
+  function normalizeAiProvider(value) {
+    const fn = window.A4Common?.normalizeAiProvider
+    if (typeof fn === "function") return fn(value)
+    return "custom"
+  }
+
   function buildChatCompletionsUrl(baseUrl) {
     const b = String(baseUrl || "").trim().replace(/\/+$/, "")
     if (!b) return ""
     if (b.includes("/chat/completions")) return b
+    if (b.endsWith("/openai") || b.includes("/openai/")) return `${b}/chat/completions`
     if (b.endsWith("/v1")) return `${b}/chat/completions`
     if (b.includes("/v1/")) return `${b.replace(/\/+$/, "")}/chat/completions`
     return `${b}/v1/chat/completions`
@@ -803,6 +811,18 @@
           <section class="panel">
             <div class="section-title">AI 生成词书</div>
             <div class="form-row">
+              <div class="form-label">API 提供商</div>
+              <div class="form-control">
+                <select id="aiProviderSelect" aria-label="API 提供商">
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini">Gemini</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="siliconcloud">SiliconCloud</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
               <div class="form-label">API Base URL</div>
               <div class="form-control">
                 <input id="aiBaseUrlInput" class="text-input" type="text" placeholder="https://api.example.com/v1" />
@@ -817,10 +837,11 @@
             <div class="form-row">
               <div class="form-label">Model</div>
               <div class="form-control">
-                <input id="aiModelInput" class="text-input" type="text" placeholder="gpt-4o-mini / deepseek-chat / ..." />
+                <input id="aiModelInput" class="text-input" type="text" list="aiModelDatalist" placeholder="可直接输入或选常用模型" />
+                <datalist id="aiModelDatalist"></datalist>
               </div>
             </div>
-            <div class="form-help">API Key 仅保存在当前浏览器本地，请勿在不信任设备上使用。</div>
+            <div class="form-help">可先选择提供商自动填充建议值；API Key 仅保存在当前浏览器本地。</div>
             <div class="form-row">
               <div class="form-label">词书类型</div>
               <div class="form-control">
@@ -945,9 +966,11 @@
       exportBackupBtn: modal.querySelector("#exportBackupBtn"),
       importBackupBtn: modal.querySelector("#importBackupBtn"),
       importBackupFile: modal.querySelector("#importBackupFile"),
+      aiProviderSelect: modal.querySelector("#aiProviderSelect"),
       aiBaseUrlInput: modal.querySelector("#aiBaseUrlInput"),
       aiApiKeyInput: modal.querySelector("#aiApiKeyInput"),
       aiModelInput: modal.querySelector("#aiModelInput"),
+      aiModelDatalist: modal.querySelector("#aiModelDatalist"),
       aiTypeSelect: modal.querySelector("#aiTypeSelect"),
       aiCustomTopicInput: modal.querySelector("#aiCustomTopicInput"),
       aiCountInput: modal.querySelector("#aiCountInput"),
@@ -1063,10 +1086,64 @@
       if (dom.aiModelInput) dom.aiModelInput.value = String(state?.aiConfig?.model || "")
       if (dom.aiStatus) dom.aiStatus.textContent = ""
       updateVoiceUi()
+      renderAiProviderUi()
+    }
+
+    function getAiProviderPresets() {
+      return {
+        openai: {
+          baseUrl: "https://api.openai.com/v1",
+          models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"],
+          defaultModel: "gpt-4o-mini",
+        },
+        gemini: {
+          baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+          models: ["gemini-1.5-flash", "gemini-1.5-pro"],
+          defaultModel: "gemini-1.5-flash",
+        },
+        deepseek: {
+          baseUrl: "https://api.deepseek.com/v1",
+          models: ["deepseek-chat", "deepseek-reasoner"],
+          defaultModel: "deepseek-chat",
+        },
+        siliconcloud: {
+          baseUrl: "https://api.siliconflow.cn/v1",
+          models: ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1"],
+          defaultModel: "deepseek-ai/DeepSeek-V3",
+        },
+        custom: {
+          baseUrl: "",
+          models: [],
+          defaultModel: "",
+        },
+      }
+    }
+
+    function normalizeAiProviderLocal(value) {
+      return normalizeAiProvider(value)
+    }
+
+    function renderAiProviderUi() {
+      const state = getState ? getState() : {}
+      const presets = getAiProviderPresets()
+      const provider = normalizeAiProviderLocal(state?.aiConfig?.provider)
+      const preset = presets[provider] || presets.custom
+      if (dom.aiProviderSelect) dom.aiProviderSelect.value = provider
+      if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.placeholder = preset.baseUrl || "https://api.example.com/v1"
+      if (dom.aiModelInput) dom.aiModelInput.placeholder = preset.defaultModel || "可直接输入或选常用模型"
+      if (dom.aiModelDatalist) {
+        dom.aiModelDatalist.innerHTML = ""
+        for (const m of preset.models || []) {
+          const opt = document.createElement("option")
+          opt.value = m
+          dom.aiModelDatalist.appendChild(opt)
+        }
+      }
     }
 
     function open() {
       render()
+      renderAiProviderUi()
       setModalVisible(dom.modal, true)
     }
 
@@ -1249,6 +1326,7 @@
     dom.aiBaseUrlInput?.addEventListener("change", () => {
       const state = getState ? getState() : {}
       const aiConfig = {
+        provider: normalizeAiProviderLocal(state?.aiConfig?.provider),
         baseUrl: String(dom.aiBaseUrlInput.value || "").trim(),
         apiKey: String(state?.aiConfig?.apiKey || ""),
         model: String(state?.aiConfig?.model || ""),
@@ -1260,6 +1338,7 @@
     dom.aiApiKeyInput?.addEventListener("change", () => {
       const state = getState ? getState() : {}
       const aiConfig = {
+        provider: normalizeAiProviderLocal(state?.aiConfig?.provider),
         baseUrl: String(state?.aiConfig?.baseUrl || ""),
         apiKey: String(dom.aiApiKeyInput.value || "").trim(),
         model: String(state?.aiConfig?.model || ""),
@@ -1271,11 +1350,36 @@
     dom.aiModelInput?.addEventListener("change", () => {
       const state = getState ? getState() : {}
       const aiConfig = {
+        provider: normalizeAiProviderLocal(state?.aiConfig?.provider),
         baseUrl: String(state?.aiConfig?.baseUrl || ""),
         apiKey: String(state?.aiConfig?.apiKey || ""),
         model: String(dom.aiModelInput.value || "").trim(),
       }
       if (typeof setState === "function") setState({ aiConfig })
+      if (typeof persist === "function") persist()
+      if (typeof onAfterChange === "function") onAfterChange({ key: "aiConfig" })
+    })
+
+    dom.aiProviderSelect?.addEventListener("change", () => {
+      const state = getState ? getState() : {}
+      const prevProvider = normalizeAiProviderLocal(state?.aiConfig?.provider)
+      const nextProvider = normalizeAiProviderLocal(dom.aiProviderSelect.value)
+      const presets = getAiProviderPresets()
+      const prevPreset = presets[prevProvider] || presets.custom
+      const nextPreset = presets[nextProvider] || presets.custom
+
+      let baseUrl = String(state?.aiConfig?.baseUrl || "").trim()
+      let model = String(state?.aiConfig?.model || "").trim()
+      const apiKey = String(state?.aiConfig?.apiKey || "").trim()
+
+      if (!baseUrl || (prevPreset.baseUrl && baseUrl === prevPreset.baseUrl)) baseUrl = String(nextPreset.baseUrl || "").trim()
+      if (!model || (prevPreset.defaultModel && model === prevPreset.defaultModel)) model = String(nextPreset.defaultModel || "").trim()
+
+      const aiConfig = { provider: nextProvider, baseUrl, apiKey, model }
+      if (typeof setState === "function") setState({ aiConfig })
+      if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.value = baseUrl
+      if (dom.aiModelInput) dom.aiModelInput.value = model
+      renderAiProviderUi()
       if (typeof persist === "function") persist()
       if (typeof onAfterChange === "function") onAfterChange({ key: "aiConfig" })
     })

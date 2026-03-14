@@ -14,14 +14,17 @@ A pure front-end vocabulary tool based on the “A4 paper memory method”. Word
 - Meaning toggle, immersive mode, theme modes (Auto/Light/Dark)
 - Learning status: mark each word as Mastered / Learning / Unknown during review
 - Lightweight review: auto schedules next review time and counts “Due”
-- Status review: view status summary and generate a round by status / due
-- Records page: per-round view, delete, jump back to review
-- Records status: each word row shows its current learning status
-- Export: CSV (Excel), A4 print/PDF, A4 image (PNG)
+- Records status view: group words by status / due and generate a review round
+- Records page: Round view + Status view (Mastered/Learning/Unknown/Due), each round has a round-type label
+- Round types: Normal / Mastered review / Learning review / Unknown review / Due review
+- Status-generated rounds: one round may contain multiple A4 pages (auto-paged by round cap)
+- Multi-page navigation: when a round has multiple A4 pages, use Previous/Next on Home
+- Export: global/per-round CSV (includes round type + review timestamps), Export PDF (1 round = 1 PDF, each A4 = 1 page)
 - Wordbooks: built-in samples + local import (TXT/CSV/JSON) + online import (CET4/CET6)
 - Pronunciation: SpeechSynthesis (en/es/ja/ko/pt/fr/de/it/eo), Auto/Manual voice selection
 - Backup: import/export full local data (records + settings)
 - AI wordbook generator: configure API → generate → preview → save
+- AI API presets: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
 
 ## Usage
 
@@ -42,8 +45,8 @@ Open: http://localhost:8080/
 
 - Home: “Next word” → add a word → review the round
 - Home: “Review this round” anytime, and mark learning status
-- Records: export CSV / print-PDF / export PNG
-- “Learning status” (top): status summary and generate a round by status / due
+- Records: Round view or Status view, per-round CSV/PDF export, export PDF uses one A4 per page
+- Records status view: status summary and generate a review round by status / due
 - Settings: theme, pronunciation, round cap, lightweight review, backup, AI generator
 
 ## Project structure (brief)

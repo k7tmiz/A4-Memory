@@ -42,8 +42,9 @@ A4-Memory
 
 ## 4) 核心模块职责
 
+- `js/core/common.js`：跨页面共享的轻量公共逻辑（状态/轮次类型常量、时间格式、分页工具等）
 - `js/app.js`：首页学习流程（取词、排版、复习弹窗、轮次推进、导入词书入口与管理、状态恢复/保存）
-- `js/records.js`：学习记录页（按轮渲染、导出 CSV、导出 PNG、打印窗口、删除轮次、从记录页发起“复习本轮”）
+- `js/records.js`：学习记录页（轮次视图 + 状态视图、每轮统计、统一 CSV 导出、导出 PDF（1 轮 = 1 个 PDF，按 pageIndex 分页）、删除轮次、从记录页发起“复习本轮”）
 - `js/settings.js`：设置弹窗系统（主题/目标/每轮上限/备份/AI 词书生成/发音 UI），在首页与记录页复用
 - `js/speech.js`：发音系统（语言推断、voice 匹配评分、自动/手动模式、回退与提示、Speak 封装）
 - `js/storage.js`：`localStorage` 数据管理（统一读写入口与 key）
@@ -55,11 +56,13 @@ A4-Memory
 
 - `index.html`（首页）
   - 负责学习主流程与复习弹窗
-  - 顶部“学习状态”入口：展示状态汇总/待复习数量，可按状态生成独立轮次并进入复习
   - “学习记录”跳转到 `records.html`
 - `records.html`（学习记录页）
-  - 展示历史轮次与统计、导出/打印
-  - 单词列表会显示每个单词的当前学习状态（已掌握/学习中/不会）
+  - 视图切换：轮次视图（按轮查看）/ 状态视图（按已掌握/学习中/不会/待复习聚合）
+  - 轮次视图：每轮展示单词总数、各状态数量、待复习数量、开始/完成时间
+  - 状态视图：每个单词展示状态、来源轮次、上次/下次复习时间
+  - 顶部入口：导出 CSV、导出 PDF
+  - 单词状态显示以“全局最新状态”为准（跨轮次聚合，而不是只看该轮历史）
   - “复习本轮”通过写入 `pendingReviewRoundId` 后跳回首页，由首页自动打开复习弹窗
   - “设置”在本页直接打开设置弹窗（不跳转）
 
@@ -108,9 +111,44 @@ A4-Memory
   - `status`: `mastered | learning | unknown`（默认 unknown，旧数据缺省视为 unknown）
   - `lastReviewedAt`: ISO string（本轮复习标记后写入）
   - `nextReviewAt`: ISO string（启用轻量复习时按状态计算，用于“待复习”判断）
+  - `pageIndex`: number（默认 0；用于“同一轮内多张 A4”分页）
+- 轮次字段（存于 `rounds[]`）
+  - `type`: `normal | review_mastered | review_learning | review_unknown | review_due`（旧数据缺省视为 normal）
 
 - 跨页同步
   - 同一浏览器多标签页时，记录页会监听 `storage` 事件以实时刷新显示（例如首页复习标记后，记录页单词状态会立即更新）
+
+## 11) Records 页：状态视图与导出规则（补充）
+
+- 状态视图聚合逻辑（`records.js`）
+  - 遍历 `rounds[].items[]`，按 term（忽略大小写）构建“最新记录”映射（最新 status / lastReviewedAt / nextReviewAt）
+  - 额外构建“首次出现轮次”映射，用于展示来源轮次（第 N 轮）
+  - “待复习”集合：当 `reviewSystemEnabled=true` 且 `nextReviewAt <= now` 时归入待复习分组
+- 状态视图“生成一轮”
+  - 点击后写入 `pendingGenerateStatusKind` 并跳转首页，由首页生成对应复习轮
+- CSV 导出统一格式（`records.js`）
+  - 列：轮次编号、轮次类型、单词、词性、释义、当前状态、开始时间、完成时间、上次复习时间、下次复习时间
+  - 时间：统一纯文本 `YYYY-MM-DD HH:mm`
+  - 当前状态/复习时间：以“全局最新状态映射”为准
+- 打印 / 导出 PDF（`records.js`）
+  - 全局：多轮导出时，每张 A4 占 1 页（跨轮次与分页）
+  - 单轮：1 轮导出为 1 个 PDF 文件，PDF 内每张 A4 占 1 页
+  - 实现：复用 A4 渲染能力，按 A4 页生成 PNG 并在打印窗口分页展示
+
+## 12) 首页：多页 A4 翻页（补充）
+
+- 普通学习轮：一轮 = 一张 A4（`pageIndex=0`）
+- 状态生成轮：一轮可包含多张 A4（`pageIndex=0..N-1`）
+- 首页渲染规则（`app.js`）
+  - 只渲染 `pageIndex === currentPageIndex` 的 items
+  - 当 `pageCount > 1` 时显示 Previous/Next 与页码（例如 `1 / 3`）
+
+## 12) AI 设置：Provider 预设（补充）
+
+- 设置项（`settings.js` / `app.js`）
+  - `aiConfig.provider`: `openai | gemini | deepseek | siliconcloud | custom`
+  - 选择 provider 后会填充/提示默认 Base URL 与常用 Model（仅在字段为空或仍为上一 provider 默认值时覆盖）
+  - `aiConfig` 继续完整保存在 `localStorage`（仅本地）
 
 ## 9) AI 词书生成
 
