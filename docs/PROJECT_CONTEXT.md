@@ -104,6 +104,7 @@ A4-Memory
 - 全局最新状态映射
   - 遍历 `rounds[].items[]`，按 term（忽略大小写）构建“最新记录”
   - 最新判定优先级：`lastReviewedAt` > `createdAt` > round 的 `finishedAt/startedAt`
+  - 当时间相等或字段缺失时：使用稳定的 tie-break 规则（后出现的记录优先），避免旧记录覆盖新记录导致“状态卡住”
 - 首次出现轮次映射：用于展示来源轮次（第 N 轮）
 - 待复习集合
   - 当 `reviewSystemEnabled=true` 且 `nextReviewAt <= now` 时归入待复习分组
