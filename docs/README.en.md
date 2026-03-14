@@ -56,6 +56,7 @@ Open: http://localhost:8080/
 - Consistency: Settings stays right-aligned on both Home and Records
 - Visual consistency: Controls keep matched sizing/proportions across Home and Records on the same viewport
 - Mobile/tablet: Per-round action buttons in Records scale down to match the rest of the UI
+- Cross-browser: normalize form/control rendering so Chromium and Safari look closer
 - Maintenance: reduce duplication and improve readability without changing behavior or localStorage schema
 - Settings: theme, pronunciation, round cap, lightweight review, backup, AI generator
 

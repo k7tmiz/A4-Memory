@@ -13,6 +13,7 @@
   - `window.A4Utils`：下载/文件名清洗工具
   - `window.A4Storage`：读写主状态
   - `window.A4Speech`：SpeechSynthesis 发音能力
+- 跨浏览器 UI：对常见控件样式做基础归一，尽量减少 Chromium/Safari 的默认渲染差异
 - 打印/导出 PDF：记录页打开打印窗口并调用 `window.print()`；由浏览器“另存为 PDF”
 - AI：兼容 OpenAI 风格 `chat/completions`；配置项含 `provider/baseUrl/apiKey/model`（仅本地保存）
 
