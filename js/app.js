@@ -801,52 +801,6 @@ function updateHint() {
   dom.paperHint.style.display = appState.placed.length === 0 ? "block" : "none"
 }
 
-function toLocalDateKey(value) {
-  const d = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(d.getTime())) return ""
-  const pad = (n) => String(n).padStart(2, "0")
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-function computeStudyStats() {
-  const rounds = Array.isArray(appState.rounds) ? appState.rounds : []
-  const todayKey = toLocalDateKey(new Date())
-  const daySet = new Set()
-  let totalWords = 0
-  let todayWords = 0
-  let completedRounds = 0
-  let todayCompletedRounds = 0
-
-  for (const r of rounds) {
-    const items = Array.isArray(r?.items) ? r.items : []
-    totalWords += items.length
-
-    const finishedKey = r?.finishedAt ? toLocalDateKey(r.finishedAt) : ""
-    if (r?.finishedAt) completedRounds += 1
-    if (finishedKey && finishedKey === todayKey) todayCompletedRounds += 1
-
-    for (const it of items) {
-      const key = toLocalDateKey(it?.createdAt || r?.startedAt)
-      if (!key) continue
-      daySet.add(key)
-      if (key === todayKey) todayWords += 1
-    }
-  }
-
-  let streak = 0
-  if (daySet.has(todayKey)) {
-    let cursor = new Date()
-    while (true) {
-      const key = toLocalDateKey(cursor)
-      if (!daySet.has(key)) break
-      streak += 1
-      cursor.setDate(cursor.getDate() - 1)
-    }
-  }
-
-  return { totalWords, todayWords, completedRounds, todayCompletedRounds, streak }
-}
-
 function normalizeReviewIntervals(raw) {
   const base = raw && typeof raw === "object" ? raw : {}
   const unknownDays = clamp(Math.round(Number(base.unknownDays) || DEFAULT_REVIEW_INTERVALS.unknownDays), 1, 60)

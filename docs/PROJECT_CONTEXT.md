@@ -54,7 +54,7 @@ A4-Memory
   - 不负责页面主流程
   - 不负责 storage 主流程
   - 不承担 records 或 app 的页面专属业务逻辑
-  - 含：状态常量与归一化、轮次类型常量与 label、时间格式化、ISO 时间解析、多页分页工具、AI provider 归一化
+  - 含：状态常量与归一化、轮次类型常量与 label、时间格式化、ISO 时间解析、多页分页工具、学习统计（computeStudyStats）、AI provider 归一化
 - `js/utils.js`
   - 下载工具与文件名清洗：`downloadTextFile/downloadJsonFile/downloadBlob/sanitizeFilename`
 - `js/storage.js`
@@ -64,6 +64,7 @@ A4-Memory
 - `js/settings.js`
   - 设置弹窗与 AI 词书生成流程（必要时注入 modal DOM）
   - 负责把设置写回调用方提供的 `persist()`，并提供 `onAfterChange` 通知
+  - 依赖 `A4Storage/A4Utils/A4Speech`，不重复实现通用能力
 - `js/app.js`
   - 首页学习流程：取词、A4 排版、复习弹窗、轮次推进、词书导入管理、状态恢复/保存
   - 多页 A4 翻页：只渲染当前页（`pageIndex === currentPageIndex`）
