@@ -2,17 +2,21 @@
 
 ## 1) 项目概览
 
-本项目是一个纯静态背单词网页：以“一张 A4 纸为一轮”的方式随机排版单词，并用“每新增 1 词必须复习本轮全部词”的流程强化记忆。提供学习记录、导出/打印、词书导入、发音与设置管理，适配 iOS/iPadOS/macOS Safari 与 PWA 添加到桌面使用。
+本项目是一个纯静态背单词网页：以 A4 排版为学习载体，核心规则是“每新增 1 个单词，必须完整复习本轮全部单词”。项目提供学习记录（按轮/按状态）、复习标记（已掌握/学习中/不会）、轻量复习（下次复习时间）、词书导入、导出（CSV / 通过浏览器打印另存 PDF）、发音与设置管理。
 
-## 2) 技术架构
+## 2) 技术架构（真实实现）
 
 - 运行形态：纯静态（HTML/CSS/Vanilla JS），无构建工具、无服务端
-- 数据：全部保存在浏览器 `localStorage`
-- 发音：浏览器 SpeechSynthesis（按语言/口音/手动选择匹配语音）
-- 打印：浏览器 `window.print()`；记录页会打开“仅 A4 内容”的打印窗口
-- AI：兼容 OpenAI 风格 `chat/completions` 接口（用户自填 Base URL / Key / Model）
+- 状态存储：全部保存在浏览器 `localStorage`
+- 全局模块暴露方式：通过 `window.A4*` 挂载（便于静态脚本依赖）
+  - `window.A4Common`：跨页面共享常量与纯工具函数
+  - `window.A4Utils`：下载/文件名清洗工具
+  - `window.A4Storage`：读写主状态
+  - `window.A4Speech`：SpeechSynthesis 发音能力
+- 打印/导出 PDF：记录页打开打印窗口并调用 `window.print()`；由浏览器“另存为 PDF”
+- AI：兼容 OpenAI 风格 `chat/completions`；配置项含 `provider/baseUrl/apiKey/model`（仅本地保存）
 
-## 3) 当前项目结构
+## 3) 当前项目结构（真实目录）
 
 ```text
 A4-Memory
@@ -29,6 +33,8 @@ A4-Memory
 ├── data/
 │   └── words.js
 ├── js/
+│   ├── core/
+│   │   └── common.js
 │   ├── app.js
 │   ├── records.js
 │   ├── settings.js
@@ -40,130 +46,132 @@ A4-Memory
     └── PROJECT_CONTEXT.md
 ```
 
-## 4) 核心模块职责
+## 4) 模块职责边界（真实实现）
 
-- `js/core/common.js`：跨页面共享的轻量公共逻辑（状态/轮次类型常量、时间格式、分页工具等）
-- `js/app.js`：首页学习流程（取词、排版、复习弹窗、轮次推进、导入词书入口与管理、状态恢复/保存）
-- `js/records.js`：学习记录页（轮次视图 + 状态视图、每轮统计、统一 CSV 导出、导出 PDF（1 轮 = 1 个 PDF，按 pageIndex 分页）、删除轮次、从记录页发起“复习本轮”）
-- `js/settings.js`：设置弹窗系统（主题/目标/每轮上限/备份/AI 词书生成/发音 UI），在首页与记录页复用
-- `js/speech.js`：发音系统（语言推断、voice 匹配评分、自动/手动模式、回退与提示、Speak 封装）
-- `js/storage.js`：`localStorage` 数据管理（统一读写入口与 key）
-- `js/utils.js`：通用工具（下载 JSON/文本/Blob、文件名清洗等）
-- `data/words.js`：词书数据入口（暴露 `window.WORDBOOKS` / `window.WORDS`）
-- `css/style.css`：全站 UI（A4 纸样式、弹窗、响应式、深色/沉浸、打印样式）
+- `js/core/common.js`
+  - 跨页面共享的轻量常量与纯工具函数
+  - 不负责页面 DOM 事件绑定
+  - 不负责页面主流程
+  - 不负责 storage 主流程
+  - 不承担 records 或 app 的页面专属业务逻辑
+  - 含：状态常量与归一化、轮次类型常量与 label、时间格式化、ISO 时间解析、多页分页工具、AI provider 归一化
+- `js/utils.js`
+  - 下载工具与文件名清洗：`downloadTextFile/downloadJsonFile/downloadBlob/sanitizeFilename`
+- `js/storage.js`
+  - `localStorage` 读写封装与 key 管理：`A4Storage.loadState/saveState`
+- `js/speech.js`
+  - SpeechSynthesis 语音选择与发音封装（自动/手动 voice、语言推断、降级提示）
+- `js/settings.js`
+  - 设置弹窗与 AI 词书生成流程（必要时注入 modal DOM）
+  - 负责把设置写回调用方提供的 `persist()`，并提供 `onAfterChange` 通知
+- `js/app.js`
+  - 首页学习流程：取词、A4 排版、复习弹窗、轮次推进、词书导入管理、状态恢复/保存
+  - 多页 A4 翻页：只渲染当前页（`pageIndex === currentPageIndex`）
+- `js/records.js`
+  - 学习记录页：轮次视图 + 状态视图、统计、导出 CSV、导出 PDF（按 `pageIndex` 分页）、删除轮次
+  - 状态视图“生成一轮”：写入 `pendingGenerateStatusKind` 并跳转首页生成复习轮
 
-## 5) 页面关系
+## 5) 页面与脚本加载关系（真实实现）
 
 - `index.html`（首页）
-  - 负责学习主流程与复习弹窗
-  - “学习记录”跳转到 `records.html`
+  - 主要 UI：控制区、A4 纸、复习弹窗、导入词书弹窗、用法介绍弹窗
+  - 多页翻页 UI：`#pageNav`（仅多页时显示）
+  - 脚本顺序：`data/words.js` → `js/core/common.js` → `utils/storage/speech/settings/app`
 - `records.html`（学习记录页）
-  - 视图切换：轮次视图（按轮查看）/ 状态视图（按已掌握/学习中/不会/待复习聚合）
-  - 轮次视图：每轮展示单词总数、各状态数量、待复习数量、开始/完成时间
-  - 状态视图：每个单词展示状态、来源轮次、上次/下次复习时间
-  - 顶部入口：导出 CSV、导出 PDF
-  - 单词状态显示以“全局最新状态”为准（跨轮次聚合，而不是只看该轮历史）
-  - “复习本轮”通过写入 `pendingReviewRoundId` 后跳回首页，由首页自动打开复习弹窗
-  - “设置”在本页直接打开设置弹窗（不跳转）
+  - 视图切换：轮次视图 / 状态视图
+  - 顶部入口：导出 CSV、导出 PDF、设置、清空记录
+  - 脚本顺序：`utils/storage/speech/core/common/settings/records`
 
-## 6) 设置系统
+## 6) 核心业务规则（真实实现）
 
-- UI 入口：两页共享“设置”弹窗（由 `js/settings.js` 注入/管理）
-- 设置项覆盖：
-  - 外观：主题模式（auto/light/dark）
-  - 学习：每日目标、每轮上限
-  - 复习：轻量复习系统开关、复习间隔（不会/学习中/已掌握）
-  - 发音：开关、语言/口音、语音模式（自动/手动）与当前语音展示
-  - 数据：导入/导出完整备份（学习记录 + 设置）
-  - AI：配置与生成词书
-- 状态写回：设置变更会调用 `persist()` 写入 `localStorage`，并通过回调通知页面做必要 UI 刷新
+- 普通学习轮
+  - 一轮对应一张 A4（`items[].pageIndex` 恒为 `0`）
+  - 每新增 1 个单词会打开“复习本轮”弹窗
+  - 轮次写满后会弹出“本轮已满”弹窗：可继续下一轮（保留记录）或清空重开
+- 状态生成轮
+  - 从记录页状态视图点击“生成一轮”触发
+  - 仍生成一个 round，但 round 内部可包含多张 A4
+  - 分页规则：按 `roundCap` 切分，写入 `items[].pageIndex = 0..N-1`
 
-## 7) 发音系统
+## 7) 多页 A4 渲染与翻页（真实实现）
 
-位置：`js/speech.js`
+- 数据结构：`rounds[].items[]` 上的 `pageIndex`
+- 首页渲染（`app.js`）
+  - 仅渲染 `pageIndex === currentPageIndex` 的 items
+  - 当 `pageCount > 1` 时显示 Previous/Next 与页码（例如 `1 / 3`）
+  - `currentPageIndex` 是运行态状态，不写入 `localStorage`（刷新后默认回到第 1 页）
+- 记录页轮次预览（`records.js`）
+  - 轮次视图的 “A4 排版预览” 支持按 `pageIndex` 翻页预览
 
-- 语言来源（优先级）：手动设置语言 > 当前词书 language > 默认 `en`
-- 口音偏好（仅英语）：auto/us/gb，转为候选 tag（例如 `en-US`/`en-GB`）
-- 语音模式：
-  - Auto：按候选语言 tag + 评分规则挑选最合适 voice
-  - Manual：按 `voiceURI` 选择；若当前设备不可用则自动回退到 Auto，并给出提示
-- 降级策略：
-  - 无语音/不支持 SpeechSynthesis：提示并安全失败
-  - 找不到目标语言 voice：回退系统默认 voice，并提示“已降级”
+## 8) Records 页：状态视图聚合逻辑（真实实现）
 
-## 8) 数据存储
-
-位置：`js/storage.js`
-
-- `localStorage` keys
-  - `a4-memory:v1`：主状态（首页与记录页共用）
-  - `a4-memory:intro-seen:v1`：用法介绍是否已读（首页用）
-- 主状态（version=2）关注字段（摘要）
-  - 轮次：`rounds`, `currentRoundId`
-  - 复习跳转：`pendingReviewRoundId`
-  - 学习偏好：`themeMode`, `immersiveMode`, `roundCap`, `dailyGoalRounds`, `dailyGoalWords`, `meaningVisible/showMeaning`
-  - 轻量复习：`reviewSystemEnabled`, `reviewIntervals`（unknownDays/learningDays/masteredDays）
-  - 发音：`pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`
-  - 词书：`selectedWordbookId`, `customWordbooks`
-  - AI 配置：`aiConfig`（仅本地保存）
-
-- 单词学习状态字段（存于 `rounds[].items[]`）
-  - `status`: `mastered | learning | unknown`（默认 unknown，旧数据缺省视为 unknown）
-  - `lastReviewedAt`: ISO string（本轮复习标记后写入）
-  - `nextReviewAt`: ISO string（启用轻量复习时按状态计算，用于“待复习”判断）
-  - `pageIndex`: number（默认 0；用于“同一轮内多张 A4”分页）
-- 轮次字段（存于 `rounds[]`）
-  - `type`: `normal | review_mastered | review_learning | review_unknown | review_due`（旧数据缺省视为 normal）
-
-- 跨页同步
-  - 同一浏览器多标签页时，记录页会监听 `storage` 事件以实时刷新显示（例如首页复习标记后，记录页单词状态会立即更新）
-
-## 11) Records 页：状态视图与导出规则（补充）
-
-- 状态视图聚合逻辑（`records.js`）
-  - 遍历 `rounds[].items[]`，按 term（忽略大小写）构建“最新记录”映射（最新 status / lastReviewedAt / nextReviewAt）
-  - 额外构建“首次出现轮次”映射，用于展示来源轮次（第 N 轮）
-  - “待复习”集合：当 `reviewSystemEnabled=true` 且 `nextReviewAt <= now` 时归入待复习分组
+- 全局最新状态映射
+  - 遍历 `rounds[].items[]`，按 term（忽略大小写）构建“最新记录”
+  - 最新判定优先级：`lastReviewedAt` > `createdAt` > round 的 `finishedAt/startedAt`
+- 首次出现轮次映射：用于展示来源轮次（第 N 轮）
+- 待复习集合
+  - 当 `reviewSystemEnabled=true` 且 `nextReviewAt <= now` 时归入待复习分组
 - 状态视图“生成一轮”
-  - 点击后写入 `pendingGenerateStatusKind` 并跳转首页，由首页生成对应复习轮
-- CSV 导出统一格式（`records.js`）
+  - 点击后写入 `pendingGenerateStatusKind` 并跳转首页
+  - 首页 restore 时读取并清空该字段，然后生成对应复习轮
+
+## 9) 导出规则（真实实现）
+
+- CSV（`records.js`）
+  - 全局导出：导出所有轮次的词条（按轮展开行）
+  - 单轮导出：仅导出该轮数据
   - 列：轮次编号、轮次类型、单词、词性、释义、当前状态、开始时间、完成时间、上次复习时间、下次复习时间
   - 时间：统一纯文本 `YYYY-MM-DD HH:mm`
   - 当前状态/复习时间：以“全局最新状态映射”为准
-- 打印 / 导出 PDF（`records.js`）
-  - 全局：多轮导出时，每张 A4 占 1 页（跨轮次与分页）
-  - 单轮：1 轮导出为 1 个 PDF 文件，PDF 内每张 A4 占 1 页
-  - 实现：复用 A4 渲染能力，按 A4 页生成 PNG 并在打印窗口分页展示
+- 导出 PDF（`records.js`）
+  - 本质：打开新窗口分页展示 A4 图片并调用 `window.print()`，由浏览器“另存为 PDF”
+  - 单轮：1 轮 = 1 个 PDF；PDF 内每个 `pageIndex` 对应 1 页
+  - 多轮：跨轮次与分页逐页输出（每张 A4 占 1 页）
 
-## 12) 首页：多页 A4 翻页（补充）
+## 10) 设置系统与 AI（真实实现）
 
-- 普通学习轮：一轮 = 一张 A4（`pageIndex=0`）
-- 状态生成轮：一轮可包含多张 A4（`pageIndex=0..N-1`）
-- 首页渲染规则（`app.js`）
-  - 只渲染 `pageIndex === currentPageIndex` 的 items
-  - 当 `pageCount > 1` 时显示 Previous/Next 与页码（例如 `1 / 3`）
+- 设置弹窗：由 `settings.js` 管理（必要时注入 modal DOM），首页与记录页共用
+- 常用设置项
+  - 外观：主题模式（auto/light/dark）
+  - 学习：每日目标、每轮上限（roundCap）
+  - 复习：轻量复习开关、复习间隔（unknown/learning/mastered）
+  - 发音：开关、语言、口音、语音模式（auto/manual）与 voice 选择
+  - 数据：导入/导出完整备份（学习记录 + 设置）
+  - AI：provider/baseUrl/apiKey/model，生成词书并预览保存到本地词书
+- AI provider（真实实现）
+  - `openai | gemini | deepseek | siliconcloud | custom`
+  - provider 切换时：仅在字段为空或仍为“上一 provider 默认值”时覆盖 baseUrl/model（尽量保留用户手动输入）
 
-## 12) AI 设置：Provider 预设（补充）
+## 11) 数据存储（真实实现）
 
-- 设置项（`settings.js` / `app.js`）
-  - `aiConfig.provider`: `openai | gemini | deepseek | siliconcloud | custom`
-  - 选择 provider 后会填充/提示默认 Base URL 与常用 Model（仅在字段为空或仍为上一 provider 默认值时覆盖）
-  - `aiConfig` 继续完整保存在 `localStorage`（仅本地）
+- `localStorage` key
+  - `a4-memory:v1`：主状态（JSON，含 `version: 2`）
+  - `a4-memory:intro-seen:v1`：用法介绍已读标记
+- 主状态（摘要字段）
+  - 轮次：`rounds`, `currentRoundId`
+  - 跨页触发：`pendingReviewRoundId`, `pendingGenerateStatusKind`
+  - UI：`showMeaning`, `immersiveMode`, `themeMode`, `darkMode`
+  - 统计/目标：`currentCount`, `dailyGoalRounds`, `dailyGoalWords`, `roundCap`
+  - 轻量复习：`reviewSystemEnabled`, `reviewIntervals`
+  - 发音：`pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`
+  - 词书：`selectedWordbookId`, `customWordbooks`
+  - AI：`aiConfig`（provider/baseUrl/apiKey/model）
+- 轮次字段（存于 `rounds[]`）
+  - `type`: `normal | review_mastered | review_learning | review_unknown | review_due`
+- 轮次 item 字段（存于 `rounds[].items[]`）
+  - `word`: `{ term, pos, meaning, ... }`
+  - `pos`: `{ x, y }`（0..1 的相对坐标）
+  - `fontSize`: string（例如 "16px"）
+  - `createdAt`: ISO string
+  - `status`: `mastered | learning | unknown`
+  - `lastReviewedAt`: ISO string
+  - `nextReviewAt`: ISO string
+  - `pageIndex`: number（默认 0；用于同一轮多页 A4）
 
-## 9) AI 词书生成
+## 12) 兼容性与已知行为（真实实现）
 
-位置：`js/settings.js`
-
-- 接口：兼容 OpenAI 风格 `POST /v1/chat/completions`（支持用户填写已包含 `/v1` 或完整路径）
-- 约束：提示模型输出“只输出合法 JSON”
-- 处理流程：
-  - 生成 → JSON 提取/解析 → 字段校验（term/pos/meaning 必填）→ 忽略大小写去重 → 预览弹窗 → 确认保存
-- 保存位置：写入 `customWordbooks`，成为可选词书
-
-## 10) 开发原则
-
-- 保持纯静态：不引入框架与构建工具，确保 GitHub Pages 可直接部署
-- 向后兼容优先：`localStorage` schema 变更需做兼容/归一化，避免数据丢失
-- 单一来源：设置弹窗与核心规则尽量集中，避免跨页重复实现
-- 低风险演进：优先小步重构与清晰拆分，避免“为模块化而模块化”
-- 移动端优先：避免顶部区域固定宽度导致 iPhone Safari 溢出，使用可换行布局
+- 旧数据兼容：旧 items 无 `pageIndex` 视为 `0`；旧 round 无 `type` 视为 `normal`
+- 备份导入（`settings.js` 的 normalizeImportedState）
+  - 导入时会重建 rounds/items 并规范化字段
+  - 当前实现不会保留 `round.type` 与 `item.pageIndex`（导入后这些字段会丢失/回到默认行为）
+- 多标签页：记录页监听 `storage` 事件以实时刷新显示

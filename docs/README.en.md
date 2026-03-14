@@ -14,12 +14,15 @@ A pure front-end vocabulary tool based on the “A4 paper memory method”. Word
 - Meaning toggle, immersive mode, theme modes (Auto/Light/Dark)
 - Learning status: mark each word as Mastered / Learning / Unknown during review
 - Lightweight review: auto schedules next review time and counts “Due”
-- Records status view: group words by status / due and generate a review round
-- Records page: Round view + Status view (Mastered/Learning/Unknown/Due), each round has a round-type label
+- Records:
+  - Round view: per-round stats, A4 preview (multi-page preview navigation)
+  - Status view: group by Due / Mastered / Learning / Unknown and “Generate a round”
 - Round types: Normal / Mastered review / Learning review / Unknown review / Due review
 - Status-generated rounds: one round may contain multiple A4 pages (auto-paged by round cap)
 - Multi-page navigation: when a round has multiple A4 pages, use Previous/Next on Home
-- Export: global/per-round CSV (includes round type + review timestamps), Export PDF (1 round = 1 PDF, each A4 = 1 page)
+- Export:
+  - CSV: global/per-round (includes round type + review timestamps)
+  - PDF: exported from Records via browser print (Save as PDF); 1 round = 1 PDF, each A4 = 1 page
 - Wordbooks: built-in samples + local import (TXT/CSV/JSON) + online import (CET4/CET6)
 - Pronunciation: SpeechSynthesis (en/es/ja/ko/pt/fr/de/it/eo), Auto/Manual voice selection
 - Backup: import/export full local data (records + settings)
@@ -45,20 +48,32 @@ Open: http://localhost:8080/
 
 - Home: “Next word” → add a word → review the round
 - Home: “Review this round” anytime, and mark learning status
-- Records: Round view or Status view, per-round CSV/PDF export, export PDF uses one A4 per page
-- Records status view: status summary and generate a review round by status / due
+- Records:
+  - Round view: A4 preview + per-round CSV/PDF export + jump back to review
+  - Status view: group by status/due and generate a review round
 - Settings: theme, pronunciation, round cap, lightweight review, backup, AI generator
 
 ## Project structure (brief)
 
 ```text
-.
+A4-Memory
 ├── index.html
 ├── records.html
+├── manifest.webmanifest
+├── assets/
 ├── css/style.css
 ├── data/words.js
-├── js/ (app/records/settings/speech/storage/utils)
-└── docs/ (README.en.md, PROJECT_CONTEXT.md)
+├── js/
+│   ├── core/common.js
+│   ├── app.js
+│   ├── records.js
+│   ├── settings.js
+│   ├── speech.js
+│   ├── storage.js
+│   └── utils.js
+└── docs/
+    ├── README.en.md
+    └── PROJECT_CONTEXT.md
 ```
 
 ## Contact
