@@ -51,6 +51,7 @@ Open: http://localhost:8080/
 - Records:
   - Round view: A4 preview + per-round CSV/PDF export + jump back to review
   - Status view: group by status/due and generate a review round
+  - Top actions: Settings is next to “Back to Home”; “Clear records” is aligned with “Export PDF”
 - Settings: theme, pronunciation, round cap, lightweight review, backup, AI generator
 
 ## Project structure (brief)

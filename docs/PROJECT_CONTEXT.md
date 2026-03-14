@@ -79,7 +79,7 @@ A4-Memory
   - 脚本顺序：`data/words.js` → `js/core/common.js` → `utils/storage/speech/settings/app`
 - `records.html`（学习记录页）
   - 视图切换：轮次视图 / 状态视图
-  - 顶部入口：导出 CSV、导出 PDF、设置、清空记录
+  - 顶部入口：返回背单词右侧为设置；导出区：导出 CSV、导出 PDF、清空记录（同一行）
   - 脚本顺序：`utils/storage/speech/core/common/settings/records`
 
 ## 6) 核心业务规则（真实实现）

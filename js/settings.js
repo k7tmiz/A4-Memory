@@ -1089,46 +1089,94 @@
       renderAiProviderUi()
     }
 
-    function getAiProviderPresets() {
-      return {
-        openai: {
-          baseUrl: "https://api.openai.com/v1",
-          models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"],
-          defaultModel: "gpt-4o-mini",
-        },
-        gemini: {
-          baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-          models: ["gemini-1.5-flash", "gemini-1.5-pro"],
-          defaultModel: "gemini-1.5-flash",
-        },
-        deepseek: {
-          baseUrl: "https://api.deepseek.com/v1",
-          models: ["deepseek-chat", "deepseek-reasoner"],
-          defaultModel: "deepseek-chat",
-        },
-        siliconcloud: {
-          baseUrl: "https://api.siliconflow.cn/v1",
-          models: ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1"],
-          defaultModel: "deepseek-ai/DeepSeek-V3",
-        },
-        custom: {
-          baseUrl: "",
-          models: [],
-          defaultModel: "",
-        },
-      }
+    const AI_PROVIDER_PRESETS = {
+      openai: {
+        baseUrl: "https://api.openai.com/v1",
+        models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"],
+        defaultModel: "gpt-4o-mini",
+      },
+      gemini: {
+        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+        models: ["gemini-1.5-flash", "gemini-1.5-pro"],
+        defaultModel: "gemini-1.5-flash",
+      },
+      deepseek: {
+        baseUrl: "https://api.deepseek.com/v1",
+        models: ["deepseek-chat", "deepseek-reasoner"],
+        defaultModel: "deepseek-chat",
+      },
+      siliconcloud: {
+        baseUrl: "https://api.siliconflow.cn/v1",
+        models: ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1"],
+        defaultModel: "deepseek-ai/DeepSeek-V3",
+      },
+      custom: {
+        baseUrl: "",
+        models: [],
+        defaultModel: "",
+      },
     }
 
     function normalizeAiProviderLocal(value) {
       return normalizeAiProvider(value)
     }
 
+    function getAiPreset(provider) {
+      const p = normalizeAiProviderLocal(provider)
+      return AI_PROVIDER_PRESETS[p] || AI_PROVIDER_PRESETS.custom
+    }
+
+    function getAiConfigFromState(state) {
+      const s = state && typeof state === "object" ? state : {}
+      const cfg = s.aiConfig && typeof s.aiConfig === "object" ? s.aiConfig : {}
+      return {
+        provider: normalizeAiProviderLocal(cfg.provider),
+        baseUrl: String(cfg.baseUrl || "").trim(),
+        apiKey: String(cfg.apiKey || "").trim(),
+        model: String(cfg.model || "").trim(),
+      }
+    }
+
+    function patchAiConfig(patch, { syncInputs } = {}) {
+      const state = getState ? getState() : {}
+      const prev = getAiConfigFromState(state)
+      const next = {
+        provider: patch.provider != null ? normalizeAiProviderLocal(patch.provider) : prev.provider,
+        baseUrl: patch.baseUrl != null ? String(patch.baseUrl || "").trim() : prev.baseUrl,
+        apiKey: patch.apiKey != null ? String(patch.apiKey || "").trim() : prev.apiKey,
+        model: patch.model != null ? String(patch.model || "").trim() : prev.model,
+      }
+      if (typeof setState === "function") setState({ aiConfig: next })
+      if (syncInputs) {
+        if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.value = next.baseUrl
+        if (dom.aiApiKeyInput) dom.aiApiKeyInput.value = next.apiKey
+        if (dom.aiModelInput) dom.aiModelInput.value = next.model
+      }
+      if (typeof persist === "function") persist()
+      if (typeof onAfterChange === "function") onAfterChange({ key: "aiConfig" })
+    }
+
+    function computeAiConfigOnProviderChange({ prevConfig, nextProvider }) {
+      const prevProvider = normalizeAiProviderLocal(prevConfig?.provider)
+      const nextProv = normalizeAiProviderLocal(nextProvider)
+      const prevPreset = getAiPreset(prevProvider)
+      const nextPreset = getAiPreset(nextProv)
+
+      let baseUrl = String(prevConfig?.baseUrl || "").trim()
+      let model = String(prevConfig?.model || "").trim()
+      const apiKey = String(prevConfig?.apiKey || "").trim()
+
+      if (!baseUrl || (prevPreset.baseUrl && baseUrl === prevPreset.baseUrl)) baseUrl = String(nextPreset.baseUrl || "").trim()
+      if (!model || (prevPreset.defaultModel && model === prevPreset.defaultModel)) model = String(nextPreset.defaultModel || "").trim()
+
+      return { provider: nextProv, baseUrl, apiKey, model }
+    }
+
     function renderAiProviderUi() {
       const state = getState ? getState() : {}
-      const presets = getAiProviderPresets()
-      const provider = normalizeAiProviderLocal(state?.aiConfig?.provider)
-      const preset = presets[provider] || presets.custom
-      if (dom.aiProviderSelect) dom.aiProviderSelect.value = provider
+      const cfg = getAiConfigFromState(state)
+      const preset = getAiPreset(cfg.provider)
+      if (dom.aiProviderSelect) dom.aiProviderSelect.value = cfg.provider
       if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.placeholder = preset.baseUrl || "https://api.example.com/v1"
       if (dom.aiModelInput) dom.aiModelInput.placeholder = preset.defaultModel || "可直接输入或选常用模型"
       if (dom.aiModelDatalist) {
@@ -1139,6 +1187,35 @@
           dom.aiModelDatalist.appendChild(opt)
         }
       }
+    }
+
+    function setAiStatus(text) {
+      if (!dom.aiStatus) return
+      dom.aiStatus.textContent = String(text || "")
+    }
+
+    function setAiBusy(busy) {
+      if (!dom.aiGenerateBtn) return
+      dom.aiGenerateBtn.disabled = !!busy
+    }
+
+    async function requestAiChatCompletion({ endpoint, apiKey, model, system, user }) {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      })
+      return res
     }
 
     function open() {
@@ -1324,64 +1401,21 @@
     })
 
     dom.aiBaseUrlInput?.addEventListener("change", () => {
-      const state = getState ? getState() : {}
-      const aiConfig = {
-        provider: normalizeAiProviderLocal(state?.aiConfig?.provider),
-        baseUrl: String(dom.aiBaseUrlInput.value || "").trim(),
-        apiKey: String(state?.aiConfig?.apiKey || ""),
-        model: String(state?.aiConfig?.model || ""),
-      }
-      if (typeof setState === "function") setState({ aiConfig })
-      if (typeof persist === "function") persist()
-      if (typeof onAfterChange === "function") onAfterChange({ key: "aiConfig" })
+      patchAiConfig({ baseUrl: dom.aiBaseUrlInput.value })
     })
     dom.aiApiKeyInput?.addEventListener("change", () => {
-      const state = getState ? getState() : {}
-      const aiConfig = {
-        provider: normalizeAiProviderLocal(state?.aiConfig?.provider),
-        baseUrl: String(state?.aiConfig?.baseUrl || ""),
-        apiKey: String(dom.aiApiKeyInput.value || "").trim(),
-        model: String(state?.aiConfig?.model || ""),
-      }
-      if (typeof setState === "function") setState({ aiConfig })
-      if (typeof persist === "function") persist()
-      if (typeof onAfterChange === "function") onAfterChange({ key: "aiConfig" })
+      patchAiConfig({ apiKey: dom.aiApiKeyInput.value })
     })
     dom.aiModelInput?.addEventListener("change", () => {
-      const state = getState ? getState() : {}
-      const aiConfig = {
-        provider: normalizeAiProviderLocal(state?.aiConfig?.provider),
-        baseUrl: String(state?.aiConfig?.baseUrl || ""),
-        apiKey: String(state?.aiConfig?.apiKey || ""),
-        model: String(dom.aiModelInput.value || "").trim(),
-      }
-      if (typeof setState === "function") setState({ aiConfig })
-      if (typeof persist === "function") persist()
-      if (typeof onAfterChange === "function") onAfterChange({ key: "aiConfig" })
+      patchAiConfig({ model: dom.aiModelInput.value })
     })
 
     dom.aiProviderSelect?.addEventListener("change", () => {
       const state = getState ? getState() : {}
-      const prevProvider = normalizeAiProviderLocal(state?.aiConfig?.provider)
-      const nextProvider = normalizeAiProviderLocal(dom.aiProviderSelect.value)
-      const presets = getAiProviderPresets()
-      const prevPreset = presets[prevProvider] || presets.custom
-      const nextPreset = presets[nextProvider] || presets.custom
-
-      let baseUrl = String(state?.aiConfig?.baseUrl || "").trim()
-      let model = String(state?.aiConfig?.model || "").trim()
-      const apiKey = String(state?.aiConfig?.apiKey || "").trim()
-
-      if (!baseUrl || (prevPreset.baseUrl && baseUrl === prevPreset.baseUrl)) baseUrl = String(nextPreset.baseUrl || "").trim()
-      if (!model || (prevPreset.defaultModel && model === prevPreset.defaultModel)) model = String(nextPreset.defaultModel || "").trim()
-
-      const aiConfig = { provider: nextProvider, baseUrl, apiKey, model }
-      if (typeof setState === "function") setState({ aiConfig })
-      if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.value = baseUrl
-      if (dom.aiModelInput) dom.aiModelInput.value = model
+      const prev = getAiConfigFromState(state)
+      const next = computeAiConfigOnProviderChange({ prevConfig: prev, nextProvider: dom.aiProviderSelect.value })
+      patchAiConfig(next, { syncInputs: true })
       renderAiProviderUi()
-      if (typeof persist === "function") persist()
-      if (typeof onAfterChange === "function") onAfterChange({ key: "aiConfig" })
     })
 
     function openAiPreviewModal({ book, meta }) {
@@ -1411,80 +1445,51 @@
     }
 
     dom.aiGenerateBtn?.addEventListener("click", async () => {
-      if (dom.aiStatus) dom.aiStatus.textContent = ""
+      setAiStatus("")
       const state = getState ? getState() : {}
-      const apiKey = String(state?.aiConfig?.apiKey || "").trim()
-      const model = String(state?.aiConfig?.model || "").trim()
-      const endpoint = buildChatCompletionsUrl(state?.aiConfig?.baseUrl)
+      const cfg = getAiConfigFromState(state)
+      const endpoint = buildChatCompletionsUrl(cfg.baseUrl)
 
-      if (!endpoint) {
-        if (dom.aiStatus) dom.aiStatus.textContent = "请先填写 API Base URL。"
-        return
-      }
-      if (!model) {
-        if (dom.aiStatus) dom.aiStatus.textContent = "请先填写 Model。"
-        return
-      }
-      if (!apiKey) {
-        if (dom.aiStatus) dom.aiStatus.textContent = "请先填写 API Key。"
-        return
-      }
+      if (!endpoint) return setAiStatus("请先填写 API Base URL。")
+      if (!cfg.model) return setAiStatus("请先填写 Model。")
+      if (!cfg.apiKey) return setAiStatus("请先填写 API Key。")
 
       const type = String(dom.aiTypeSelect?.value || "custom")
       const customTopic = String(dom.aiCustomTopicInput?.value || "").trim()
       const count = Number(dom.aiCountInput?.value || 120)
       const { system, user } = buildAiRequest({ type, customTopic, count })
 
-      if (dom.aiGenerateBtn) dom.aiGenerateBtn.disabled = true
-      if (dom.aiStatus) dom.aiStatus.textContent = "生成中…"
+      setAiBusy(true)
+      setAiStatus("生成中…")
 
       let content = ""
       try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model,
-            temperature: 0.2,
-            messages: [
-              { role: "system", content: system },
-              { role: "user", content: user },
-            ],
-          }),
+        const res = await requestAiChatCompletion({
+          endpoint,
+          apiKey: cfg.apiKey,
+          model: cfg.model,
+          system,
+          user,
         })
-        if (!res.ok) {
-          if (dom.aiStatus) dom.aiStatus.textContent = `生成失败：HTTP ${res.status}`
-          return
-        }
+        if (!res.ok) return setAiStatus(`生成失败：HTTP ${res.status}`)
         const data = await res.json()
         content = String(data?.choices?.[0]?.message?.content || "")
       } catch (e) {
-        if (dom.aiStatus) dom.aiStatus.textContent = "生成失败：网络或接口错误。"
-        return
+        return setAiStatus("生成失败：网络或接口错误。")
       } finally {
-        if (dom.aiGenerateBtn) dom.aiGenerateBtn.disabled = false
+        setAiBusy(false)
       }
 
       let parsed = null
       try {
         parsed = JSON.parse(stripJsonFromText(content))
       } catch (e) {
-        if (dom.aiStatus) dom.aiStatus.textContent = "生成失败：AI 返回内容不是合法 JSON。"
-        return
+        return setAiStatus("生成失败：AI 返回内容不是合法 JSON。")
       }
 
       const normalized = normalizeAiWordbook(parsed)
-      if (!normalized) {
-        if (dom.aiStatus) dom.aiStatus.textContent = "生成失败：词书结构不符合要求。"
-        return
-      }
-      if (!normalized.words.length) {
-        if (dom.aiStatus) dom.aiStatus.textContent = "生成失败：没有可用词条。"
-        return
-      }
+      if (!normalized) return setAiStatus("生成失败：词书结构不符合要求。")
+      if (!normalized.words.length) return setAiStatus("生成失败：没有可用词条。")
 
       const meta = [
         `名称：${normalized.name}`,
@@ -1498,7 +1503,7 @@
         .join(" · ")
 
       openAiPreviewModal({ book: normalized, meta })
-      if (dom.aiStatus) dom.aiStatus.textContent = "已生成：请在预览中确认保存。"
+      setAiStatus("已生成：请在预览中确认保存。")
     })
 
     aiDom.backdrop?.addEventListener("click", () => closeAiPreviewModal())
