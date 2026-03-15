@@ -1,35 +1,12 @@
 ;(function () {
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n))
 
-  function normalizeThemeMode(value) {
-    const v = String(value || "").toLowerCase()
-    if (v === "auto" || v === "light" || v === "dark") return v
-    return "auto"
-  }
-
-  function normalizeRoundCap(value) {
-    const n = Math.round(Number(value) || 0)
-    return clamp(n || 30, 20, 30)
-  }
-
-  function normalizeAccent(value) {
-    const v = String(value || "").toLowerCase()
-    if (v === "auto" || v === "us" || v === "gb") return v
-    return "auto"
-  }
-
-  function normalizeVoiceMode(value) {
-    const v = String(value || "").toLowerCase()
-    if (v === "auto" || v === "manual") return v
-    return "auto"
-  }
-
-  function normalizePronunciationLang(value) {
-    const v = String(value || "").toLowerCase().replaceAll("_", "-")
-    if (v === "auto" || v === "en" || v === "es" || v === "ja") return v
-    if (v === "ko" || v === "pt" || v === "fr" || v === "de" || v === "it" || v === "eo") return v
-    return "auto"
-  }
+  const normalizeThemeMode = window.A4Common?.normalizeThemeMode
+  const normalizeRoundCap = window.A4Common?.normalizeRoundCap
+  const normalizeAccent = window.A4Common?.normalizeAccent
+  const normalizeVoiceMode = window.A4Common?.normalizeVoiceMode
+  const normalizePronunciationLang = window.A4Common?.normalizePronunciationLang
+  const normalizeAiProvider = window.A4Common?.normalizeAiProvider
 
   const STATUS_MASTERED = "mastered"
   const STATUS_LEARNING = "learning"
@@ -170,12 +147,6 @@
     const last = raw.lastIndexOf("}")
     if (first >= 0 && last > first) return raw.slice(first, last + 1).trim()
     return raw
-  }
-
-  function normalizeAiProvider(value) {
-    const fn = window.A4Common?.normalizeAiProvider
-    if (typeof fn === "function") return fn(value)
-    return "custom"
   }
 
   function buildChatCompletionsUrl(baseUrl) {

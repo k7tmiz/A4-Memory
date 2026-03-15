@@ -35,7 +35,7 @@ Demo：https://k7tmiz.com/words
 - 备份：导入/导出完整学习数据（学习记录 + 设置）
 - AI 生成词书：配置 API 后生成 → 实时预览 → 保存到本地词书（主题可选，小语种也可填）
 - AI 接入：支持 OpenAI / Gemini / DeepSeek / SiliconCloud / 自定义预设
-- 维护：跨页面公共逻辑集中在 `js/core/common.js`（含全局最新状态聚合）
+- 维护：跨页面公共逻辑集中在 `js/core/common.js`（含全局最新状态聚合与部分通用归一化）
 
 ## 使用方式
 

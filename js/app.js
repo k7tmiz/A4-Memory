@@ -1031,34 +1031,6 @@ async function openRemoteImportPicker({ owner, repo, language, name } = {}) {
   setRemoteImportBusy(false)
 }
 
-async function importWordbookFromGithubRepoAuto({ owner, repo, name, language }) {
-  const branches = ["main", "master"]
-  for (const branch of branches) {
-    const tree = await fetchGithubTree({ owner, repo, branch })
-    const items = Array.isArray(tree?.tree) ? tree.tree : []
-    if (!items.length) continue
-
-    const candidates = items
-      .filter((it) => it && it.type === "blob" && String(it.path || "").toLowerCase().endsWith(".json"))
-      .map((it) => ({
-        path: String(it.path || ""),
-        size: Number(it.size) || 0,
-        score: scoreGithubJsonPath(it.path, it.size),
-      }))
-      .filter((it) => it.path && it.score > -200)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 18)
-
-    for (const c of candidates) {
-      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${c.path}`
-      const desc = `${owner}/${repo}@${branch}:${c.path}`
-      const book = await importWordbookFromUrl({ url: rawUrl, name, language, description: desc })
-      if (book) return book
-    }
-  }
-  return null
-}
-
 function getPaperInnerSize() {
   const rect = dom.paperInner.getBoundingClientRect()
   return { w: rect.width || 1, h: rect.height || 1 }

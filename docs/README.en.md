@@ -33,7 +33,7 @@ A pure front-end vocabulary tool based on the “A4 paper memory method”. Word
 - Backup: import/export full local data (records + settings)
 - AI wordbook generator: configure API → generate → live preview → save (optional topic, also for non-English)
 - AI API presets: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
-- Maintenance: cross-page shared logic is centralized in js/core/common.js (including latest-status aggregation)
+- Maintenance: cross-page shared logic is centralized in js/core/common.js (including latest-status aggregation and shared normalizers)
 
 ## Usage
 

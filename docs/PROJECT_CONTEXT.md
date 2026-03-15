@@ -52,7 +52,7 @@ A4-Memory
 ## 4) 模块职责边界（真实实现）
 
 - `js/core/common.js`
-  - 跨页面共享的轻量常量与纯工具函数（状态/轮次/时间/分页/学习统计/AI provider 归一化、全局最新状态聚合）
+  - 跨页面共享的轻量常量与纯工具函数（状态/轮次/时间/分页/学习统计、若干设置归一化、AI provider 归一化、全局最新状态聚合）
 - `js/utils.js`
   - 下载工具与文件名清洗：`downloadTextFile/downloadJsonFile/downloadBlob/sanitizeFilename`
 - `js/storage.js`
@@ -85,7 +85,7 @@ A4-Memory
 - `records.html`（学习记录页）
   - 视图切换：轮次视图 / 状态视图
   - 顶部操作：返回、设置、导出与清空
-  - 脚本顺序：`utils/storage/speech/core/common/settings/records`
+  - 脚本顺序：`utils/storage/core/common/speech/settings/records`
 
 ## 6) 核心业务规则（真实实现）
 
