@@ -328,8 +328,6 @@ const appState = {
   reviewSystemEnabled: true,
   reviewIntervals: { ...DEFAULT_REVIEW_INTERVALS },
   reviewAutoCloseModal: true,
-  flowSeenWordKeys: [],
-  preferUnseenFirstWordInNewRound: false,
   pronunciationEnabled: true,
   pronunciationAccent: "auto",
   pronunciationLang: "auto",
@@ -698,8 +696,6 @@ async function importWordbookFile(file) {
 
   appState.customWordbooks = [...appState.customWordbooks, book]
   appState.selectedWordbookId = book.id
-  appState.flowSeenWordKeys = []
-  appState.preferUnseenFirstWordInNewRound = false
   renderWordbookSelect()
   startNextRound()
   persist()
@@ -877,8 +873,6 @@ async function importWordbookFromUrl({ url, name, language, description } = {}) 
 
   appState.customWordbooks = [...appState.customWordbooks, book]
   appState.selectedWordbookId = book.id
-  appState.flowSeenWordKeys = []
-  appState.preferUnseenFirstWordInNewRound = false
   renderWordbookSelect()
   startNextRound()
   persist()
@@ -1101,7 +1095,6 @@ function persist() {
     darkMode,
     themeMode: appState.themeMode,
     unknownTerms: appState.unknownTerms,
-    flowSeenWordKeys: appState.flowSeenWordKeys,
     roundCap: appState.roundCap,
     dailyGoalRounds: appState.dailyGoalRounds,
     dailyGoalWords: appState.dailyGoalWords,
@@ -1155,8 +1148,6 @@ function startNextRound({ clearAll = false } = {}) {
   if (clearAll) {
     appState.rounds = []
     appState.currentRoundId = ""
-    appState.flowSeenWordKeys = []
-    appState.preferUnseenFirstWordInNewRound = false
   } else {
     const current = getCurrentRound()
     if (current && current.items.length > 0) finalizeCurrentRound()
@@ -1442,6 +1433,13 @@ function closeRoundFullModal() {
   setModalVisible(dom.roundFullModal, false)
 }
 
+let pendingNextWordAfterRoundFull = false
+
+function cancelRoundFullModal() {
+  pendingNextWordAfterRoundFull = false
+  closeRoundFullModal()
+}
+
 function generateStatusRound(kind) {
   const cap = normalizeRoundCap(appState.roundCap)
   const nowMs = Date.now()
@@ -1565,25 +1563,8 @@ function ensurePool() {
 }
 
 function pickNextWord() {
-  return pickNextWordWithOptions()
-}
-
-function pickNextWordWithOptions({ preferUnseen } = {}) {
   ensurePool()
   const currentKeys = buildCurrentRoundWordKeySet()
-  const prefer = !!preferUnseen
-  const flowSeen = prefer ? new Set(appState.flowSeenWordKeys) : null
-  if (prefer) {
-    for (let i = appState.poolIndex; i < appState.pool.length; i++) {
-      const word = appState.pool[i]
-      const key = getWordMeaningKey(word)
-      if (!key) continue
-      if (currentKeys.has(key)) continue
-      if (flowSeen && flowSeen.has(key)) continue
-      appState.poolIndex = clamp(i + 1, 0, appState.pool.length)
-      return word || null
-    }
-  }
   while (appState.poolIndex < appState.pool.length) {
     const word = appState.pool[appState.poolIndex]
     appState.poolIndex = clamp(appState.poolIndex + 1, 0, appState.pool.length)
@@ -1673,8 +1654,6 @@ function restore() {
   if (!saved) {
     appState.customWordbooks = []
     appState.selectedWordbookId = getAllWordbooks()[0]?.id || "empty"
-    appState.flowSeenWordKeys = []
-    appState.preferUnseenFirstWordInNewRound = false
     renderWordbookSelect()
     ensureCurrentRound()
     updateImmersiveToggle()
@@ -1699,10 +1678,6 @@ function restore() {
   appState.unknownTerms = Array.isArray(saved.unknownTerms)
     ? saved.unknownTerms.map((s) => String(s || "").trim()).filter(Boolean)
     : []
-  appState.flowSeenWordKeys = Array.isArray(saved.flowSeenWordKeys)
-    ? saved.flowSeenWordKeys.map((s) => String(s || "").trim()).filter(Boolean)
-    : []
-  appState.preferUnseenFirstWordInNewRound = false
 
   const rawRoundCap = Number(saved.roundCap)
   appState.roundCap = Number.isFinite(rawRoundCap) ? clamp(Math.round(rawRoundCap), 20, 30) : DEFAULT_ROUND_CAP
@@ -1852,19 +1827,55 @@ function restore() {
   persist()
 }
 
-function addNextWord() {
-  ensureCurrentRound()
-  if (appState.placed.length >= getCurrentRoundCap()) {
-    openRoundFullModal()
-    return
+function buildAllRoundsWordKeySet({ excludeRoundId } = {}) {
+  const exclude = String(excludeRoundId || "")
+  const set = new Set()
+  for (const r of Array.isArray(appState.rounds) ? appState.rounds : []) {
+    if (exclude && String(r?.id || "") === exclude) continue
+    const items = Array.isArray(r?.items) ? r.items : []
+    for (const it of items) {
+      const key = getWordMeaningKey(it?.word)
+      if (key) set.add(key)
+    }
+  }
+  return set
+}
+
+function pickNextWordPreferUnseenFirst({ globalSeenSet } = {}) {
+  ensurePool()
+  const seen = globalSeenSet instanceof Set ? globalSeenSet : new Set()
+  const currentKeys = buildCurrentRoundWordKeySet()
+
+  const start = clamp(appState.poolIndex, 0, appState.pool.length)
+  let foundIndex = -1
+  for (let i = start; i < appState.pool.length; i++) {
+    const word = appState.pool[i]
+    const key = getWordMeaningKey(word)
+    if (!key) continue
+    if (currentKeys.has(key)) continue
+    if (seen.has(key)) continue
+    foundIndex = i
+    break
   }
 
-  const isFirstWordInRound = appState.placed.length === 0
-  const preferUnseen = isFirstWordInRound && appState.preferUnseenFirstWordInNewRound
-  const word = pickNextWordWithOptions({ preferUnseen })
+  if (foundIndex > start) {
+    const tmp = appState.pool[start]
+    appState.pool[start] = appState.pool[foundIndex]
+    appState.pool[foundIndex] = tmp
+  }
+  return pickNextWord()
+}
+
+function addNextWordToCurrentRound({ preferUnseenFirst } = {}) {
+  ensureCurrentRound()
+  if (appState.placed.length >= getCurrentRoundCap()) return null
+
+  const word = preferUnseenFirst
+    ? pickNextWordPreferUnseenFirst({ globalSeenSet: buildAllRoundsWordKeySet({ excludeRoundId: appState.currentRoundId }) })
+    : pickNextWord()
   if (!word) {
     window.alert("当前词书没有更多可用词条（已自动去重本轮同词同义）。")
-    return
+    return null
   }
 
   const placed = placeWordElement(word)
@@ -1881,14 +1892,6 @@ function addNextWord() {
   }
   appState.placed.push({ word, roundItem, el: placed.el, box: placed.box, fontSize, pos: placed.pos })
 
-  const flowKey = getWordMeaningKey(word)
-  if (flowKey) {
-    const nextSet = new Set(appState.flowSeenWordKeys)
-    nextSet.add(flowKey)
-    appState.flowSeenWordKeys = Array.from(nextSet)
-  }
-  if (preferUnseen) appState.preferUnseenFirstWordInNewRound = false
-
   const round = getCurrentRound()
   if (round) {
     if (!round.type) round.type = ROUND_TYPE_NORMAL
@@ -1899,15 +1902,29 @@ function addNextWord() {
   updateBadge()
   updateHint()
   persist()
+  return roundItem
+}
+
+function handleNextWord() {
+  ensureCurrentRound()
+  if (appState.placed.length >= getCurrentRoundCap()) {
+    pendingNextWordAfterRoundFull = true
+    openRoundFullModal()
+    return
+  }
+  addNextWordToCurrentRound()
+}
+
+function openReviewCurrentRound() {
   openReviewModal()
 }
 
 dom.nextBtn.addEventListener("click", () => {
-  addNextWord()
+  handleNextWord()
 })
 
 dom.reviewBtn.addEventListener("click", () => {
-  openReviewModal()
+  openReviewCurrentRound()
 })
 
 dom.newRoundBtn.addEventListener("click", () => {
@@ -1941,8 +1958,6 @@ dom.settingsBtn.addEventListener("click", () => openSettingsModal())
 dom.wordbookSelect.addEventListener("change", () => {
   appState.selectedWordbookId = dom.wordbookSelect.value
   updateSourceWords()
-  appState.flowSeenWordKeys = []
-  appState.preferUnseenFirstWordInNewRound = false
   startNextRound()
   persist()
 })
@@ -2199,12 +2214,12 @@ window.addEventListener("keydown", (e) => {
 
   if (key === " " || key === "Spacebar") {
     e.preventDefault()
-    addNextWord()
+    handleNextWord()
     return
   }
 
   if (k === "r") {
-    openReviewModal()
+    openReviewCurrentRound()
     return
   }
 
@@ -2240,14 +2255,21 @@ restore()
 updateBadge()
 updateHint()
 
-dom.roundFullBackdrop.addEventListener("click", () => closeRoundFullModal())
-dom.closeRoundFullBtn.addEventListener("click", () => closeRoundFullModal())
+dom.roundFullBackdrop.addEventListener("click", () => cancelRoundFullModal())
+dom.closeRoundFullBtn.addEventListener("click", () => cancelRoundFullModal())
 dom.continueRoundBtn.addEventListener("click", () => {
   closeRoundFullModal()
-  appState.preferUnseenFirstWordInNewRound = true
   startNextRound()
+  if (pendingNextWordAfterRoundFull) {
+    pendingNextWordAfterRoundFull = false
+    addNextWordToCurrentRound({ preferUnseenFirst: true })
+  }
 })
 dom.restartAllBtn.addEventListener("click", () => {
   closeRoundFullModal()
   startNextRound({ clearAll: true })
+  if (pendingNextWordAfterRoundFull) {
+    pendingNextWordAfterRoundFull = false
+    addNextWordToCurrentRound({ preferUnseenFirst: true })
+  }
 })
