@@ -266,7 +266,7 @@ const dom = {
   closeRoundFullBtn: document.getElementById("closeRoundFullBtn"),
   roundFullMeta: document.getElementById("roundFullMeta"),
   continueRoundBtn: document.getElementById("continueRoundBtn"),
-  restartAllBtn: document.getElementById("restartAllBtn"),
+  reviewFromFullBtn: document.getElementById("reviewFromFullBtn"),
   settingsModal: document.getElementById("settingsModal"),
   settingsBackdrop: document.getElementById("settingsBackdrop"),
   closeSettingsBtn: document.getElementById("closeSettingsBtn"),
@@ -311,6 +311,8 @@ const appState = {
   placed: [],
   showMeaning: false,
   reviewShuffled: false,
+  reviewPinnedRoundItem: null,
+  reviewOrderPreferenceShuffled: null,
   rounds: [],
   currentRoundId: "",
   pendingReviewRoundId: "",
@@ -1143,15 +1145,10 @@ function renderCurrentRound() {
   }
 }
 
-function startNextRound({ clearAll = false } = {}) {
+function startNextRound() {
   ensureCurrentRound()
-  if (clearAll) {
-    appState.rounds = []
-    appState.currentRoundId = ""
-  } else {
-    const current = getCurrentRound()
-    if (current && current.items.length > 0) finalizeCurrentRound()
-  }
+  const current = getCurrentRound()
+  if (current && current.items.length > 0) finalizeCurrentRound()
 
   const round = {
     id: makeId(),
@@ -1363,8 +1360,12 @@ function refreshReviewList() {
   const base = rawItems
     .filter((it) => it && it.word && it.word.term)
     .map((it) => ({ word: it.word, roundItem: it }))
-  const list = appState.reviewShuffled ? shuffle(base) : base
-  appState.reviewQueue = list
+  const pinned = appState.reviewPinnedRoundItem
+  const pinnedIndex = pinned ? base.findIndex((e) => e.roundItem === pinned) : -1
+  const pinnedEntry = pinnedIndex >= 0 ? base[pinnedIndex] : null
+  const rest = pinnedEntry ? [...base.slice(0, pinnedIndex), ...base.slice(pinnedIndex + 1)] : base
+  const orderedRest = appState.reviewShuffled ? shuffle(rest) : rest
+  appState.reviewQueue = pinnedEntry ? [pinnedEntry, ...orderedRest] : orderedRest
   appState.reviewIndex = 0
   renderReviewCard()
 }
@@ -1409,8 +1410,18 @@ function renderReviewCard() {
 }
 
 function openReviewModal() {
+  appState.reviewPinnedRoundItem = null
   appState.reviewShuffled = true
   if (dom.shuffleBtn) dom.shuffleBtn.textContent = "恢复顺序"
+  refreshReviewList()
+  setModalVisible(dom.reviewModal, true)
+}
+
+function openAutoReviewModal(pinnedRoundItem) {
+  appState.reviewPinnedRoundItem = pinnedRoundItem || null
+  appState.reviewShuffled =
+    typeof appState.reviewOrderPreferenceShuffled === "boolean" ? appState.reviewOrderPreferenceShuffled : true
+  if (dom.shuffleBtn) dom.shuffleBtn.textContent = appState.reviewShuffled ? "恢复顺序" : "打乱顺序"
   refreshReviewList()
   setModalVisible(dom.reviewModal, true)
 }
@@ -1912,7 +1923,9 @@ function handleNextWord() {
     openRoundFullModal()
     return
   }
-  addNextWordToCurrentRound()
+  const roundItem = addNextWordToCurrentRound()
+  if (!roundItem) return
+  openAutoReviewModal(roundItem)
 }
 
 function openReviewCurrentRound() {
@@ -2179,6 +2192,7 @@ dom.reviewCard.addEventListener("touchend", (e) => {
 
 dom.shuffleBtn.addEventListener("click", () => {
   appState.reviewShuffled = !appState.reviewShuffled
+  appState.reviewOrderPreferenceShuffled = appState.reviewShuffled
   dom.shuffleBtn.textContent = appState.reviewShuffled ? "恢复顺序" : "打乱顺序"
   refreshReviewList()
 })
@@ -2265,11 +2279,7 @@ dom.continueRoundBtn.addEventListener("click", () => {
     addNextWordToCurrentRound({ preferUnseenFirst: true })
   }
 })
-dom.restartAllBtn.addEventListener("click", () => {
+dom.reviewFromFullBtn.addEventListener("click", () => {
   closeRoundFullModal()
-  startNextRound({ clearAll: true })
-  if (pendingNextWordAfterRoundFull) {
-    pendingNextWordAfterRoundFull = false
-    addNextWordToCurrentRound({ preferUnseenFirst: true })
-  }
+  openReviewCurrentRound()
 })
