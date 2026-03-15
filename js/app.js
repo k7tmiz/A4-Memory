@@ -310,6 +310,10 @@ const appState = {
   poolIndex: 0,
   placed: [],
   showMeaning: false,
+  // 复习弹窗顺序控制：
+  // - 手动“复习本轮”：每次打开默认打乱（不置顶）
+  // - “下一个单词”后的自动复习：置顶本次新加入的 roundItem，其余旧词按当前复习顺序规则排列
+  // - reviewOrderPreferenceShuffled：用户在弹窗内选择“打乱/恢复”的偏好，仅用于后续自动复习（不写入 localStorage）
   reviewShuffled: false,
   reviewPinnedRoundItem: null,
   reviewOrderPreferenceShuffled: null,
@@ -377,12 +381,6 @@ function getResolvedDarkMode() {
   if (mode === "dark") return true
   if (mode === "light") return false
   return !!appState.systemPrefersDark
-}
-
-function formatThemeModeLabel(mode) {
-  if (mode === "light") return "浅色"
-  if (mode === "dark") return "深色"
-  return "自动"
 }
 
 function applyTheme() {
@@ -1145,6 +1143,7 @@ function renderCurrentRound() {
   }
 }
 
+// 开启下一轮：保留历史记录，仅结束当前轮并追加一个新轮次。
 function startNextRound() {
   ensureCurrentRound()
   const current = getCurrentRound()
@@ -1354,6 +1353,7 @@ function speakTerm(term) {
   if (settingsController) settingsController.updateVoiceUi()
 }
 
+// ===== 复习弹窗（手动复习 / 自动复习共用渲染）=====
 function refreshReviewList() {
   const round = getCurrentRound()
   const rawItems = Array.isArray(round?.items) ? round.items : []
@@ -1409,6 +1409,7 @@ function renderReviewCard() {
   dom.reviewUnknownBtn.disabled = false
 }
 
+// 手动入口：默认打乱顺序，不强制新词置顶。
 function openReviewModal() {
   appState.reviewPinnedRoundItem = null
   appState.reviewShuffled = true
@@ -1417,6 +1418,7 @@ function openReviewModal() {
   setModalVisible(dom.reviewModal, true)
 }
 
+// 自动入口：用于“下一个单词”后的强制复习，新词置顶；旧词仍按当前复习顺序规则排列。
 function openAutoReviewModal(pinnedRoundItem) {
   appState.reviewPinnedRoundItem = pinnedRoundItem || null
   appState.reviewShuffled =
@@ -1444,6 +1446,7 @@ function closeRoundFullModal() {
   setModalVisible(dom.roundFullModal, false)
 }
 
+// 当用户在“本轮已满”时仍点击了“下一个单词”，用于在继续下一轮后自动补一次“下一个单词”动作。
 let pendingNextWordAfterRoundFull = false
 
 function cancelRoundFullModal() {
@@ -1916,6 +1919,7 @@ function addNextWordToCurrentRound({ preferUnseenFirst } = {}) {
   return roundItem
 }
 
+// 学习推进入口：写入新词后立刻进入“自动复习”（新词置顶）。
 function handleNextWord() {
   ensureCurrentRound()
   if (appState.placed.length >= getCurrentRoundCap()) {
@@ -1932,6 +1936,7 @@ function openReviewCurrentRound() {
   openReviewModal()
 }
 
+// ===== 事件绑定（首页）=====
 dom.nextBtn.addEventListener("click", () => {
   handleNextWord()
 })
@@ -2276,10 +2281,12 @@ dom.continueRoundBtn.addEventListener("click", () => {
   startNextRound()
   if (pendingNextWordAfterRoundFull) {
     pendingNextWordAfterRoundFull = false
-    addNextWordToCurrentRound({ preferUnseenFirst: true })
+    const roundItem = addNextWordToCurrentRound({ preferUnseenFirst: true })
+    if (roundItem) openAutoReviewModal(roundItem)
   }
 })
 dom.reviewFromFullBtn.addEventListener("click", () => {
   closeRoundFullModal()
+  pendingNextWordAfterRoundFull = false
   openReviewCurrentRound()
 })
