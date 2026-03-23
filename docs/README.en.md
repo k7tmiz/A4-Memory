@@ -4,14 +4,14 @@
 
 Demo: https://k7tmiz.com/words
 
-A pure front-end vocabulary tool based on the “A4 paper memory method”. Words are randomly placed on an A4 page as a round. Each time you add 1 new word, you must fully review all words in the current round. Includes records, wordbook import, export/print, and pronunciation.
+A pure front-end vocabulary tool based on the “A4 paper memory method”. Words are randomly placed on A4 pages within a round. Each time you add 1 new word, it auto-opens the review modal: in a multi-page normal round, auto review is scoped to the current page; the “Review this round” button reviews the whole round (all pages). Includes records, wordbook import, export/print, and pronunciation.
 
 ## Features
 
 - A4 random layout with collision avoidance
-- “Review this round”: a dedicated entry to review the current A4 (shuffled by default, can restore order; swipe/drag to mark: right = Mastered, left = Unknown, supports touch + desktop mouse drag; if not committed, the card smoothly snaps back to center with all transient states cleared; supports quick flick commits; clicking the term speaks in both normal and flip modes; optional “click card to flip” mode — front: click the term to speak, click non-term area to flip; back: click anywhere to flip back; auto-closes the review modal on completion by default, configurable in Settings)
-- Per-round de-dup: within a round, it avoids adding the same “term + meaning” entry twice
-- Configurable round cap (20–30), start next round or review the current round when full
+- “Review this round”: a dedicated entry to review the whole round (all A4 pages in the round). Shuffled by default, can restore order; swipe/drag to mark: right = Mastered, left = Unknown, supports touch + desktop mouse drag; if not committed, the card smoothly snaps back to center with all transient states cleared; supports quick flick commits; clicking the term speaks in both normal and flip modes; optional “click card to flip” mode — front: click the term to speak, click non-term area to flip; back: click anywhere to flip back; auto-closes the review modal on completion by default, configurable in Settings)
+- Per-round de-dup: within a round, it de-dups by “same language + same term + same meaning” (no duplicates across pages)
+- Configurable A4 page cap (20–30). When the current A4 page is full, you can append another A4 page within the same normal round (round-wide de-dup), or review the round / start the next round manually
 - Meaning toggle, immersive mode, theme modes (Auto/Light/Dark)
 - Learning status: mark each word as Mastered / Learning / Unknown during review
 - Lightweight review: auto schedules next review time and counts “Due”
@@ -20,12 +20,12 @@ A pure front-end vocabulary tool based on the “A4 paper memory method”. Word
   - Status view: group by Due / Mastered / Learning / Unknown and “Generate a round”
   - Status aggregation: groups by normalized term+meaning key and always reflects the latest user action (deterministic, even when timestamps tie)
 - Round types: Normal / Mastered review / Learning review / Unknown review / Due review
-- Status-generated rounds: one round may contain multiple A4 pages (auto-paged by round cap)
+- Multi-page rounds: a round may contain multiple A4 pages. Status-generated rounds are auto-paged by the cap; normal rounds can append pages when the current A4 is full
 - Multi-page navigation: when a round has multiple A4 pages, use Previous/Next on Home
 - Export:
   - CSV: global/per-round (includes round type + review timestamps)
   - PDF: exported from Records via browser print (Save as PDF); 1 round = 1 PDF, each A4 = 1 page
-- Wordbooks: built-in samples + local import (TXT/CSV/JSON) + online import (English / Spanish, lists JSON files in the repo and lets you pick one to import)
+- Wordbooks: language-scoped wordbooks (built-in samples + local import (TXT/CSV/JSON) + online import (English / Spanish, lists JSON files in the repo and lets you pick one to import))
   - Naming: online import prefers the wordbook `name/title` in JSON; otherwise falls back to the JSON filename and de-dups automatically
   - Language: JSON import can optionally include `language` (e.g. `en`/`ja`/`ko`/`fr` etc., mainly used for pronunciation voice auto-pick); TXT/CSV uses a weak heuristic and falls back to default; you can always override it in Settings → Pronunciation language
 - Pronunciation: SpeechSynthesis (en/es/ja/ko/pt/fr/de/it/eo), Auto/Manual voice selection
@@ -53,13 +53,13 @@ Open: http://localhost:8080/
 
 ### 3) Basic flow
 
-- Home: “Next word” → add a word and auto-open the review modal (the new word is pinned to the first position)
+- Home: “Next word” → add a word and auto-open the review modal (the new word is pinned to the first position; in a multi-page normal round it reviews the current page only)
 - Home: “Review this round” anytime, and mark learning status (swipe/drag right = Mastered, left = Unknown; if not committed it snaps back to center; touch + mouse drag)
 - Records:
   - Round view: A4 preview + per-round CSV/PDF export + jump back to review
   - Status view: group by status/due and generate a review round
   - Lookup: search local wordbooks + latest learning status, then optional online supplement (English: Chinese-first with English below)
-  - Lookup result → “Add to current round” (a primary button on each result card) with auto review flow (new word pinned first)
+  - Lookup result → “Add to current round” (a primary button on each result card). If the current A4 page is full, it appends a new A4 page within the same round; preserves the auto review flow (new word pinned first)
   - Top actions: Settings is next to “Back to Home”; “Clear records” is aligned with “Export PDF”
 - Mobile: Home controls are compact and grouped so the full A4 area remains visible while all actions stay reachable
 - Mobile: Review buttons use a two-row layout for easier one-handed use
