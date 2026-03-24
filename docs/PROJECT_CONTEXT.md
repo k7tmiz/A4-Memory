@@ -81,6 +81,7 @@ A4-Memory
   - 依赖 `A4Storage/A4Utils/A4Speech`，不重复实现通用能力
 - `js/app.js`
   - 首页学习流程：取词、A4 排版、复习弹窗、轮次推进、词书导入管理、状态恢复/保存
+  - `generateWordbookRound(wordbookId)`：从已导入词书批量创建 normal round，包含全量单词、自动按 roundCap 分页（pageIndex 从 0 递增）、整轮按 term+meaning 去重，不弹复习弹窗，直接进入首页第一页
 - 词书语言：词书按 `language` 维度组织；当 `pronunciationLang != auto` 时，首页词书下拉会优先显示该语言下的词书并用于抽词/查词加入；`pronunciationLang=auto` 时会跟随所选词书 `language`
   - 线上导入：从指定 GitHub 词库仓库拉取 `.json` 列表并展示给用户选择，再按所选 JSON 导入（英语/西班牙语）
     - 命名：优先使用词书 JSON 的 `name/title`；缺失时回退为 JSON 文件名并自动去重
@@ -119,9 +120,16 @@ A4-Memory
   - 本轮去重：同一轮 A4 内不重复出现“同词同义”的词条
   - 当前 A4 写满后会弹出“当前 A4 已满”弹窗：可在本轮新增下一张 A4 继续学习，或复习本轮（不清空记录）
 - 状态生成轮
-  - 从记录页状态视图点击“生成一轮”触发
+  - 从记录页状态视图点击”生成一轮”触发
   - 仍生成一个 round，但 round 内部可包含多张 A4
   - 分页规则：按 `roundCap` 切分，写入 `items[].pageIndex = 0..N-1`
+- 一键生成整轮
+  - 从已导入词书的”开始整本学习”按钮触发（位于导入词书弹窗的词书列表中）
+  - 基于词书全部单词创建 normal round，按 roundCap 自动分页（pageIndex 从 0 递增）
+  - 整轮按 term+meaning 去重（忽略大小写）
+  - round.language 使用词书对应 language，不受当前选中词书影响
+  - 生成完成后直接进入首页第一页，**不自动弹出复习弹窗**
+  - 后续可继续追加单词（在同一 round 内新增 pageIndex）
 
 ## 7) 多页 A4 渲染与翻页（真实实现）
 

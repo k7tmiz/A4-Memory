@@ -525,9 +525,18 @@ function renderCustomWordbooksManage() {
       deleteCustomWordbook(b.id)
     })
 
+    const learn = document.createElement("button")
+    learn.className = "primary"
+    learn.type = "button"
+    learn.textContent = `开始整本学习（${Array.isArray(b.words) ? b.words.length : 0}词）`
+    learn.addEventListener("click", () => {
+      generateWordbookRound(b.id)
+    })
+
     row.appendChild(meta)
     actions.appendChild(exp)
     actions.appendChild(del)
+    actions.appendChild(learn)
     row.appendChild(actions)
     listEl.appendChild(row)
   }
@@ -1733,6 +1742,101 @@ function generateStatusRound(kind) {
   persist()
   refreshReviewList()
   openReviewModal()
+}
+
+// 一键生成整轮学习：从词书创建完整 normal round
+function generateWordbookRound(wordbookId) {
+  const book = appState.customWordbooks.find((b) => b.id === wordbookId)
+  if (!book) {
+    window.alert("词书不存在。")
+    return
+  }
+
+  const rawWords = Array.isArray(book.words) ? book.words : []
+  const words = rawWords.map(normalizeWordObject).filter(Boolean)
+  const total = words.length
+
+  if (!total) {
+    window.alert(`词书「${book.name}」中没有可用单词。`)
+    return
+  }
+
+  const cap = normalizeRoundCap(appState.roundCap)
+  const pages = Math.max(1, Math.ceil(total / cap))
+
+  if (total <= cap) {
+    window.alert(`词书「${book.name}」：共 ${total} 个，已生成 1 页 A4。`)
+  } else {
+    window.alert(`词书「${book.name}」：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
+  }
+
+  ensureCurrentRound()
+  const current = getCurrentRound()
+  if (current && current.items.length > 0) finalizeCurrentRound()
+
+  const langBase = getWordbookLangBase(book)
+  const round = {
+    id: makeId(),
+    startedAt: new Date().toISOString(),
+    finishedAt: "",
+    items: [],
+    roundCap: cap,
+    type: ROUND_TYPE_NORMAL,
+    language: langBase,
+  }
+  appState.rounds.push(round)
+  appState.currentRoundId = round.id
+  appState.currentPageIndex = 0
+  appState.placed = []
+  appState.reviewShuffled = false
+  appState.pool = []
+  appState.poolIndex = 0
+
+  const addedKeys = new Set()
+
+  for (let pageIndex = 0; pageIndex < pages; pageIndex++) {
+    clearPaper()
+    appState.placed = []
+    const chunk = words.slice(pageIndex * cap, (pageIndex + 1) * cap)
+
+    for (const w of chunk) {
+      const wordLang = getLangBase(w?.lang || "") || langBase
+      const key = getWordMeaningKey({ ...w, lang: wordLang })
+      if (!key || addedKeys.has(key)) continue
+      addedKeys.add(key)
+
+      const placed = placeWordElement({ ...w, lang: wordLang })
+      const fontSize = placed.el.style.fontSize || ""
+      const roundItem = {
+        word: { ...w, lang: wordLang },
+        pos: placed.pos,
+        fontSize,
+        createdAt: new Date().toISOString(),
+        status: STATUS_UNKNOWN,
+        lastReviewedAt: "",
+        nextReviewAt: "",
+        pageIndex,
+      }
+      round.items.push(roundItem)
+      appState.placed.push({
+        word: w,
+        roundItem,
+        el: placed.el,
+        box: placed.box,
+        fontSize,
+        pos: placed.pos,
+      })
+    }
+  }
+
+  clearPaper()
+  closeImportModal()
+  renderCurrentRound()
+  updatePageNav()
+  updateBadge()
+  updateHint()
+  renderStats()
+  persist()
 }
 
 function normalizeMeaningKey(value) {
