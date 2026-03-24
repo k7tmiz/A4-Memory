@@ -1,23 +1,12 @@
 ;(function () {
-  const { normalizeLookupText, scoreLookupMatch, dedupeAndSortLookupResults, buildLatestTermMap, buildFirstSeenRoundMap, normalizeLookupRecordMeta, getStatusLabel, normalizeStatus, formatDateTime, normalizeLangTag } =
-    window.A4Common || {}
+  const {
+    normalizeLookupText, scoreLookupMatch, dedupeAndSortLookupResults,
+    buildLatestTermMap, buildFirstSeenRoundMap, normalizeLookupRecordMeta,
+    getStatusLabel, normalizeStatus, formatDateTime, normalizeLangTag,
+    clamp, setModalVisible, formatMeaning, getWordKey,
+  } = window.A4Common || {}
 
   const CACHE_KEY = "a4-memory:lookup-cache:v1"
-
-  function clamp(n, min, max) {
-    return Math.max(min, Math.min(max, n))
-  }
-
-  function setModalVisible(modal, visible) {
-    if (!modal) return
-    if (visible) {
-      modal.classList.remove("hidden")
-      modal.setAttribute("aria-hidden", "false")
-    } else {
-      modal.classList.add("hidden")
-      modal.setAttribute("aria-hidden", "true")
-    }
-  }
 
   function getWordsFromGlobal() {
     const list = Array.isArray(window.WORDS) ? window.WORDS : []
@@ -154,14 +143,6 @@
     if (className) node.className = className
     if (text != null) node.textContent = text
     return node
-  }
-
-  function formatMeaning(word) {
-    const pos = String(word?.pos || "").trim()
-    const meaning = String(word?.meaning || "").trim()
-    if (!meaning) return ""
-    if (!pos) return meaning
-    return `${pos} ${meaning}`
   }
 
   function buildWordRow({ term, meaning, meaning2, metaText, status, action } = {}) {
@@ -389,31 +370,6 @@
     return { provider, baseUrl, apiKey, model }
   }
 
-  function buildChatCompletionsUrlLocal(baseUrl) {
-    const f = window.A4Settings?.buildChatCompletionsUrl
-    if (typeof f === "function") return f(baseUrl)
-    const b = String(baseUrl || "").trim().replace(/\/+$/, "")
-    if (!b) return ""
-    if (b.includes("/chat/completions")) return b
-    if (b.endsWith("/openai") || b.includes("/openai/")) return `${b}/chat/completions`
-    if (b.endsWith("/v1")) return `${b}/chat/completions`
-    if (b.includes("/v1/")) return `${b.replace(/\/+$/, "")}/chat/completions`
-    return `${b}/v1/chat/completions`
-  }
-
-  function stripJsonFromTextLocal(text) {
-    const f = window.A4Settings?.stripJsonFromText
-    if (typeof f === "function") return f(text)
-    const raw = String(text || "").trim()
-    if (!raw) return ""
-    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fenced) return String(fenced[1] || "").trim()
-    const first = raw.indexOf("{")
-    const last = raw.lastIndexOf("}")
-    if (first >= 0 && last > first) return raw.slice(first, last + 1).trim()
-    return raw
-  }
-
   function normalizeOnlineSupplementList(raw) {
     const list = Array.isArray(raw) ? raw : raw && typeof raw === "object" ? [raw] : []
     const out = []
@@ -465,7 +421,7 @@
     const t = String(term || "").trim()
     if (!t) return { ok: false, data: [], error: "empty" }
     const cfg = normalizeAiConfigFromState(state)
-    const url = buildChatCompletionsUrlLocal(cfg.baseUrl)
+    const url = window.A4Settings?.buildChatCompletionsUrl?.(cfg.baseUrl) || ""
     const model = String(cfg.model || "").trim()
     if (!url || !model) return { ok: false, data: [], error: "not_configured" }
 
@@ -488,7 +444,7 @@
         String(json?.choices?.[0]?.message?.content || "").trim() ||
         String(json?.choices?.[0]?.text || "").trim() ||
         String(json?.output_text || "").trim()
-      const raw = stripJsonFromTextLocal(content)
+      const raw = window.A4Settings?.stripJsonFromText?.(content) || content
       if (!raw) return { ok: false, data: [], error: "empty_content" }
       let parsed = null
       try {
@@ -1560,24 +1516,14 @@
       }, 1600)
     }
 
-    function getWordKeyLocal(word) {
-      const f = window.A4Common?.getWordKey
-      if (typeof f === "function") return f(word)
-      const term = String(word?.term || "").trim().toLowerCase()
-      const meaning = String(word?.meaning || "").trim().replaceAll(/\s+/g, " ")
-      if (!term) return ""
-      if (!meaning) return term
-      return `${term}||${meaning}`
-    }
-
     function isInCurrentRound(word) {
       const state = getStateSafe()
       const roundId = String(state?.currentRoundId || "").trim()
       const rounds = Array.isArray(state?.rounds) ? state.rounds : []
       const round = rounds.find((r) => String(r?.id || "") === roundId)
       const items = Array.isArray(round?.items) ? round.items : []
-      const set = new Set(items.map((it) => getWordKeyLocal(it?.word || {})).filter(Boolean))
-      const key = getWordKeyLocal(word)
+      const set = new Set(items.map((it) => getWordKey(it?.word || {})).filter(Boolean))
+      const key = getWordKey(word)
       return !!(key && set.has(key))
     }
 

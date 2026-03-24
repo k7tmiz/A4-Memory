@@ -20,6 +20,9 @@ const {
   buildLatestTermMap,
   getRoundPageCount,
   getRoundItemsByPage,
+  clamp,
+  normalizeMeaningKey,
+  setModalVisible,
 } = window.A4Common || {}
 
 const { normalizeThemeMode, normalizeAccent, normalizeVoiceMode, normalizePronunciationLang } = window.A4Settings
@@ -27,10 +30,6 @@ const { sanitizeFilename, downloadJsonFile } = window.A4Utils
 
 function makeId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
-
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n))
 }
 
 function getWordsFromGlobal() {
@@ -145,16 +144,6 @@ function buildWordElement(word) {
   el.appendChild(t)
   el.appendChild(m)
   return el
-}
-
-function setModalVisible(modalEl, visible) {
-  if (visible) {
-    modalEl.classList.remove("hidden")
-    modalEl.setAttribute("aria-hidden", "false")
-  } else {
-    modalEl.classList.add("hidden")
-    modalEl.setAttribute("aria-hidden", "true")
-  }
 }
 
 function openImportModal() {
@@ -1177,12 +1166,11 @@ function finalizeCurrentRound() {
 }
 
 function getRoundLastPageIndex(round) {
-  const count = getRoundPageCount(round)
-  return Math.max(0, Math.floor(Number(count) || 1) - 1)
+  return window.A4Common?.getRoundLastPageIndex?.(round) ?? 0
 }
 
 function getRoundItemCountByPage(round, pageIndex) {
-  return getRoundItemsByPage(round, pageIndex).length
+  return window.A4Common?.getRoundItemCountOnPage?.(round, pageIndex) ?? 0
 }
 
 function normalizeRoundCap(value) {
@@ -1837,12 +1825,6 @@ function generateWordbookRound(wordbookId) {
   updateHint()
   renderStats()
   persist()
-}
-
-function normalizeMeaningKey(value) {
-  return String(value || "")
-    .trim()
-    .replaceAll(/\s+/g, " ")
 }
 
 function getWordMeaningKey(word) {

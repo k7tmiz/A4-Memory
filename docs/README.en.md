@@ -110,14 +110,14 @@ A4-Memory
 
 ### Module boundaries
 
-- `js/core/common.js`: cross-page constants and pure utilities (round/status types, term+meaning aggregation, paging, time/stats, etc.)
+- `js/core/common.js`: cross-page shared pure logic (no DOM) — the single source of truth for business logic. Includes: status/round-type normalization, term+meaning aggregation, round/page dedup & pagination helpers (`isDuplicateInRound`/`isPageFull`/`getRoundLastPageIndex`/`getNextPageIndex` etc.), time & stats, shared utilities (`clamp`/`setModalVisible`/`formatMeaning` etc.)
 - `js/storage.js`: main state load/save wrapper (`a4-memory:v1`)
 - `js/utils.js`: downloads and filename sanitization
 - `js/speech.js`: SpeechSynthesis capability and voice selection
 - `js/settings.js`: Settings modal controller, AI wordbook generation, backup import/export normalization
 - `js/lookup.js`: Lookup modal controller (local-first + online supplement + Spanish conjugation + “Add to current round”)
-- `js/app.js`: Home learning flow (A4 placement, enforced review modal, round progression)
-- `js/records.js`: Records page (round/status views, export, delete, generate review rounds)
+- `js/app.js`: Home page controller (UI only + delegates to logic; no core business logic directly)
+- `js/records.js`: Records page controller (UI only + delegates to logic; no core business logic directly)
 
 ### Storage schema (summary)
 

@@ -108,14 +108,14 @@ A4-Memory
 
 ### 核心模块边界
 
-- `js/core/common.js`：跨页共享常量与纯函数（状态/轮次类型、term+meaning 聚合、分页、时间与统计等）
+- `js/core/common.js`：跨页共享的纯逻辑（无 DOM），是唯一业务逻辑源。包括：状态/轮次类型归一化、term+meaning 聚合、round/page 去重与分页（`isDuplicateInRound`/`isPageFull`/`getRoundLastPageIndex`/`getNextPageIndex` 等）、时间与统计、`clamp`/`setModalVisible`/`formatMeaning` 等公共工具
 - `js/storage.js`：主状态读写封装（`a4-memory:v1`）
 - `js/utils.js`：下载与文件名清洗
 - `js/speech.js`：SpeechSynthesis 发音能力与 voice 选择
 - `js/settings.js`：设置弹窗控制器、AI 词书生成、备份导入/导出规范化
 - `js/lookup.js`：查词弹窗控制器（本地优先 + 在线补充 + 西语变位 + “加入当前轮”）
-- `js/app.js`：首页学习流程（A4 排版、强制复习弹窗、轮次推进）
-- `js/records.js`：学习记录页（轮次视图/状态视图、导出、删除、生成复习轮）
+- `js/app.js`：首页控制器（仅做 UI 与调用逻辑，不写核心业务逻辑）
+- `js/records.js`：学习记录页控制器（仅做 UI 与调用逻辑，不写核心业务逻辑）
 
 ### 存储结构（摘要）
 
