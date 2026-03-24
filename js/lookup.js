@@ -394,8 +394,11 @@
         .map((d) => String(d || "").trim())
         .filter(Boolean)
         .slice(0, 8)
-      if (!term && !meanings.length) continue
-      out.push({ term, phonetic, meanings, meaningsZh, examples, synonyms })
+      const pos = String(it?.pos || "").trim()
+      let meaning = String(it?.meaning || "").trim()
+      if (!meaning && meanings.length) meaning = meanings[0]
+      if (!term && !meaning && !meanings.length) continue
+      out.push({ term, pos, meaning, phonetic, meanings, meaningsZh, examples, synonyms })
     }
     return out.slice(0, 5)
   }
@@ -403,17 +406,27 @@
   function buildLookupAiUserPrompt({ term, base }) {
     const t = String(term || "").trim()
     const b = String(base || "").trim().toLowerCase()
-    const langHint = b === "es" ? "该词可能是西班牙语。" : b === "en" ? "该词可能是英语。" : `该词语言可能为：${b || "未知"}。`
+    const isEs = b === "es"
+    const isEn = b === "en"
+    const langHint = isEs ? "该词是西班牙语。" : isEn ? "该词是英语。" : `该词语言可能为：${b || "未知"}。`
+    const meaningHint = isEs
+      ? "meanings 为主释义（西班牙语），最多 3 条，每条尽量短（尽量给出中文释义）。"
+      : isEn
+        ? "meanings 为主释义（中文），最多 3 条，每条尽量短。"
+        : "meanings 为主释义（中文），最多 3 条，每条尽量短。"
     return [
-      `请为单词「${t}」提供简明的词典补充信息。${langHint}`,
+      `请为单词「${t}」提供简明的词典信息。${langHint}`,
       "要求：",
       "- 输出必须且只输出合法 JSON（不要 markdown，不要代码块，不要解释）",
-      "- JSON 结构必须为：{ \"term\": \"...\", \"phonetic\": \"...\", \"meanings\": [\"...\"], \"examples\": [\"...\"], \"synonyms\": [\"...\"] }",
-      "- meanings 用中文释义，最多 5 条，每条尽量短",
+      "- JSON 结构：{ \"term\": \"...\", \"pos\": \"...\", \"meaning\": \"...\", \"phonetic\": \"...\", \"meanings\": [\"...\"], \"examples\": [\"...\"], \"synonyms\": [\"...\"] }",
+      "- term：原词（只读不改）",
+      `- pos：词性（如 v. / n. / adj. 等），可留空字符串。${meaningHint}`,
+      "- meaning：主释义（单条字符串，优先中文；为空时用 meanings[0] 填充）",
+      "- meanings：所有释义数组，最多 5 条，每条尽量短",
       "- examples 最多 2 条，可为空数组",
       "- synonyms 最多 6 个，可为空数组",
       "- phonetic 可留空字符串",
-      "- 如果你不确定释义，meanings 输出空数组",
+      "- 如果不确定释义，meaning 和 meanings 均输出空字符串/空数组",
     ].join("\n")
   }
 
@@ -452,7 +465,9 @@
       } catch (e) {
         return { ok: false, data: [], error: "bad_json" }
       }
+      if (_DEBUG) console.debug("[lookup] AI custom raw parsed:", JSON.stringify(parsed).slice(0, 300))
       const list = normalizeOnlineSupplementList(parsed)
+      if (_DEBUG) console.debug("[lookup] AI custom normalized:", JSON.stringify(list).slice(0, 300))
       return { ok: true, data: list, error: "" }
     } catch (e) {
       return { ok: false, data: [], error: "network" }
@@ -1274,20 +1289,35 @@
         const term = String(it?.term || "").trim()
         const meanings = Array.isArray(it?.meanings) ? it.meanings : []
         const meaningsZh = Array.isArray(it?.meaningsZh) ? it.meaningsZh : []
+        const isEn = String(base || "").toLowerCase() === "en"
         const zhLine = meaningsZh.filter(Boolean).slice(0, 3).join("；")
         const enLine = meanings.filter(Boolean).slice(0, 3).join("；")
-        const primary = String(base || "").toLowerCase() === "en" ? (zhLine || enLine) : enLine
-        const secondary = String(base || "").toLowerCase() === "en" && zhLine && enLine ? `EN: ${enLine}` : ""
+
+        // Primary meaning: use normalized meaning if present; fall back to language-specific array
+        const normMeaning = String(it?.meaning || "").trim()
+        const primary = normMeaning || (isEn ? (zhLine || enLine) : enLine)
+        // Secondary: for en lookups, show English defs below Chinese meaning when available
+        const secondary = normMeaning && isEn && enLine ? `EN: ${enLine}` : (isEn && zhLine && enLine && !normMeaning ? `EN: ${enLine}` : "")
+
         const metaParts = []
         if (source === "custom") metaParts.push("来源：AI补充")
-        else if (String(base || "").toLowerCase() === "en") metaParts.push("来源：MyMemory + dictionaryapi.dev")
+        else if (isEn) metaParts.push("来源：MyMemory + dictionaryapi.dev")
         else metaParts.push("来源：dictionaryapi.dev")
         if (it?.phonetic) metaParts.push(`音标：${String(it.phonetic || "").trim()}`)
         const syn = Array.isArray(it?.synonyms) ? it.synonyms : []
         if (syn.length) metaParts.push(`同义词：${syn.slice(0, 6).join(" / ")}`)
         const ex = Array.isArray(it?.examples) ? it.examples : []
         if (ex.length) metaParts.push(`例句：${ex[0]}`)
-        const addMeaning = String(String(base || "").toLowerCase() === "en" ? meaningsZh?.[0] || "" : meanings?.[0] || "").trim()
+
+        // Add to round: prefer normalized meaning; fall back to zh/en meaning array
+        const addMeaning = normMeaning || (isEn ? (meaningsZh[0] || "") : (meanings[0] || "")).trim()
+        // Pos: prefer normalized pos; extract from builtin meaning string for builtin results
+        let pos = normMeaning ? String(it?.pos || "").trim() : ""
+        if (!pos && meanings[0]) {
+          const m = String(meanings[0] || "").match(/^([a-z]+\.?)\s/i)
+          if (m) pos = m[1]
+        }
+
         const row = buildWordRow({
           term,
           meaning: primary,
@@ -1296,7 +1326,7 @@
           action: {
             kind: "primary",
             label: "加入当前轮",
-            onClick: () => tryAddWordToCurrentRound({ term, pos: "", meaning: addMeaning }),
+            onClick: () => tryAddWordToCurrentRound({ term, pos, meaning: addMeaning }),
           },
         })
         row.dataset.lookupSpeak = term
@@ -1527,11 +1557,15 @@
       return !!(key && set.has(key))
     }
 
+    // DEBUG: set to true to log add-to-round details; remove before shipping
+    const _DEBUG = false
+
     function tryAddWordToCurrentRound(raw) {
       const term = String(raw?.term || "").trim()
       const pos = String(raw?.pos || "").trim()
       const meaning = String(raw?.meaning || "").trim()
       if (!term) return
+      if (_DEBUG) console.debug("[lookup] tryAddWordToCurrentRound →", { term, pos, meaning })
       const langBase =
         typeof window.A4GetActiveLangBase === "function"
           ? String(window.A4GetActiveLangBase() || "").trim().toLowerCase()
