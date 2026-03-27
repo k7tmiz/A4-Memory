@@ -2,6 +2,9 @@
 
 [中文（默认）](./README.md) | [English](./docs/README.en.md)
 
+> **开源说明**：本仓库为前端开源项目，核心代码（`js/`、`css/`、`index.html` 等）完全开源。
+> 后端服务（用户注册登录、云同步、管理后台）为私有闭源，如需使用请联系作者。
+
 Demo：https://k7tmiz.com/words
 
 一个纯前端背单词工具：把单词随机排在 A4 纸上作为学习载体，核心目标是打破列表式的背书模式。每新增 1 个单词都会自动打开复习弹窗；普通学习轮在多页时默认只复习当前页，只有主动点击“复习本轮”时才复习整轮全部页。项目支持学习记录、状态聚合、词书导入、查词、发音、导出与 AI 生成词书。
@@ -107,6 +110,7 @@ A4-Memory
 │   ├── core/
 │   │   └── common.js
 │   ├── app.js
+│   ├── cloud.js          # 云同步模块（可选，需单独获取）
 │   ├── lookup.js
 │   ├── records.js
 │   ├── settings.js
@@ -117,6 +121,14 @@ A4-Memory
     ├── README.en.md
     └── PROJECT_CONTEXT.md
 ```
+
+## 云同步（可选）
+
+本项目支持将学习数据同步到云端后端。需要配合私有部署的后端服务使用：
+
+1. 部署后端服务（参考 backend/README.md）
+2. 将 `js/cloud.js` 复制到本地 `js/` 目录
+3. 云同步功能自动生效
 
 ## 开发说明
 
@@ -131,8 +143,10 @@ A4-Memory
 
 - 首页：
   `index.html` → `data/words.js` → `js/core/common.js` → `js/utils.js` → `js/storage.js` → `js/speech.js` → `js/settings.js` → `js/lookup.js` → `js/app.js`
+  （启用云同步后：→ `js/cloud.js`）
 - 记录页：
   `records.html` → `data/words.js` → `js/utils.js` → `js/storage.js` → `js/core/common.js` → `js/speech.js` → `js/settings.js` → `js/lookup.js` → `js/records.js`
+  （启用云同步后：→ `js/cloud.js`）
 
 ### 核心模块
 

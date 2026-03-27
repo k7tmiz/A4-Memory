@@ -19,3 +19,19 @@ build/
 out/
 .cache/
 
+# Cloud sync module (proprietary, obtained separately)
+js/cloud.js
+
+# Backend (proprietary, closed source)
+backend/
+.env
+.env.example
+init.sql
+deploy.sh
+admin/
+src/
+package.json
+package-lock.json
+
+# Development docs (private)
+docs/PROJECT_CONTEXT.md

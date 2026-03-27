@@ -49,12 +49,20 @@ A4-Memory
 │   ├── core/
 │   │   └── common.js
 │   ├── app.js
+│   ├── cloud.js          # Cloud sync module (optional, untracked)
 │   ├── lookup.js
 │   ├── records.js
 │   ├── settings.js
 │   ├── speech.js
 │   ├── storage.js
 │   └── utils.js
+├── backend/              # Proprietary backend (closed source)
+│   ├── src/
+│   │   ├── index.js
+│   │   ├── db.js
+│   │   ├── middleware/
+│   │   └── routes/
+│   └── admin/
 └── docs/
     ├── README.en.md
     └── PROJECT_CONTEXT.md

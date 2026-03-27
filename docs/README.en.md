@@ -2,6 +2,9 @@
 
 [中文 (Default)](../README.md) | [English](./README.en.md)
 
+> **Open Source Notice**: This repository is the open-source frontend. Core code (`js/`, `css/`, `index.html`, etc.) is fully open source.
+> Backend services (user auth, cloud sync, admin panel) are proprietary and closed source. Contact the author if you need access.
+
 Demo: https://k7tmiz.com/words
 
 A pure front-end vocabulary tool built around randomly placing words on A4 pages, with the goal of breaking away from list-based memorization. Each time you add 1 new word, it auto-opens the review modal: in a multi-page normal round, auto review is scoped to the current page; the “Review this round” button reviews the whole round (all pages). Includes records, wordbook import, export/print, and pronunciation.
@@ -87,6 +90,7 @@ A4-Memory
 ├── js/
 │   ├── core/common.js
 │   ├── app.js
+│   ├── cloud.js          # Cloud sync module (optional)
 │   ├── records.js
 │   ├── lookup.js
 │   ├── settings.js
@@ -97,6 +101,14 @@ A4-Memory
     ├── README.en.md
     └── PROJECT_CONTEXT.md
 ```
+
+## Cloud sync
+
+The app supports optional cloud backup via a proprietary backend. To enable it:
+
+1. Deploy the backend service (see backend/README.md for deployment instructions)
+2. Copy `js/cloud.js` to your local `js/` directory
+3. The module will automatically use the configured API endpoint
 
 ## Implementation notes (for developers)
 
