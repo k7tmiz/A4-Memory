@@ -27,3 +27,6 @@ out/
 # AI coding context (references closed-source paths)
 /AGENTS.md
 /CLAUDE.md
+
+# Local deploy script
+/deploy-hexo.sh
