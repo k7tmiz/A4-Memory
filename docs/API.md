@@ -1,6 +1,6 @@
 # API 参考文档
 
-> **说明**：本文档为公开 API 参考，仅包含用户侧公开接口。后端管理接口、运维相关内容请参考 `backend/BACKEND_CONTEXT.md`（私有）。
+> **说明**：本文档为公开 API 参考，仅包含用户侧公开接口。后端管理接口、运维相关内容请参考 `backend/DEVELOPMENT_CONTEXT.md`（私有）。
 >
 > 基础 URL：`https://api.k7tmiz.com`
 >
@@ -289,6 +289,75 @@ Content-Type: application/json
 - 400：state 缺失或不是对象
 - 401：未提供 Token 或 Token 无效/过期
 - 403：Token 不是用户 Token
+- 500：服务器内部错误
+
+---
+
+### 1.9 获取公告列表
+
+```
+GET /api/announcements
+```
+
+**鉴权**：用户 JWT（Bearer Token）
+
+**查询参数**：
+
+| 参数 | 说明 |
+|------|------|
+| `limit` | 可选，返回最新公告条数，默认 10 |
+
+**成功响应**（200）：
+```json
+{
+  "success": true,
+  "announcements": [
+    {
+      "id": 3,
+      "title": "系统维护通知",
+      "content": "今晚 23:00 进行短时维护。",
+      "created_at": "2026-03-29T12:00:00.000Z"
+    }
+  ],
+  "unreadIds": [3]
+}
+```
+
+**说明**：`unreadIds` 表示当前账号尚未标记已读的公告 ID 列表。用户端没有固定入口，仅在存在未读公告时自动弹窗。
+
+**错误响应**：
+- 401：未提供 Token 或 Token 无效/过期
+- 500：服务器内部错误
+
+---
+
+### 1.10 标记公告已读
+
+```
+POST /api/announcements/read
+```
+
+**鉴权**：用户 JWT（Bearer Token）
+
+**请求体**：
+```json
+{
+  "announcementIds": [3, 2]
+}
+```
+
+**成功响应**（200）：
+```json
+{
+  "success": true
+}
+```
+
+**说明**：同一账号每条公告只会被标记一次。多设备登录同一账号时，已读状态由后端统一控制。
+
+**错误响应**：
+- 400：announcementIds 缺失或格式错误
+- 401：未提供 Token 或 Token 无效/过期
 - 500：服务器内部错误
 
 ---

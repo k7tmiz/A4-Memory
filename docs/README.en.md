@@ -82,8 +82,6 @@ Open: http://localhost:8080/
 | `a4-memory:v1` | Main state JSON (version: 2) |
 | `a4-memory:intro-seen:v1` | "How to use" modal seen flag |
 | `a4-memory:lookup-cache:v1` | Lookup online supplement cache |
-| `a4-memory:cloud-token:v1` | 【cloud.js】JWT token |
-| `a4-memory:cloud-user:v1` | 【cloud.js】User ID |
 
 ## Cloud Sync (Optional, requires private module)
 

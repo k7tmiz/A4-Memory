@@ -23,3 +23,7 @@ out/
 
 # Optional private cloud module
 /js/cloud.js
+
+# AI coding context (references closed-source paths)
+/AGENTS.md
+/CLAUDE.md

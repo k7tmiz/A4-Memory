@@ -82,10 +82,6 @@ python3 -m http.server 8080
 | `a4-memory:v1` | 主状态 JSON（version: 2） |
 | `a4-memory:intro-seen:v1` | 用法介绍弹窗已读标记 |
 | `a4-memory:lookup-cache:v1` | 查词在线补充缓存 |
-| `a4-memory:cloud-token:v1` | 【cloud.js】JWT 令牌 |
-| `a4-memory:cloud-user:v1` | 【cloud.js】用户 ID |
-| `a4-memory:cloud-profile:v1` | 【cloud.js】登录资料缓存（userId / username / loggedInAt） |
-| `a4-memory:cloud-sync-meta:v1` | 【settings.js】最近一次上传/恢复结果摘要 |
 
 ### 主状态摘要
 

@@ -43,41 +43,15 @@ A4-Memory/
 #### 职责
 
 接入后端 API，为前端提供账号和云同步功能：
-- 用户登录 / 邮箱验证码注册 / 重置密码（账号在服务端独立管理）
+- 用户登录 / 邮箱验证码注册 / 重置密码
 - 学习状态上传 / 下载（多设备同步）
-- 用户公告拉取 / 已读回执（无固定入口，仅在存在未读公告时弹窗）
+- 系统公告接收
 
 #### 接入方式
 
 1. 联系作者获取 `cloud.js`
 2. 将文件放入 `js/` 目录
 3. 无需修改 HTML，页面会自动加载
-
-#### 暴露的全局对象
-
-```javascript
-window.A4Cloud = {
-  register(username, password),
-  login(email, password),
-  logout(),
-  isLoggedIn(),
-  getUserId(),
-  getProfile(),
-  uploadState(),   // 调用 A4Storage.loadState() 取当前状态，上传
-  downloadState(), // 下载后调用 A4Storage.saveState() 恢复
-  fetchAnnouncements(limit),
-  markAnnouncementsRead(announcementIds),
-}
-```
-
-#### localStorage 键（cloud.js 专用）
-
-| 键名 | 内容 |
-|------|------|
-| `a4-memory:cloud-token:v1` | JWT 令牌 |
-| `a4-memory:cloud-user:v1` | 用户 ID（字符串） |
-| `a4-memory:cloud-profile:v1` | 登录资料缓存（userId / username / loggedInAt） |
-| `a4-memory:cloud-sync-meta:v1` | 最近一次上传/恢复结果摘要 |
 
 #### 无 cloud.js 时的行为
 
@@ -91,9 +65,9 @@ window.A4Cloud = {
 
 以下功能依赖 cloud.js，无此模块时按钮会显示错误提示但不崩溃：
 
-- 设置中的"账号"区块（登录 / 邮箱验证码注册 / 重置密码 / 登出）
+- 设置中的"账号"区块（登录 / 注册 / 重置密码 / 登出）
 - 设置中的"云备份"区块（仅登录后显示上传 / 下载）
-- 登录后自动接收系统公告弹窗（首页 / 记录页）
+- 系统公告弹窗（首页 / 记录页）
 
 ---
 
@@ -107,13 +81,12 @@ index.html
   → js/core/common.js
   → js/utils.js
   → js/storage.js
+  → js/cloud.js              ← 私有模块，公开仓库中不存在此文件
   → js/speech.js
   → js/settings.js
   → js/lookup.js
   → js/app.js
 ```
-
-（接入 cloud.js 后：→ `js/cloud.js`）
 
 ### 记录页（records.html）
 
@@ -122,6 +95,7 @@ records.html
   → data/words.js
   → js/utils.js
   → js/storage.js
+  → js/cloud.js              ← 私有模块，公开仓库中不存在此文件
   → js/core/common.js
   → js/speech.js
   → js/settings.js
@@ -129,7 +103,7 @@ records.html
   → js/records.js
 ```
 
-（接入 cloud.js 后：→ `js/cloud.js`）
+`cloud.js` 已在 HTML 中固定引用。公开仓库中不含此文件，浏览器会 404 但不影响其他脚本加载。
 
 ---
 
@@ -317,10 +291,6 @@ window.A4Lookup = {
 | `a4-memory:v1` | 主状态 JSON |
 | `a4-memory:intro-seen:v1` | 布尔值，用法介绍弹窗是否已看过 |
 | `a4-memory:lookup-cache:v1` | 查词在线补充缓存（TTL 控制） |
-| `a4-memory:cloud-token:v1` | 【cloud.js】JWT 令牌 |
-| `a4-memory:cloud-user:v1` | 【cloud.js】用户 ID |
-| `a4-memory:cloud-profile:v1` | 【cloud.js】登录资料缓存（userId / username / loggedInAt） |
-| `a4-memory:cloud-sync-meta:v1` | 【settings.js】最近一次上传/恢复结果摘要 |
 
 ---
 
