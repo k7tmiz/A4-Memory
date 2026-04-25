@@ -28,5 +28,6 @@ out/
 /AGENTS.md
 /CLAUDE.md
 
-# Local deploy script
+# Local deploy scripts
 /deploy-hexo.sh
+/deploy-backend.sh
