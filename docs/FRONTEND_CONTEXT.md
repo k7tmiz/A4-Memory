@@ -9,6 +9,8 @@ A4-Memory/
 ├── manifest.webmanifest   # PWA manifest
 ├── LICENSE
 ├── README.md
+├── package.json            # Node 依赖（Vite + Tauri CLI）
+├── vite.config.js          # Vite dev server 配置
 ├── assets/
 │   ├── icon.svg
 │   └── mask-icon.svg
@@ -19,6 +21,7 @@ A4-Memory/
 ├── js/
 │   ├── core/
 │   │   └── common.js      # 跨页共享纯业务逻辑
+│   ├── __cloud_stub.js    # cloud.js 占位（仅公开仓库构建时使用）
 │   ├── app.js             # 首页控制器
 │   ├── lookup.js          # 查词弹窗控制器
 │   ├── records.js         # 记录页控制器
@@ -26,11 +29,14 @@ A4-Memory/
 │   ├── speech.js          # 语音合成封装
 │   ├── storage.js         # localStorage 读写封装
 │   └── utils.js           # 文件下载与清洗工具
+├── scripts/
+│   └── build.mjs          # 生产构建脚本（复制文件到 dist/）
+├── src-tauri/             # Tauri 桌面端脚手架（Rust）
 └── docs/
     └── ...                # 文档目录
 ```
 
-**说明**：以上为公开仓库中的文件。`js/cloud.js` 不在公开仓库中，属于私有可选模块（见下方说明）。
+**说明**：以上为公开仓库中的文件。`js/cloud.js` 不在公开仓库中，属于私有可选模块（见下方说明）。`js/__cloud_stub.js` 是 cloud.js 的占位替代，仅当 cloud.js 缺失时构建脚本自动使用。
 
 ---
 

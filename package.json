@@ -1,0 +1,19 @@
+{
+  "name": "a4-memory",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A4 纸随机排版背单词",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/build.mjs",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "vite": "^6"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2"
+  }
+}

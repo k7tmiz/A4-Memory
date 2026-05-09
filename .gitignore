@@ -31,3 +31,6 @@ out/
 # Local deploy scripts
 /deploy-hexo.sh
 /deploy-backend.sh
+
+# Tauri
+src-tauri/target/

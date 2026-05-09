@@ -31,7 +31,8 @@ Demo：https://k7tmiz.com/words
 
 | 组成部分 | 技术 |
 |-----------|------|
-| 前端 | 纯静态 HTML/CSS/Vanilla JS，无构建工具 |
+| 前端 | 纯静态 HTML/CSS/Vanilla JS，无框架 |
+| 桌面端 | Tauri v2（Rust + WebView），与 Web 版共享前端代码 |
 | 状态存储 | 浏览器 localStorage |
 | 云同步 | 后端 API + JWT（私有模块 `js/cloud.js`） |
 | AI 接入 | OpenAI 风格 chat/completions API |
@@ -53,10 +54,29 @@ A4-Memory/
 │   ├── speech.js          # 语音合成
 │   ├── storage.js         # localStorage 封装
 │   └── utils.js           # 下载工具
+├── src-tauri/             # Tauri 桌面端（Rust）
+├── package.json           # Node 依赖（Vite + Tauri CLI）
 └── docs/                  # 文档
 ```
 
-**说明**：`js/cloud.js` 不在公开仓库中，属于可选私有模块（云同步功能）。
+**说明**：`js/cloud.js` 不在公开仓库中，属于可选私有模块（云同步功能）。桌面端构建时若本地存在 `cloud.js` 则自动打入 Tauri 应用。
+
+## 桌面应用（Tauri）
+
+除 Web 版本外，本项目支持打包为 macOS / Windows / Linux 桌面应用（基于 Tauri v2）。
+
+```bash
+# 安装依赖
+npm install
+
+# 开发模式（热更新）
+npm run tauri dev
+
+# 生产打包
+npm run tauri build   # 输出 .dmg（macOS）/ .msi（Windows）/ .deb（Linux）
+```
+
+桌面版与 Web 版共享同一套前端代码，`npm run build` 会将静态文件复制到 `dist/`，再由 Tauri 打包。本地构建时若存在 `js/cloud.js`，云同步功能会自动打入桌面应用。
 
 ## 使用方式
 
