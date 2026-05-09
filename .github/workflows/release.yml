@@ -9,13 +9,15 @@ permissions:
   contents: write
 
 jobs:
-  build-tauri:
+  build-desktop:
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - os: windows-latest
@@ -61,32 +63,87 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'A4 Word Memory ${{ github.ref_name }}'
           releaseBody: |
-            ## A4 Word Memory — 桌面版
+            ## A4 Word Memory
 
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
             - 内置 CET4 / CET6 / 西班牙语词书，支持自定义导入
-            - 云同步（登录后可在桌面端和 Web 端同步学习进度）
+            - 云同步（登录后可在桌面端 / Android / Web 同步学习进度）
             - AI 词书生成
+            - Android 端发音需安装 Google 文字转语音引擎
 
             ### 下载
             | 平台 | 文件 |
             |------|------|
             | macOS (Apple Silicon) | `A4 Word Memory_*_aarch64.dmg` |
-            | Windows (x64) | `A4 Word Memory_*_x64.msi` |
+            | macOS (Intel) | `A4 Word Memory_*_x64.dmg` |
+            | Windows (x64) | `A4 Word Memory_*_x64.exe` |
             | Linux | `A4 Word Memory_*_amd64.deb` / `.AppImage` |
+            | Android | `A4 Word Memory_*.apk` |
 
             ### 安装
             - **macOS**: 打开 `.dmg` → 拖入 Applications
-            - **Windows**: 双击 `.msi` → 按向导安装
+            - **Windows**: 双击 `.exe` → 按向导安装
             - **Linux**: `sudo dpkg -i *.deb` 或直接运行 `.AppImage`
+            - **Android**: 允许来源不明应用 → 点击 `.apk` 安装
 
             ### 说明
-
             - 此版本为 GitHub Actions 自动构建，**含云同步功能**
             - 网页版请访问 **[k7tmiz.com/words](https://k7tmiz.com/words)**
             - `cloud.js` 为私有模块，如需使用请联系作者
           releaseDraft: true
           prerelease: false
+
+  build-android:
+    needs: build-desktop
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - run: npm ci
+
+      - name: Inject cloud.js from secret
+        shell: bash
+        env:
+          CLOUD_JS_BASE64: ${{ secrets.CLOUD_JS_BASE64 }}
+        run: |
+          if [ -n "$CLOUD_JS_BASE64" ]; then
+            node -e "require('fs').writeFileSync('js/cloud.js', Buffer.from(process.env.CLOUD_JS_BASE64, 'base64'))"
+            echo "✓ cloud.js injected"
+          else
+            echo "! CLOUD_JS_BASE64 not set — using stub"
+          fi
+
+      - run: npm run build
+
+      - name: Init Android project (if needed)
+        run: npx tauri android init --skip-sdk-check || true
+
+      - name: Build Android APK
+        run: npx tauri android build --apk
+
+      - name: Upload APK to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk

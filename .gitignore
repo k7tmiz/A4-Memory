@@ -34,3 +34,8 @@ out/
 
 # Tauri
 src-tauri/target/
+
+# Android
+src-tauri/gen/android/app/build/
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/local.properties

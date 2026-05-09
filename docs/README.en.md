@@ -3,9 +3,10 @@
 [中文](./README.md) | **English**
 
 > **Open Source Notice**: This repository is the open-source frontend. Core code (`js/`, `css/`, `index.html`, etc.) is fully open source.
-> Backend services (user auth, cloud sync, admin panel) are proprietary and closed source. Contact the author for access.
+> Backend services (user auth, cloud sync, admin panel) are proprietary and closed source.
+> `js/cloud.js` cloud sync module is a private module and is **NOT in the public repository**.
 >
-> `js/cloud.js` cloud sync module is a private module and is NOT in the public repository.
+> **Cloud Sync**: Building from source does NOT include cloud sync (cloud.js is absent). [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) include cloud.js via CI injection — **full cloud sync is available** in desktop and Android builds.
 
 Demo: https://k7tmiz.com/words
 
@@ -61,9 +62,11 @@ A4-Memory/
 
 **Note**: `js/cloud.js` is NOT in the public repository — it's an optional private module for cloud sync. Desktop builds auto-include `cloud.js` if present locally.
 
-## Desktop App (Tauri)
+## Cross-Platform App (Tauri)
 
-A macOS / Windows / Linux desktop app is available (built with Tauri v2).
+Desktop (macOS / Windows / Linux) and Android APK are available, built with Tauri v2.
+
+Download prebuilt installers from [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) — includes full cloud sync.
 
 ```bash
 # Install dependencies
@@ -72,11 +75,9 @@ npm install
 # Development mode (hot reload)
 npm run tauri dev
 
-# Production build
-npm run tauri build   # Outputs .dmg (macOS) / .msi (Windows) / .deb (Linux)
+# Local build (no cloud.js — add it to js/ if needed)
+npm run tauri build
 ```
-
-The desktop app shares all frontend code with the Web version. `npm run build` copies static files to `dist/`, which Tauri then packages. If `js/cloud.js` exists locally, cloud sync is included in the desktop build.
 
 ## Usage
 

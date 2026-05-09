@@ -3,9 +3,11 @@
 [English](./docs/README.en.md)
 
 > **开源说明**：本仓库为前端开源项目，核心代码（`js/`、`css/`、`index.html` 等）完全开源。
-> 后端服务（用户注册登录、云同步、管理后台）为私有闭源，如需使用请联系作者。
+> 后端服务（用户注册登录、云同步、管理后台）为私有闭源。
+> `js/cloud.js` 云同步模块为私有模块，**不在公开仓库中**。
 >
-> `js/cloud.js` 云同步模块为私有模块，不在公开仓库中。
+> **关于云同步**：公开仓库不含 `cloud.js`，源码构建无云同步功能。
+> [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) 中的桌面版和 Android 版通过 CI 注入了 cloud.js，**包含完整云同步功能**。
 
 Demo：https://k7tmiz.com/words
 
@@ -63,9 +65,11 @@ A4-Memory/
 
 **说明**：`js/cloud.js` 不在公开仓库中，属于可选私有模块（云同步功能）。桌面端构建时若本地存在 `cloud.js` 则自动打入 Tauri 应用。
 
-## 桌面应用（Tauri）
+## 跨平台应用（Tauri）
 
-除 Web 版本外，本项目支持打包为 macOS / Windows / Linux 桌面应用（基于 Tauri v2）。
+除 Web 版本外，本项目支持打包为 macOS / Windows / Linux 桌面应用及 Android APK（基于 Tauri v2）。
+
+预编译安装包从 [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) 下载，含完整云同步功能。
 
 ```bash
 # 安装依赖
@@ -74,11 +78,9 @@ npm install
 # 开发模式（热更新）
 npm run tauri dev
 
-# 生产打包
-npm run tauri build   # 输出 .dmg（macOS）/ .msi（Windows）/ .deb（Linux）
+# 本地打包（不含 cloud.js，需自行放入 js/ 目录）
+npm run tauri build
 ```
-
-桌面版与 Web 版共享同一套前端代码，`npm run build` 会将静态文件复制到 `dist/`，再由 Tauri 打包。本地构建时若存在 `js/cloud.js`，云同步功能会自动打入桌面应用。
 
 ## 使用方式
 
