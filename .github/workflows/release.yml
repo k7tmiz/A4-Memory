@@ -81,7 +81,7 @@ jobs:
             | Android | `A4 Word Memory_*_android.apk` |
 
             ### 安装
-            - **macOS**: 打开 `.dmg` → 拖入 Applications
+            - **macOS**: 打开 `.dmg` → 拖入 Applications → 终端运行 `xattr -cr /Applications/A4\ Word\ Memory.app` 移除隔离标记
             - **Windows**: 双击 `.exe` → 按向导安装
             - **Linux**: `sudo dpkg -i *.deb` 或直接运行 `.AppImage`
             - **Android**: 允许来源不明应用 → 点击 `.apk` 安装
