@@ -150,8 +150,8 @@ jobs:
 
       - name: Enable WebView debugging
         run: |
-          MANIFEST="src-tauri/gen/android/app/src/main/AndroidManifest.xml"
-          sed -i 's/<application/<application android:debuggable="true"/g' "$MANIFEST"
+          GRADLE="src-tauri/gen/android/app/build.gradle.kts"
+          sed -i '/release {/a\            isDebuggable = true' "$GRADLE"
           echo "✓ WebView debugging enabled"
 
       - name: Build Android APK
