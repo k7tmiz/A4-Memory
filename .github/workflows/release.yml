@@ -59,9 +59,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'A4 Word Memory ${{ github.ref_name }}'
+          releaseName: 'A4 Memory ${{ github.ref_name }}'
           releaseBody: |
-            ## A4 Word Memory
+            ## A4 Memory
 
             A4 纸随机排版背单词，打破列表式背书模式。
 
@@ -75,10 +75,10 @@ jobs:
             ### 下载
             | 平台 | 文件 |
             |------|------|
-            | macOS (Apple Silicon) | `A4 Word Memory_*_aarch64.dmg` |
-            | Windows (x64) | `A4 Word Memory_*_x64.exe` |
-            | Linux | `A4 Word Memory_*_amd64.deb` / `.AppImage` |
-            | Android | `A4 Word Memory_*_android.apk` |
+            | macOS (Apple Silicon) | `A4 Memory_*_aarch64.dmg` |
+            | Windows (x64) | `A4 Memory_*_x64.exe` |
+            | Linux | `A4 Memory_*_amd64.deb` / `.AppImage` |
+            | Android | `A4 Memory_*_android.apk` |
 
             ### 安装
             - **macOS**: 打开 `.dmg` → 拖入 Applications → 终端运行 `xattr -cr /Applications/A4\ Word\ Memory.app` 移除隔离标记
@@ -169,7 +169,7 @@ jobs:
 
           # Find unsigned APK
           UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
-          SIGNED="A4 Word Memory_${{ github.ref_name }}_android.apk"
+          SIGNED="A4 Memory_${{ github.ref_name }}_android.apk"
 
           # Sign with apksigner (auto-detect version)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
@@ -183,7 +183,7 @@ jobs:
 
       - name: Upload APK to Release
         run: |
-          APK="A4 Word Memory_${{ github.ref_name }}_android.apk"
+          APK="A4 Memory_${{ github.ref_name }}_android.apk"
           gh release upload ${{ github.ref_name }} "$APK" --clobber
           echo "✓ APK uploaded"
         env:

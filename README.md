@@ -1,4 +1,4 @@
-# A4 Word Memory（A4 纸记忆法背单词）
+# A4 Memory（A4 纸记忆法背单词）
 
 [English](./docs/README.en.md)
 

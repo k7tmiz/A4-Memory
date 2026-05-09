@@ -1,7 +1,7 @@
 [package]
 name = "a4-memory"
 version = "1.0.0"
-description = "A4 Word Memory — 随机排版背单词"
+description = "A4 Memory — 随机排版背单词"
 authors = ["k7tmiz"]
 edition = "2021"
 

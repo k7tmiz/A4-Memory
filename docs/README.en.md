@@ -1,4 +1,4 @@
-# A4 Word Memory
+# A4 Memory
 
 [中文](./README.md) | **English**
 
