@@ -133,8 +133,8 @@ jobs:
 
       - run: npm run build
 
-      - name: Init Android project (if needed)
-        run: npx tauri android init --skip-sdk-check || true
+      - name: Init Android project
+        run: npx tauri android init
 
       - name: Build Android APK
         run: npx tauri android build --apk
