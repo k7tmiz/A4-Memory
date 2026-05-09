@@ -78,7 +78,7 @@ jobs:
             | macOS (Apple Silicon) | `A4 Word Memory_*_aarch64.dmg` |
             | Windows (x64) | `A4 Word Memory_*_x64.exe` |
             | Linux | `A4 Word Memory_*_amd64.deb` / `.AppImage` |
-            | Android | `A4 Word Memory_*.apk` |
+            | Android | `A4-Word-Memory-*-android.apk` |
 
             ### 安装
             - **macOS**: 打开 `.dmg` → 拖入 Applications
@@ -177,19 +177,8 @@ jobs:
 
       - name: Upload APK to Release
         run: |
-          echo "Looking for APK files..."
-          find src-tauri/gen/android -name "*.apk" 2>/dev/null || echo "No APK files found"
-          find src-tauri/gen/android -name "*.aab" 2>/dev/null || echo "No AAB files found"
-          echo "---"
-          ls -la src-tauri/gen/android/app/build/outputs/apk/ 2>/dev/null || echo "apk/ dir not found"
-
           APK="A4-Word-Memory-${{ github.ref_name }}-android.apk"
-          if [ -f "$APK" ]; then
-            echo "Uploading: $APK"
-            gh release upload ${{ github.ref_name }} "$APK" --clobber
-            echo "✓ APK uploaded to release"
-          else
-            echo "! Signed APK not found at $APK"
-          fi
+          gh release upload ${{ github.ref_name }} "$APK" --clobber
+          echo "✓ APK uploaded"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
