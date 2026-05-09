@@ -47,6 +47,17 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'A4 Word Memory ${{ github.ref_name }}'
-          releaseBody: 'See the assets to download this version.'
+          releaseBody: |
+            ## Desktop App
+
+            Built with Tauri v2.
+
+            ### Download
+            - **macOS**: `A4 Word Memory_*.dmg` (Apple Silicon)
+            - **Windows**: `A4 Word Memory_*.msi`
+            - **Linux**: `A4 Word Memory_*.deb` / `.AppImage`
+
+            ### Note
+            This public build does not include cloud sync. For the full-featured version, visit [k7tmiz.com/words](https://k7tmiz.com/words).
           releaseDraft: true
           prerelease: false
