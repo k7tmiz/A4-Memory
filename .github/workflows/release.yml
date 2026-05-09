@@ -152,8 +152,10 @@ jobs:
           # Find any APK file
           APK=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
           if [ -n "$APK" ]; then
-            echo "Uploading: $APK"
-            gh release upload ${{ github.ref_name }} "$APK" --clobber
+            RENAMED="A4 Word Memory_${{ github.ref_name }}_android.apk"
+            cp "$APK" "$RENAMED"
+            echo "Uploading: $RENAMED"
+            gh release upload ${{ github.ref_name }} "$RENAMED" --clobber
             echo "✓ APK uploaded to release"
           else
             echo "! No APK found — build may have succeeded but APK path is unexpected"
