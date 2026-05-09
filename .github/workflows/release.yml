@@ -143,13 +143,20 @@ jobs:
 
       - name: Upload APK to Release
         run: |
-          APK="src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk"
-          if [ -f "$APK" ]; then
+          echo "Looking for APK files..."
+          find src-tauri/gen/android -name "*.apk" 2>/dev/null || echo "No APK files found"
+          find src-tauri/gen/android -name "*.aab" 2>/dev/null || echo "No AAB files found"
+          echo "---"
+          ls -la src-tauri/gen/android/app/build/outputs/apk/ 2>/dev/null || echo "apk/ dir not found"
+
+          # Find any APK file
+          APK=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
+          if [ -n "$APK" ]; then
+            echo "Uploading: $APK"
             gh release upload ${{ github.ref_name }} "$APK" --clobber
             echo "✓ APK uploaded to release"
           else
-            echo "! APK not found at $APK"
-            find src-tauri/gen/android -name "*.apk" 2>/dev/null || echo "No APK files found"
+            echo "! No APK found — build may have succeeded but APK path is unexpected"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
