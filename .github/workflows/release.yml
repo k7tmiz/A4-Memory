@@ -83,6 +83,10 @@ jobs:
             - **Windows**: 双击 `.msi` → 按向导安装
             - **Linux**: `sudo dpkg -i *.deb` 或直接运行 `.AppImage`
 
-            Web 版：[k7tmiz.com/words](https://k7tmiz.com/words)
+            ### 说明
+
+            - 此版本为 GitHub Actions 自动构建，**含云同步功能**
+            - 网页版请访问 **[k7tmiz.com/words](https://k7tmiz.com/words)**
+            - `cloud.js` 为私有模块，如需使用请联系作者
           releaseDraft: true
           prerelease: false
