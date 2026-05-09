@@ -161,15 +161,24 @@ jobs:
       - name: Replace Android icons
         run: |
           RES="src-tauri/gen/android/app/src/main/res"
-          cp src-tauri/icons/icon.png "$RES/mipmap-hdpi/ic_launcher.png"
-          cp src-tauri/icons/icon.png "$RES/mipmap-mdpi/ic_launcher.png"
-          cp src-tauri/icons/icon.png "$RES/mipmap-xhdpi/ic_launcher.png"
-          cp src-tauri/icons/icon.png "$RES/mipmap-xxhdpi/ic_launcher.png"
-          cp src-tauri/icons/icon.png "$RES/mipmap-xxxhdpi/ic_launcher.png"
-          echo "✓ Icons replaced"
+          SRC="src-tauri/icons/android"
+          # Adaptive icon XML
+          mkdir -p "$RES/mipmap-anydpi-v26"
+          cp "$SRC/mipmap-anydpi-v26/ic_launcher.xml" "$RES/mipmap-anydpi-v26/"
+          # Background color
+          mkdir -p "$RES/values"
+          cp "$SRC/values/ic_launcher_background.xml" "$RES/values/"
+          # Foreground layers (each density)
+          for d in mipmap-hdpi mipmap-mdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+            mkdir -p "$RES/$d"
+            cp "$SRC/$d/ic_launcher_foreground.png" "$RES/$d/" 2>/dev/null || true
+            cp "$SRC/$d/ic_launcher_round.png" "$RES/$d/" 2>/dev/null || true
+            cp "$SRC/$d/ic_launcher.png" "$RES/$d/" 2>/dev/null || true
+          done
+          echo "✓ Icons replaced (adaptive)"
 
-      - name: Build Android APK (debug)
-        run: npx tauri android build --apk --debug
+      - name: Build Android APK
+        run: npx tauri android build --apk
 
       - name: Sign APK
         run: |
