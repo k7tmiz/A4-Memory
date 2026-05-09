@@ -163,7 +163,7 @@ jobs:
 
           # Find unsigned APK
           UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
-          SIGNED="A4 Word Memory_${{ github.ref_name }}_android.apk"
+          SIGNED="A4-Word-Memory-${{ github.ref_name }}-android.apk"
 
           # Sign with apksigner (auto-detect version)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
@@ -183,7 +183,7 @@ jobs:
           echo "---"
           ls -la src-tauri/gen/android/app/build/outputs/apk/ 2>/dev/null || echo "apk/ dir not found"
 
-          APK="A4 Word Memory_${{ github.ref_name }}_android.apk"
+          APK="A4-Word-Memory-${{ github.ref_name }}-android.apk"
           if [ -f "$APK" ]; then
             echo "Uploading: $APK"
             gh release upload ${{ github.ref_name }} "$APK" --clobber
