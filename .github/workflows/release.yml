@@ -165,8 +165,9 @@ jobs:
           UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
           SIGNED="A4 Word Memory_${{ github.ref_name }}_android.apk"
 
-          # Sign with apksigner
-          $ANDROID_HOME/build-tools/35.0.0/apksigner sign \
+          # Sign with apksigner (auto-detect version)
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
+          $APKSIGNER sign \
             --ks /tmp/release.jks \
             --ks-pass pass:android \
             --key-pass pass:android \
