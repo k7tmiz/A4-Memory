@@ -138,6 +138,16 @@ jobs:
       - name: Init Android project
         run: npx tauri android init
 
+      - name: Replace Android icons
+        run: |
+          RES="src-tauri/gen/android/app/src/main/res"
+          cp src-tauri/icons/icon.png "$RES/mipmap-hdpi/ic_launcher.png"
+          cp src-tauri/icons/icon.png "$RES/mipmap-mdpi/ic_launcher.png"
+          cp src-tauri/icons/icon.png "$RES/mipmap-xhdpi/ic_launcher.png"
+          cp src-tauri/icons/icon.png "$RES/mipmap-xxhdpi/ic_launcher.png"
+          cp src-tauri/icons/icon.png "$RES/mipmap-xxxhdpi/ic_launcher.png"
+          echo "✓ Icons replaced"
+
       - name: Build Android APK
         run: npx tauri android build --apk
 
