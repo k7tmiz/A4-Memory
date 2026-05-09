@@ -154,7 +154,9 @@ jobs:
       - run: npm run build
 
       - name: Init Android project
-        run: npx tauri android init
+        run: |
+          rm -rf src-tauri/gen/android
+          npx tauri android init
 
       - name: Replace Android icons
         run: |
