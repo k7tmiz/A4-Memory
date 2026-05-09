@@ -16,8 +16,6 @@ jobs:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
-          - os: macos-13
-            target: x86_64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - os: windows-latest
@@ -78,7 +76,6 @@ jobs:
             | 平台 | 文件 |
             |------|------|
             | macOS (Apple Silicon) | `A4 Word Memory_*_aarch64.dmg` |
-            | macOS (Intel) | `A4 Word Memory_*_x64.dmg` |
             | Windows (x64) | `A4 Word Memory_*_x64.exe` |
             | Linux | `A4 Word Memory_*_amd64.deb` / `.AppImage` |
             | Android | `A4 Word Memory_*.apk` |
