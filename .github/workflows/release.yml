@@ -142,7 +142,14 @@ jobs:
         run: npx tauri android build --apk
 
       - name: Upload APK to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk
+        run: |
+          APK="src-tauri/gen/android/app/build/outputs/apk/release/app-release.apk"
+          if [ -f "$APK" ]; then
+            gh release upload ${{ github.ref_name }} "$APK" --clobber
+            echo "✓ APK uploaded to release"
+          else
+            echo "! APK not found at $APK"
+            find src-tauri/gen/android -name "*.apk" 2>/dev/null || echo "No APK files found"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
