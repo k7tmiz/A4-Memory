@@ -16,12 +16,11 @@
         "width": 1200,
         "height": 800,
         "minWidth": 800,
-        "minHeight": 600,
-        "devtools": true
+        "minHeight": 600
       }
     ],
     "security": {
-      "csp": "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; connect-src *"
+      "csp": null
     }
   },
   "bundle": {
