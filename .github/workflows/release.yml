@@ -166,33 +166,30 @@ jobs:
           cp src-tauri/icons/icon.png "$RES/mipmap-xxxhdpi/ic_launcher.png"
           echo "✓ Icons replaced"
 
-      - name: Enable WebView debugging
-        run: |
-          GRADLE="src-tauri/gen/android/app/build.gradle.kts"
-          sed -i '/release {/a\            isDebuggable = true' "$GRADLE"
-          echo "✓ WebView debugging enabled"
-
-      - name: Build Android APK
-        run: npx tauri android build --apk
+      - name: Build Android APK (debug)
+        run: npx tauri android build --apk --debug
 
       - name: Sign APK
         run: |
           # Generate a debug keystore
           keytool -genkey -v \
-            -keystore /tmp/release.jks \
+            -keystore /tmp/debug.jks \
             -alias a4memory \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass android -keypass android \
             -dname "CN=A4 Memory, OU=Dev, O=k7tmiz, L=Unknown, ST=Unknown, C=US"
 
-          # Find unsigned APK
-          UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
+          # Find debug APK
+          UNSIGNED=$(find src-tauri/gen/android -name "*debug*.apk" 2>/dev/null | head -1)
+          if [ -z "$UNSIGNED" ]; then
+            UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
+          fi
           SIGNED="A4 Memory_${{ github.ref_name }}_android.apk"
 
           # Sign with apksigner (auto-detect version)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
           $APKSIGNER sign \
-            --ks /tmp/release.jks \
+            --ks /tmp/debug.jks \
             --ks-pass pass:android \
             --key-pass pass:android \
             --out "$SIGNED" "$UNSIGNED"
