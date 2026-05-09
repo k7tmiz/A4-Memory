@@ -31,7 +31,8 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 
 | Component | Technology |
 |-----------|------------|
-| Frontend | Pure static HTML/CSS/Vanilla JS, no build tools |
+| Frontend | Pure static HTML/CSS/Vanilla JS, no framework |
+| Desktop | Tauri v2 (Rust + WebView), shares frontend code with Web |
 | State storage | Browser localStorage |
 | Cloud sync | Backend API + JWT (`js/cloud.js` private module) |
 | AI integration | OpenAI-style chat/completions API |
@@ -53,10 +54,29 @@ A4-Memory/
 │   ├── speech.js          # Speech synthesis
 │   ├── storage.js         # localStorage wrapper
 │   └── utils.js           # Download utilities
+├── src-tauri/             # Tauri desktop app (Rust)
+├── package.json           # Node dependencies (Vite + Tauri CLI)
 └── docs/                  # Documentation
 ```
 
-**Note**: `js/cloud.js` is NOT in the public repository — it's an optional private module for cloud sync.
+**Note**: `js/cloud.js` is NOT in the public repository — it's an optional private module for cloud sync. Desktop builds auto-include `cloud.js` if present locally.
+
+## Desktop App (Tauri)
+
+A macOS / Windows / Linux desktop app is available (built with Tauri v2).
+
+```bash
+# Install dependencies
+npm install
+
+# Development mode (hot reload)
+npm run tauri dev
+
+# Production build
+npm run tauri build   # Outputs .dmg (macOS) / .msi (Windows) / .deb (Linux)
+```
+
+The desktop app shares all frontend code with the Web version. `npm run build` copies static files to `dist/`, which Tauri then packages. If `js/cloud.js` exists locally, cloud sync is included in the desktop build.
 
 ## Usage
 
@@ -69,9 +89,11 @@ Open the demo: https://k7tmiz.com/words
 ```bash
 cd A4-Memory
 python3 -m http.server 8080
+# or with Vite dev server (hot reload):
+npm run dev
 ```
 
-Open: http://localhost:8080/
+Open: http://localhost:8080/ or http://localhost:5173/
 
 ## Data & Storage
 

@@ -55,6 +55,8 @@ A4-Memory/
 │   ├── storage.js         # localStorage 封装
 │   └── utils.js           # 下载工具
 ├── src-tauri/             # Tauri 桌面端（Rust）
+├── scripts/               # 构建脚本
+├── .github/workflows/     # CI / 自动发布
 ├── package.json           # Node 依赖（Vite + Tauri CLI）
 └── docs/                  # 文档
 ```
@@ -89,9 +91,11 @@ npm run tauri build   # 输出 .dmg（macOS）/ .msi（Windows）/ .deb（Linux�
 ```bash
 cd A4-Memory
 python3 -m http.server 8080
+# 或使用 Vite dev server（支持热更新）：
+npm run dev
 ```
 
-打开：http://localhost:8080/
+打开：http://localhost:8080/ 或 http://localhost:5173/
 
 ## 数据与存储
 
