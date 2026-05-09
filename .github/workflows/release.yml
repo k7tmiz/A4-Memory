@@ -141,6 +141,29 @@ jobs:
       - name: Build Android APK
         run: npx tauri android build --apk
 
+      - name: Sign APK
+        run: |
+          # Generate a debug keystore
+          keytool -genkey -v \
+            -keystore /tmp/release.jks \
+            -alias a4memory \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=A4 Memory, OU=Dev, O=k7tmiz, L=Unknown, ST=Unknown, C=US"
+
+          # Find unsigned APK
+          UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
+          SIGNED="A4 Word Memory_${{ github.ref_name }}_android.apk"
+
+          # Sign with apksigner
+          $ANDROID_HOME/build-tools/35.0.0/apksigner sign \
+            --ks /tmp/release.jks \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --out "$SIGNED" "$UNSIGNED"
+
+          echo "✓ APK signed: $SIGNED"
+
       - name: Upload APK to Release
         run: |
           echo "Looking for APK files..."
@@ -149,16 +172,13 @@ jobs:
           echo "---"
           ls -la src-tauri/gen/android/app/build/outputs/apk/ 2>/dev/null || echo "apk/ dir not found"
 
-          # Find any APK file
-          APK=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
-          if [ -n "$APK" ]; then
-            RENAMED="A4 Word Memory_${{ github.ref_name }}_android.apk"
-            cp "$APK" "$RENAMED"
-            echo "Uploading: $RENAMED"
-            gh release upload ${{ github.ref_name }} "$RENAMED" --clobber
+          APK="A4 Word Memory_${{ github.ref_name }}_android.apk"
+          if [ -f "$APK" ]; then
+            echo "Uploading: $APK"
+            gh release upload ${{ github.ref_name }} "$APK" --clobber
             echo "✓ APK uploaded to release"
           else
-            echo "! No APK found — build may have succeeded but APK path is unexpected"
+            echo "! Signed APK not found at $APK"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
