@@ -161,21 +161,15 @@ jobs:
       - name: Replace Android icons
         run: |
           RES="src-tauri/gen/android/app/src/main/res"
-          SRC="src-tauri/icons/android"
-          # Adaptive icon XML
-          mkdir -p "$RES/mipmap-anydpi-v26"
-          cp "$SRC/mipmap-anydpi-v26/ic_launcher.xml" "$RES/mipmap-anydpi-v26/"
-          # Background color
-          mkdir -p "$RES/values"
-          cp "$SRC/values/ic_launcher_background.xml" "$RES/values/"
-          # Foreground layers (each density)
+          # Remove adaptive icon XML (forces use of plain PNG icons)
+          rm -rf "$RES/mipmap-anydpi-v26"
+          rm -f "$RES/values/ic_launcher_background.xml"
+          # Copy plain icon to all densities
           for d in mipmap-hdpi mipmap-mdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
             mkdir -p "$RES/$d"
-            cp "$SRC/$d/ic_launcher_foreground.png" "$RES/$d/" 2>/dev/null || true
-            cp "$SRC/$d/ic_launcher_round.png" "$RES/$d/" 2>/dev/null || true
-            cp "$SRC/$d/ic_launcher.png" "$RES/$d/" 2>/dev/null || true
+            cp src-tauri/icons/icon.png "$RES/$d/ic_launcher.png"
           done
-          echo "✓ Icons replaced (adaptive)"
+          echo "✓ Icons replaced"
 
       - name: Build Android APK
         run: npx tauri android build --apk
