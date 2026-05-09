@@ -148,6 +148,20 @@ jobs:
           cp src-tauri/icons/icon.png "$RES/mipmap-xxxhdpi/ic_launcher.png"
           echo "✓ Icons replaced"
 
+      - name: Enable WebView debugging
+        run: |
+          MANIFEST="src-tauri/gen/android/app/src/main/AndroidManifest.xml"
+          python3 -c "
+import xml.etree.ElementTree as ET
+ns = '{http://schemas.android.com/apk/res/android}'
+ET.register_namespace('android', 'http://schemas.android.com/apk/res/android')
+tree = ET.parse('$MANIFEST')
+app = tree.getroot().find('application')
+app.set(ns + 'debuggable', 'true')
+tree.write('$MANIFEST', encoding='utf-8', xml_declaration=True)
+          "
+          echo "✓ WebView debugging enabled"
+
       - name: Build Android APK
         run: npx tauri android build --apk
 
