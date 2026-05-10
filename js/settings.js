@@ -785,6 +785,20 @@
             </div>
             <div class="form-help" id="aiStatus"></div>
           </section>
+
+          <section class="panel">
+            <div class="section-title">版本</div>
+            <div class="form-row">
+              <div class="form-label">当前版本</div>
+              <div class="form-control">
+                <span class="form-help" id="versionText">v${window.A4Updater?.APP_VERSION || "1.0.0"}</span>
+              </div>
+            </div>
+            <div class="stack" style="margin-top:4px">
+              <button class="ghost full" id="checkUpdateBtn" type="button">检查更新</button>
+            </div>
+            <div class="form-help hidden" id="updateStatus"></div>
+          </section>
         </div>
       </div>
     `
@@ -947,6 +961,8 @@
       aiCountInput: modal.querySelector("#aiCountInput"),
       aiGenerateBtn: modal.querySelector("#aiGenerateBtn"),
       aiStatus: modal.querySelector("#aiStatus"),
+      checkUpdateBtn: modal.querySelector("#checkUpdateBtn"),
+      updateStatus: modal.querySelector("#updateStatus"),
     }
 
     let aiPreviewModal = document.getElementById("aiPreviewModal")
@@ -1002,6 +1018,12 @@
       input.classList.toggle("is-invalid", !!value)
       hint.textContent = value
       hint.classList.toggle("hidden", !value)
+    }
+
+    function setUpdateStatus(text) {
+      if (!dom.updateStatus) return
+      dom.updateStatus.textContent = text
+      dom.updateStatus.classList.toggle("hidden", !text)
     }
 
     function getRegisterEmailError(options = {}) {
@@ -2230,6 +2252,32 @@
       if (!dom.importBackupFile) return
       dom.importBackupFile.value = ""
       dom.importBackupFile.click()
+    })
+
+    dom.checkUpdateBtn?.addEventListener("click", () => {
+      if (!window.A4Updater) {
+        setUpdateStatus("更新检测未加载")
+        return
+      }
+      setUpdateStatus("正在检查...")
+      var cached = null
+      try { cached = JSON.parse(localStorage.getItem("a4-memory:update-check:v1") || "null") } catch (_) {}
+      // Clear cache to force re-check
+      try { localStorage.removeItem("a4-memory:update-check:v1") } catch (_) {}
+      try { localStorage.removeItem("a4-memory:update-skip:v1") } catch (_) {}
+      window.A4Updater.checkUpdate()
+      // Restore skip key after check completes (async)
+      setTimeout(() => {
+        var el = document.getElementById("updateModal")
+        if (el && !el.classList.contains("hidden")) {
+          setUpdateStatus("")
+        } else {
+          setUpdateStatus("已是最新版本")
+          if (cached) {
+            try { localStorage.setItem("a4-memory:update-check:v1", JSON.stringify(cached)) } catch (_) {}
+          }
+        }
+      }, 3000)
     })
 
     dom.importBackupFile?.addEventListener("change", async () => {

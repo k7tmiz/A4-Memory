@@ -1,5 +1,6 @@
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
@@ -290,9 +291,9 @@ button {
   color: var(--text);
   padding: 10px 12px;
   border-radius: 10px;
+  font-family: inherit;
   font-size: 14px;
   line-height: 1;
-  font: inherit;
   cursor: pointer;
 }
 
@@ -351,9 +352,9 @@ select {
   color: var(--text);
   padding: 10px 36px 10px 12px;
   border-radius: 10px;
+  font-family: inherit;
   font-size: 14px;
   line-height: 1;
-  font: inherit;
   background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
     linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
@@ -380,9 +381,9 @@ select:hover {
   color: var(--text);
   padding: 10px 12px;
   border-radius: 10px;
+  font-family: inherit;
   font-size: 14px;
   line-height: 1;
-  font: inherit;
   cursor: pointer;
 }
 
@@ -521,6 +522,11 @@ select:hover {
     padding: 8px 10px;
     font-size: 13px;
   }
+
+  .word-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }
 
 /* Import wordbook modal mobile styles — strictly scoped to #importModal */
@@ -638,6 +644,7 @@ select:hover {
   background: var(--card);
   border-radius: 12px;
   padding: 10px;
+  overflow: hidden;
 }
 
 .item-header {
@@ -800,6 +807,7 @@ select:hover {
   user-select: none;
   max-width: 70%;
   white-space: normal;
+  overflow: hidden;
 }
 
 .word-term {
@@ -809,6 +817,7 @@ select:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
   cursor: pointer;
 }
 
@@ -819,7 +828,7 @@ select:hover {
   font-weight: 500;
   font-size: 0.78em;
   line-height: 1.15;
-  max-width: 18em;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   -webkit-box-orient: vertical;
@@ -1373,9 +1382,9 @@ select:hover {
   color: var(--text);
   padding: 10px 12px;
   border-radius: 10px;
+  font-family: inherit;
   font-size: 14px;
   line-height: 1;
-  font: inherit;
 }
 
 .text-input:focus {
@@ -1927,11 +1936,15 @@ body.theme-dark .account-badge {
 
 .word-row .w {
   font-weight: 800;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .word-row .m {
   color: var(--muted);
   font-size: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .view-tabs {

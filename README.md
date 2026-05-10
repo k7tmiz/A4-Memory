@@ -28,6 +28,7 @@ Demo：https://k7tmiz.com/words
 - 外观：释义显示/隐藏、沉浸模式、auto/light/dark 主题
 - 备份：完整 JSON 导入/导出
 - AI 生成词书：OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
+- 版本更新检测：自动检测 GitHub Release 新版本，弹窗提示下载
 
 ## 技术栈
 

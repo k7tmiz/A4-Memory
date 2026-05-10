@@ -1,4 +1,4 @@
-import { cp, rm, mkdir } from 'fs/promises';
+import { cp, rm, mkdir, readFile, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 
 const DIST = 'dist';
@@ -18,6 +18,7 @@ const DIRS = [
 const JS_DIR = 'js';
 const CLOUD_JS = 'js/cloud.js';
 const CLOUD_STUB = 'js/__cloud_stub.js';
+const UPDATER_JS = 'js/updater.js';
 
 // Clean and recreate dist
 await rm(DIST, { recursive: true, force: true });
@@ -43,6 +44,16 @@ try { await rm(`${DIST}/${CLOUD_STUB}`); } catch { /* not in dist */ }
 if (!hasCloud) {
   await cp(CLOUD_STUB, `${DIST}/${CLOUD_JS}`);
   console.warn('⚠  cloud.js not found — using stub (cloud features disabled)');
+}
+
+// Inject version from package.json into updater.js
+const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
+const updaterDist = `${DIST}/${UPDATER_JS}`;
+if (existsSync(updaterDist)) {
+  let content = await readFile(updaterDist, 'utf-8');
+  content = content.replace('"__A4_VERSION__"', `"${pkg.version}"`);
+  await writeFile(updaterDist, content);
+  console.log(`✅  updater.js → APP_VERSION = ${pkg.version}`);
 }
 
 console.log('✅  Build complete → dist/');

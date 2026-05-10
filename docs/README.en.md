@@ -27,6 +27,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Appearance: meaning toggle, immersive mode, auto/light/dark theme
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
+- Version update check: auto-detects new GitHub Releases and shows download notification
 
 ## Tech Stack
 

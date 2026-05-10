@@ -28,6 +28,7 @@ A4-Memory/
 │   ├── settings.js        # 设置弹窗控制器
 │   ├── speech.js          # 语音合成封装
 │   ├── storage.js         # localStorage 读写封装
+│   ├── updater.js         # GitHub 版本更新检测与通知
 │   └── utils.js           # 文件下载与清洗工具
 ├── scripts/
 │   └── build.mjs          # 生产构建脚本（复制文件到 dist/）
