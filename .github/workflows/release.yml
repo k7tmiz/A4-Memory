@@ -71,7 +71,6 @@ jobs:
             - 修复手机端显示释义时翻译文字比单词还大
             - 修复设置界面版本号始终显示旧版本的问题
             - 主页使用说明新增「下载桌面/安卓版」入口
-            - Android 固定签名，后续版本可直接覆盖安装
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
@@ -226,3 +225,40 @@ jobs:
           echo "✓ APK uploaded"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  finalize-release:
+    needs: build-android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Append commit log to release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --oneline --no-merges "$PREV_TAG..HEAD" | sed 's/^/- /')
+          else
+            COMMITS=$(git log --oneline --no-merges | sed 's/^/- /')
+          fi
+
+          gh release view "$TAG" --json body -q '.body' > /tmp/release-body.md
+
+          if [ -n "$COMMITS" ]; then
+            {
+              echo ""
+              echo "<details>"
+              echo "<summary>提交记录</summary>"
+              echo ""
+              echo "$COMMITS"
+              echo "</details>"
+            } >> /tmp/release-body.md
+          fi
+
+          gh release edit "$TAG" --notes-file /tmp/release-body.md --draft=false
+          echo "✓ Release notes updated"
