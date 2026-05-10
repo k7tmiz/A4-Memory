@@ -95,9 +95,6 @@ jobs:
 
             A4 纸随机排版背单词，打破列表式背书模式。
 
-            ### 本次更新
-            - 修复若干问题，优化用户体验
-
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
             - 内置 CET4 / CET6 / 西班牙语词书，支持自定义导入
@@ -278,11 +275,8 @@ jobs:
           if [ -n "$COMMITS" ]; then
             {
               echo ""
-              echo "<details>"
-              echo "<summary>提交记录</summary>"
-              echo ""
+              echo "### 本次更新"
               echo "$COMMITS"
-              echo "</details>"
             } >> /tmp/release-body.md
           fi
 
