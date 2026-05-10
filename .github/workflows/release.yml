@@ -265,29 +265,37 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^${TAG}$" | head -1)
 
           if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log --no-merges --format="- %s" "$PREV_TAG..HEAD" | sed 's/^\(- \)\(feat\|fix\|docs\|ci\|chore\|refactor\|style\|test\|perf\|build\|revert\): /\1/')
+            COMMITS=$(git log --no-merges --format="%s" "$PREV_TAG..HEAD" \
+              | grep -vE '^(chore|ci|build):' \
+              | sed 's/^\(feat\|fix\|docs\|refactor\|style\|test\|perf\|revert\): //' \
+              | sed 's/^/- /')
           else
-            COMMITS=$(git log --no-merges --format="- %s" | sed 's/^\(- \)\(feat\|fix\|docs\|ci\|chore\|refactor\|style\|test\|perf\|build\|revert\): /\1/')
+            COMMITS=$(git log --no-merges --format="%s" -20 \
+              | grep -vE '^(chore|ci|build):' \
+              | sed 's/^\(feat\|fix\|docs\|refactor\|style\|test\|perf\|revert\): //' \
+              | sed 's/^/- /')
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- 修复若干问题，优化用户体验"
           fi
 
           gh release view "$TAG" --json body -q '.body' > /tmp/release-body.md
 
-          if [ -n "$COMMITS" ]; then
-            export COMMITS
-            node -e "
-              const fs = require('fs');
-              const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
-              const commits = process.env.COMMITS;
-              const updated = body.replace(
-                /### 本次更新[\s\S]*?(?=### )/,
-                '### 本次更新\n' + commits + '\n\n'
-              );
-              fs.writeFileSync('/tmp/release-body.md', updated);
-            "
-          fi
+          export COMMITS
+          node -e "
+            const fs = require('fs');
+            const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
+            const commits = process.env.COMMITS;
+            const updated = body.replace(
+              /### 本次更新[\s\S]*?(?=### )/,
+              '### 本次更新\n' + commits + '\n\n'
+            );
+            fs.writeFileSync('/tmp/release-body.md', updated);
+          "
 
           gh release edit "$TAG" --notes-file /tmp/release-body.md --draft=false
           echo "✓ Release published"
