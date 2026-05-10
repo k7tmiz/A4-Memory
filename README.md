@@ -21,21 +21,21 @@ Demo：https://k7tmiz.com/words
 - 状态系统：已掌握 / 学习中 / 不会
 - 轻量复习：按状态计算复习时间，记录页可聚合"待复习"
 - 轮次类型：普通学习轮 / 已掌握复习 / 学习中复习 / 不会复习 / 待复习
-- 学习记录：轮次视图、状态视图、导出 CSV/PDF、生成复习轮
+- 学习记录：轮次视图、状态视图、导出 CSV/PDF、生成复习轮；桌面端和 Android 端会调用系统打印/保存为 PDF
 - 词书：内置 CET4 / CET6 / 西班牙语示例，支持 TXT/CSV/JSON 导入和 GitHub 在线导入
 - 查词：本地优先、联网补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充
 - 发音：SpeechSynthesis，支持 en/es/ja/ko/pt/fr/de/it/eo
 - 外观：释义显示/隐藏、沉浸模式、auto/light/dark 主题
 - 备份：完整 JSON 导入/导出
 - AI 生成词书：OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
-- 版本更新检测：自动检测 GitHub Release 新版本，弹窗提示下载
+- 版本更新检测：自动检测 GitHub Release 新版本，桌面端和 Android 端会打开对应平台安装包（Android 直达 APK 下载）
 
 ## 技术栈
 
 | 组成部分 | 技术 |
 |-----------|------|
 | 前端 | 纯静态 HTML/CSS/Vanilla JS，无框架 |
-| 桌面端 | Tauri v2（Rust + WebView），与 Web 版共享前端代码 |
+| 桌面端 / Android | Tauri v2（Rust + WebView），与 Web 版共享前端代码 |
 | 状态存储 | 浏览器 localStorage |
 | 云同步 | 后端 API + JWT（私有模块 `js/cloud.js`） |
 | AI 接入 | OpenAI 风格 chat/completions API |
@@ -73,6 +73,8 @@ A4-Memory/
 除 Web 版本外，本项目支持打包为 macOS / Windows / Linux 桌面应用及 Android APK（基于 Tauri v2）。
 
 预编译安装包从 [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) 下载，含完整云同步功能。
+
+应用内"检查更新"会读取最新 GitHub Release，并按当前平台优先打开对应安装包：Android 打开 `.apk`，macOS 打开 `.dmg`，Windows 打开 `.msi` / `.exe`，Linux 打开 `.AppImage` / `.deb`。Android 仍需按系统提示确认下载和安装。
 
 ```bash
 # 安装依赖

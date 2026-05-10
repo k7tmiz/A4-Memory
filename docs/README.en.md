@@ -20,21 +20,21 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Status system: Mastered / Learning / Unknown
 - Lightweight review: auto-schedules next review, "Due" aggregation in records
 - Round types: Normal / Mastered review / Learning review / Unknown review / Due review
-- Records: round view, status view, CSV/PDF export, generate review rounds
+- Records: round view, status view, CSV/PDF export, generate review rounds; desktop and Android builds invoke the system print / save-as-PDF flow
 - Wordbooks: built-in CET4 / CET6 / Spanish samples, TXT/CSV/JSON import, GitHub online import
 - Lookup: local-first, online supplement (MyMemory + dictionaryapi.dev), Spanish conjugation, AI supplement
 - Pronunciation: SpeechSynthesis (en/es/ja/ko/pt/fr/de/it/eo)
 - Appearance: meaning toggle, immersive mode, auto/light/dark theme
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
-- Version update check: auto-detects new GitHub Releases and shows download notification
+- Version update check: auto-detects new GitHub Releases and opens the platform-specific installer (Android links directly to the APK)
 
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
 | Frontend | Pure static HTML/CSS/Vanilla JS, no framework |
-| Desktop | Tauri v2 (Rust + WebView), shares frontend code with Web |
+| Desktop / Android | Tauri v2 (Rust + WebView), shares frontend code with Web |
 | State storage | Browser localStorage |
 | Cloud sync | Backend API + JWT (`js/cloud.js` private module) |
 | AI integration | OpenAI-style chat/completions API |
@@ -72,6 +72,8 @@ A4-Memory/
 Desktop (macOS / Windows / Linux) and Android APK are available, built with Tauri v2.
 
 Download prebuilt installers from [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) — includes full cloud sync.
+
+The in-app "Check for updates" flow reads the latest GitHub Release and prefers the matching installer for the current platform: `.apk` on Android, `.dmg` on macOS, `.msi` / `.exe` on Windows, and `.AppImage` / `.deb` on Linux. Android still requires the user to confirm download and installation in the system UI.
 
 ```bash
 # Install dependencies

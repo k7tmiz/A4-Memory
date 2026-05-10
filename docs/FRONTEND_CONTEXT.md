@@ -28,7 +28,7 @@ A4-Memory/
 │   ├── settings.js        # 设置弹窗控制器
 │   ├── speech.js          # 语音合成封装
 │   ├── storage.js         # localStorage 读写封装
-│   ├── updater.js         # GitHub 版本更新检测与通知
+│   ├── updater.js         # GitHub 版本更新检测、平台安装包选择与通知
 │   └── utils.js           # 文件下载与清洗工具
 ├── scripts/
 │   └── build.mjs          # 生产构建脚本（复制文件到 dist/）
@@ -191,9 +191,25 @@ window.A4Lookup = {
 记录页控制器（UI 层）。负责：
 - 轮次视图与状态视图切换
 - 统计计算
-- CSV/PDF 导出
+- CSV/PDF 导出；PDF 会生成隐藏的 A4 打印输出层，桌面端走 Tauri WebView 打印权限，Android 端走原生打印桥接
 - 轮次删除
 - 跳转首页触发复习轮生成
+
+### `js/updater.js`
+GitHub Release 版本更新检测，暴露 `window.A4Updater`：
+```javascript
+window.A4Updater = {
+  checkUpdate(),
+  openExternalUrl(url),
+  selectReleaseDownloadUrl(release),
+  APP_VERSION,
+  isTauri(),
+}
+```
+行为：
+- 自动检查最新 GitHub Release，设置页"检查更新"会清除本地跳过/缓存后强制检查一次
+- 从 `release.assets[].browser_download_url` 选择当前平台安装包：Android `.apk`、macOS `.dmg`、Windows `.msi` / `.exe`、Linux `.AppImage` / `.deb`
+- Tauri 端通过 Rust 命令 `a4_open_external` 打开系统默认浏览器/下载处理器；Web 端使用 `window.open` / `location.href` 兜底
 
 ---
 

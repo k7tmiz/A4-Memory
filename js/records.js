@@ -117,6 +117,73 @@
     return exportRoundAsPng({ round: nextRound, roundNo })
   }
 
+  function clearPrintPages() {
+    const existing = document.getElementById("pdfPrintPages")
+    if (existing) existing.remove()
+    document.body.classList.remove("a4-printing")
+  }
+
+  function buildPrintPages(pageInfos) {
+    clearPrintPages()
+
+    const root = document.createElement("div")
+    root.id = "pdfPrintPages"
+    root.setAttribute("aria-hidden", "true")
+
+    for (const info of pageInfos) {
+      const page = el("section", "a4-print-page")
+      const paper = el("div", "a4-print-paper")
+      const inner = el("div", "a4-print-inner")
+      const items = getRoundItemsByPage(info.round, info.pageIndex)
+
+      for (const it of items) {
+        const term = String(it?.word?.term || "").trim()
+        const pos = it?.pos
+        if (!term || !pos) continue
+
+        const word = el("div", "a4-print-word", term)
+        const base = Number.parseFloat(String(it.fontSize || "").replace("px", "")) || 16
+        word.style.left = `${Math.max(0, Math.min(1, Number(pos.x) || 0)) * 100}%`
+        word.style.top = `${Math.max(0, Math.min(1, Number(pos.y) || 0)) * 100}%`
+        word.style.fontSize = `${Math.max(11, Math.min(28, base))}px`
+        inner.appendChild(word)
+      }
+
+      const footer = el("div", "a4-print-footer", `A4 Memory · ${info.title} · ${formatDateTime(info.round?.startedAt)}`)
+      paper.appendChild(inner)
+      paper.appendChild(footer)
+      page.appendChild(paper)
+      root.appendChild(page)
+    }
+
+    document.body.appendChild(root)
+    return root
+  }
+
+  function isAndroidTauri() {
+    return !!window.__TAURI_INTERNALS__?.invoke && /Android/i.test(navigator.userAgent || "")
+  }
+
+  function printCurrentDocument() {
+    if (isAndroidTauri()) {
+      window.__TAURI_INTERNALS__.invoke("a4_android_print").catch(() => {
+        window.alert("无法调用 Android 打印系统。请确认当前 Android 版本已包含原生打印支持。")
+      })
+      return
+    }
+
+    try {
+      const result = window.print()
+      if (result && typeof result.catch === "function") {
+        result.catch(() => {
+          window.alert("无法调用系统打印。请确认当前桌面/Android 版本已包含打印权限。")
+        })
+      }
+    } catch {
+      window.alert("无法调用系统打印。请确认当前桌面/Android 版本已包含打印权限。")
+    }
+  }
+
   function buildCsv(rounds) {
     const header = [
       "轮次编号",
@@ -619,6 +686,7 @@
     })
 
     if (pageInfos.length === 0) return
+    buildPrintPages(pageInfos)
 
     // Remove existing overlay if any
     const existing = document.getElementById("pdfPrintOverlay")
@@ -638,7 +706,10 @@
     const closeBtn = document.createElement("button")
     closeBtn.textContent = "关闭"
     closeBtn.style.cssText = "padding:6px 14px;border:1px solid rgba(255,255,255,.35);border-radius:6px;background:transparent;color:#fff;font-size:14px"
-    closeBtn.addEventListener("click", () => overlay.remove())
+    closeBtn.addEventListener("click", () => {
+      overlay.remove()
+      clearPrintPages()
+    })
     topBar.appendChild(pageLabel)
     topBar.appendChild(closeBtn)
 
@@ -666,7 +737,10 @@
     const printBtn = document.createElement("button")
     printBtn.textContent = "打印"
     printBtn.style.cssText = "padding:8px 18px;border:1px solid rgba(255,255,255,.35);border-radius:8px;background:transparent;color:#fff;font-size:14px"
-    printBtn.addEventListener("click", () => window.print())
+    printBtn.addEventListener("click", () => {
+      document.body.classList.add("a4-printing")
+      printCurrentDocument()
+    })
 
     bottomBar.appendChild(prevBtn)
     bottomBar.appendChild(printBtn)
@@ -728,7 +802,10 @@
     // Keyboard nav
     const onKey = (e) => {
       if (!document.getElementById("pdfPrintOverlay")) return
-      if (e.key === "Escape") overlay.remove()
+      if (e.key === "Escape") {
+        overlay.remove()
+        clearPrintPages()
+      }
       if (e.key === "ArrowLeft") showPage(currentIdx - 1)
       if (e.key === "ArrowRight") showPage(currentIdx + 1)
     }
