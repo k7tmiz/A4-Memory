@@ -22,7 +22,7 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           if gh release view "$TAG" &>/dev/null; then
-            gh release delete "$TAG" --yes --cleanup-tag
+            gh release delete "$TAG" --yes
             echo "✓ Deleted old release (draft or published) for $TAG"
           else
             echo "No existing release for $TAG"
@@ -36,10 +36,13 @@ jobs:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
+            tauri_args: --target aarch64-apple-darwin --bundles app
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            tauri_args: ''
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            tauri_args: ''
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -51,6 +54,8 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && matrix.target || '' }}
 
       - name: Cache Rust
         uses: actions/cache@v4
@@ -125,6 +130,38 @@ jobs:
             - `cloud.js` 为私有模块，如需使用请联系作者
           releaseDraft: true
           prerelease: false
+          args: ${{ matrix.tauri_args }}
+
+      - name: Create macOS DMG
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          VERSION=$(node -p "require('./package.json').version")
+          APP_PATH=$(find "src-tauri/target/${{ matrix.target }}/release/bundle/macos" -maxdepth 1 -name "*.app" -type d | head -1)
+
+          if [ -z "$APP_PATH" ]; then
+            echo "No macOS .app bundle found"
+            exit 1
+          fi
+
+          DMG_ROOT=$(mktemp -d)
+          cp -R "$APP_PATH" "$DMG_ROOT/"
+          ln -s /Applications "$DMG_ROOT/Applications"
+
+          DMG_NAME="A4 Memory_${VERSION}_aarch64.dmg"
+          hdiutil create \
+            -volname "A4 Memory" \
+            -srcfolder "$DMG_ROOT" \
+            -ov \
+            -format UDZO \
+            "$DMG_NAME"
+
+          gh release upload "${{ github.ref_name }}" "$DMG_NAME" --clobber
+          echo "✓ DMG uploaded: $DMG_NAME"
 
   build-android:
     needs: build-desktop
