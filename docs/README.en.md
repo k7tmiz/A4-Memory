@@ -57,6 +57,8 @@ A4-Memory/
 │   ├── storage.js         # localStorage wrapper
 │   └── utils.js           # Download utilities
 ├── src-tauri/             # Tauri desktop app (Rust)
+├── scripts/               # Build scripts
+├── .github/workflows/     # CI / auto-release
 ├── package.json           # Node dependencies (Vite + Tauri CLI)
 └── docs/                  # Documentation
 ```
@@ -107,11 +109,23 @@ Open: http://localhost:8080/ or http://localhost:5173/
 | `a4-memory:intro-seen:v1` | "How to use" modal seen flag |
 | `a4-memory:lookup-cache:v1` | Lookup online supplement cache |
 
+### Main state summary
+
+- Rounds: `rounds`, `currentRoundId`, `pendingReviewRoundId`, `pendingGenerateStatusKind`
+- UI: `showMeaning`, `immersiveMode`, `themeMode`, `darkMode`
+- Learning: `roundCap`, `dailyGoalRounds`, `dailyGoalWords`
+- Review: `reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
+- Pronunciation: `pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`
+- Wordbooks: `selectedWordbookId`, `customWordbooks`
+- AI config: `aiConfig = { provider, baseUrl, apiKey, model }` (`apiKey` stays in memory, not persisted)
+- Lookup: `lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
+
 ## Cloud Sync (Optional, requires private module)
 
 Cloud sync depends on the backend API and the `js/cloud.js` private module. When enabled:
 - User registration/login (account managed server-side)
 - Learning state upload/download (multi-device sync)
+- Cloud-logged-in users auto-receive system announcements; each announcement pops once per account, latest shown at top
 
 To use, contact the author to obtain `cloud.js`, place it in the `js/` directory. No HTML changes needed — the page loads it automatically.
 
