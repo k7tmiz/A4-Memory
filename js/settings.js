@@ -8,6 +8,7 @@
   const normalizePronunciationLang = window.A4Common?.normalizePronunciationLang
   const normalizeAiProvider = window.A4Common?.normalizeAiProvider
   const normalizeStatus = window.A4Common?.normalizeStatus
+  const normalizeWordObject = window.A4Common?.normalizeWordObject
   const ACCOUNT_REGISTER_CODE_COOLDOWN_KEY = "a4-memory:register-code-cooldown:v1"
   const ACCOUNT_RESET_CODE_COOLDOWN_KEY = "a4-memory:reset-code-cooldown:v1"
   const ACCOUNT_SYNC_META_KEY = "a4-memory:cloud-sync-meta:v1"
@@ -18,20 +19,6 @@
     const learningDays = clamp(Math.round(Number(base.learningDays) || 3), 1, 60)
     const masteredDays = clamp(Math.round(Number(base.masteredDays) || 7), 1, 365)
     return { unknownDays, learningDays, masteredDays }
-  }
-
-  function normalizeWordObject(raw) {
-    const term = String(raw?.term || "").trim()
-    const pos = String(raw?.pos || "").trim()
-    const meaning = String(raw?.meaning || "").trim()
-    if (!term || !pos || !meaning) return null
-    return {
-      term,
-      pos,
-      meaning,
-      example: String(raw?.example || "").trim(),
-      tags: Array.isArray(raw?.tags) ? raw.tags.map((t) => String(t || "").trim()).filter(Boolean) : [],
-    }
   }
 
   function isValidEmail(value) {
@@ -100,7 +87,7 @@
       const n = Math.max(0, Math.round(Number(untilMs) || 0))
       if (n > Date.now()) localStorage.setItem(key, String(n))
       else localStorage.removeItem(key)
-    } catch (e) {}
+    } catch { /* ignore */ }
   }
 
   function loadAccountCooldown(key) {
@@ -108,7 +95,7 @@
       const raw = localStorage.getItem(key)
       const n = Math.round(Number(raw) || 0)
       return n > Date.now() ? n : 0
-    } catch (e) {
+    } catch {
       return 0
     }
   }
@@ -147,11 +134,11 @@
     next.aiConfig =
       next.aiConfig && typeof next.aiConfig === "object"
         ? {
-            provider: normalizeAiProvider(next.aiConfig.provider),
-            baseUrl: String(next.aiConfig.baseUrl || "").trim(),
-            apiKey: String(next.aiConfig.apiKey || "").trim(),
-            model: String(next.aiConfig.model || "").trim(),
-          }
+          provider: normalizeAiProvider(next.aiConfig.provider),
+          baseUrl: String(next.aiConfig.baseUrl || "").trim(),
+          apiKey: String(next.aiConfig.apiKey || "").trim(),
+          model: String(next.aiConfig.model || "").trim(),
+        }
         : { provider: "custom", baseUrl: "", apiKey: "", model: "" }
 
     next.lookupOnlineEnabled = typeof next.lookupOnlineEnabled === "boolean" ? next.lookupOnlineEnabled : true
@@ -1635,10 +1622,10 @@
               const objText = s.slice(state.objStart, i + 1)
               state.collecting = false
               state.objStart = 0
-              let parsed = null
+              let parsed
               try {
                 parsed = JSON.parse(objText)
-              } catch (e) {
+              } catch {
                 continue
               }
               const entry = normalizeAiWordEntry(parsed)
@@ -1692,10 +1679,10 @@
             const dataStr = String(line.slice(5) || "").trim()
             if (!dataStr) continue
             if (dataStr === "[DONE]") return content
-            let obj = null
+            let obj
             try {
               obj = JSON.parse(dataStr)
-            } catch (e) {
+            } catch {
               continue
             }
             const delta =
@@ -1715,7 +1702,7 @@
     function open() {
       // Show version panel only in Tauri (desktop/Android), not on web
       if (dom.versionPanel) {
-        var isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
+        const isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
         dom.versionPanel.classList.toggle("hidden", !isTauri)
       }
       render()
@@ -1920,13 +1907,13 @@
       if (next === "manual") {
         const resolved =
           window.A4Speech?.resolveVoice?.({
-          pronunciationEnabled: true,
-          pronunciationLang: state?.pronunciationLang,
-          wordbookLanguage: getWordbookLang(),
-          accent: state?.pronunciationAccent,
-          voiceMode: "auto",
-          voiceURI: "",
-        }) || { ok: false, voice: null }
+            pronunciationEnabled: true,
+            pronunciationLang: state?.pronunciationLang,
+            wordbookLanguage: getWordbookLang(),
+            accent: state?.pronunciationAccent,
+            voiceMode: "auto",
+            voiceURI: "",
+          }) || { ok: false, voice: null }
         const chosen = resolved.voice || window.A4Speech?.getSystemDefaultVoice?.(voices) || voices[0] || null
         setStateSafe({ voiceMode: "manual", voiceURI: chosen ? String(chosen.voiceURI || "") : "" })
       } else {
@@ -2122,7 +2109,7 @@
       if (aiAbortController) {
         try {
           aiAbortController.abort()
-        } catch (e) {}
+        } catch { /* ignore */ }
       }
       setModalVisible(aiDom.modal, false)
     }
@@ -2149,7 +2136,7 @@
       aiAbortController = new AbortController()
       openAiPreviewModal({ book: aiPreviewer.getPartialBook(), meta: "生成中… · 已解析 0 个词条" })
 
-      let content = ""
+      let content
       try {
         const res = await requestAiChatCompletion({
           endpoint,
@@ -2189,10 +2176,10 @@
         aiAbortController = null
       }
 
-      let parsed = null
+      let parsed
       try {
         parsed = JSON.parse(stripJsonFromText(content))
-      } catch (e) {
+      } catch {
         return setAiStatus("生成失败：AI 返回内容不是合法 JSON。")
       }
 
@@ -2261,7 +2248,7 @@
       dom.importBackupFile.click()
     })
 
-    var updateCheckFailed = false
+    let updateCheckFailed = false
     window.addEventListener("a4-update-check-failed", () => {
       updateCheckFailed = true
       setUpdateStatus("检查失败：网络错误或 GitHub API 不可用")
@@ -2274,22 +2261,22 @@
       }
       updateCheckFailed = false
       setUpdateStatus("正在检查...")
-      var cached = null
-      try { cached = JSON.parse(localStorage.getItem("a4-memory:update-check:v1") || "null") } catch (_) {}
+      let cached = null
+      try { cached = JSON.parse(localStorage.getItem("a4-memory:update-check:v1") || "null") } catch { /* ignore */ }
       // Clear cache to force re-check
-      try { localStorage.removeItem("a4-memory:update-check:v1") } catch (_) {}
-      try { localStorage.removeItem("a4-memory:update-skip:v1") } catch (_) {}
+      try { localStorage.removeItem("a4-memory:update-check:v1") } catch { /* ignore */ }
+      try { localStorage.removeItem("a4-memory:update-skip:v1") } catch { /* ignore */ }
       window.A4Updater.checkUpdate()
       // Restore skip key after check completes (async)
       setTimeout(() => {
         if (updateCheckFailed) return
-        var el = document.getElementById("updateModal")
+        const el = document.getElementById("updateModal")
         if (el && !el.classList.contains("hidden")) {
           setUpdateStatus("")
         } else {
           setUpdateStatus("已是最新版本")
           if (cached) {
-            try { localStorage.setItem("a4-memory:update-check:v1", JSON.stringify(cached)) } catch (_) {}
+            try { localStorage.setItem("a4-memory:update-check:v1", JSON.stringify(cached)) } catch { /* ignore */ }
           }
         }
       }, 3000)
@@ -2303,17 +2290,17 @@
         window.alert("导入失败：文件过大（上限 10 MB）。")
         return
       }
-      let rawText = ""
+      let rawText
       try {
         rawText = await file.text()
-      } catch (e) {
+      } catch {
         window.alert("导入失败：无法读取文件。")
         return
       }
-      let parsed = null
+      let parsed
       try {
         parsed = JSON.parse(rawText)
-      } catch (e) {
+      } catch {
         window.alert("导入失败：不是合法 JSON。")
         return
       }
@@ -2356,7 +2343,7 @@
           hour: "2-digit",
           minute: "2-digit",
         })
-      } catch (e) {
+      } catch {
         return "当前浏览器会话"
       }
     }
@@ -2382,7 +2369,7 @@
           hour: "2-digit",
           minute: "2-digit",
         })
-      } catch (e) {
+      } catch {
         return ""
       }
     }
@@ -2409,7 +2396,7 @@
         const raw = localStorage.getItem(ACCOUNT_SYNC_META_KEY)
         const parsed = raw ? JSON.parse(raw) : null
         return parsed && typeof parsed === "object" ? parsed : null
-      } catch (e) {
+      } catch {
         return null
       }
     }
@@ -2421,7 +2408,7 @@
           return
         }
         localStorage.setItem(ACCOUNT_SYNC_META_KEY, JSON.stringify(meta))
-      } catch (e) {}
+      } catch { /* ignore */ }
     }
 
     function buildLearningSummary() {
@@ -2464,7 +2451,7 @@
         if (dom.cloudAccountSubtitle) {
           dom.cloudAccountSubtitle.textContent = email
             ? email
-            : `已登录，可上传或恢复学习数据`
+            : "已登录，可上传或恢复学习数据"
         }
         if (dom.cloudBackupStateText) dom.cloudBackupStateText.textContent = "已启用"
         if (dom.cloudRoundsText) dom.cloudRoundsText.textContent = String(summary.roundsCount)
@@ -2782,12 +2769,12 @@
   if (!document.getElementById("settingsModal")) {
     try {
       document.body.appendChild(buildSettingsModalDom())
-    } catch (e) {}
+    } catch { /* ignore */ }
   }
   if (!document.getElementById("aiPreviewModal")) {
     try {
       document.body.appendChild(buildAiPreviewModalDom())
-    } catch (e) {}
+    } catch { /* ignore */ }
   }
 
   window.A4Settings = {

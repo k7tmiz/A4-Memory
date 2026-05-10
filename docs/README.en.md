@@ -55,11 +55,13 @@ A4-Memory/
 │   ├── settings.js        # Settings controller
 │   ├── speech.js          # Speech synthesis
 │   ├── storage.js         # localStorage wrapper
+│   ├── updater.js         # Version update checker
 │   └── utils.js           # Download utilities
 ├── src-tauri/             # Tauri desktop app (Rust)
 ├── scripts/               # Build scripts
 ├── .github/workflows/     # CI / auto-release
-├── package.json           # Node dependencies (Vite + Tauri CLI)
+├── eslint.config.mjs      # ESLint code style config
+├── package.json           # Node dependencies (Vite + Tauri CLI + ESLint)
 └── docs/                  # Documentation
 ```
 
@@ -95,6 +97,8 @@ cd A4-Memory
 python3 -m http.server 8080
 # or with Vite dev server (hot reload):
 npm run dev
+# Lint:
+npm run lint
 ```
 
 Open: http://localhost:8080/ or http://localhost:5173/

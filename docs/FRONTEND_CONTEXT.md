@@ -32,6 +32,7 @@ A4-Memory/
 │   └── utils.js           # 文件下载与清洗工具
 ├── scripts/
 │   └── build.mjs          # 生产构建脚本（复制文件到 dist/）
+├── eslint.config.mjs      # ESLint 代码规范配置
 ├── src-tauri/             # Tauri 桌面端脚手架（Rust）
 └── docs/
     └── ...                # 文档目录
@@ -125,6 +126,7 @@ records.html
 - 查词匹配评分与去重排序
 - 时间格式化、日期 key、统计计算
 - 通用 normalize 与默认设置
+- 词库/单词归一化（`getWordsFromGlobal`、`getWordbooksFromGlobal`、`normalizeWordObject`）
 
 ### `js/storage.js`
 `localStorage` 读写封装，暴露 `window.A4Storage`：

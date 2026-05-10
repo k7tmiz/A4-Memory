@@ -56,11 +56,13 @@ A4-Memory/
 │   ├── settings.js        # 设置控制器
 │   ├── speech.js          # 语音合成
 │   ├── storage.js         # localStorage 封装
+│   ├── updater.js         # 版本更新检测
 │   └── utils.js           # 下载工具
 ├── src-tauri/             # Tauri 桌面端（Rust）
 ├── scripts/               # 构建脚本
 ├── .github/workflows/     # CI / 自动发布
-├── package.json           # Node 依赖（Vite + Tauri CLI）
+├── eslint.config.mjs      # ESLint 代码规范
+├── package.json           # Node 依赖（Vite + Tauri CLI + ESLint）
 └── docs/                  # 文档
 ```
 
@@ -96,6 +98,8 @@ cd A4-Memory
 python3 -m http.server 8080
 # 或使用 Vite dev server（支持热更新）：
 npm run dev
+# 代码检查：
+npm run lint
 ```
 
 打开：http://localhost:8080/ 或 http://localhost:5173/

@@ -3,7 +3,7 @@
 
   function stripSensitive(state) {
     if (!state || typeof state !== "object") return state
-    var stripped = JSON.parse(JSON.stringify(state))
+    const stripped = JSON.parse(JSON.stringify(state))
     if (stripped.aiConfig && typeof stripped.aiConfig === "object") {
       stripped.aiConfig.apiKey = ""
     }
@@ -18,7 +18,7 @@
       if (!parsed || typeof parsed !== "object") return null
       // Clean up API key that may have been persisted by older versions
       return stripSensitive(parsed)
-    } catch (e) {
+    } catch {
       return null
     }
   }
@@ -26,11 +26,11 @@
   function saveState(state) {
     try {
       // Never persist sensitive fields to localStorage
-      var safe = JSON.parse(JSON.stringify(state))
+      const safe = JSON.parse(JSON.stringify(state))
       stripSensitive(safe)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(safe))
       return true
-    } catch (e) {
+    } catch {
       return false
     }
   }
