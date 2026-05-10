@@ -183,16 +183,26 @@ jobs:
         run: npx tauri android build --apk
 
       - name: Sign APK
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          # Generate a debug keystore
-          keytool -genkey -v \
-            -keystore /tmp/debug.jks \
-            -alias a4memory \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
-            -dname "CN=A4 Memory, OU=Dev, O=k7tmiz, L=Unknown, ST=Unknown, C=US"
+          # Use persistent keystore if available, otherwise generate a temporary one
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/release.jks
+            KS=/tmp/release.jks
+            echo "✓ Using persistent release keystore"
+          else
+            keytool -genkey -v \
+              -keystore /tmp/debug.jks \
+              -alias a4memory \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass android -keypass android \
+              -dname "CN=A4 Memory, OU=Dev, O=k7tmiz, L=Unknown, ST=Unknown, C=US"
+            KS=/tmp/debug.jks
+            echo "⚠ No ANDROID_KEYSTORE_BASE64 secret — using temporary keystore (won't survive reinstall)"
+          fi
 
-          # Find debug APK
+          # Find APK
           UNSIGNED=$(find src-tauri/gen/android -name "*debug*.apk" 2>/dev/null | head -1)
           if [ -z "$UNSIGNED" ]; then
             UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
@@ -202,7 +212,7 @@ jobs:
           # Sign with apksigner (auto-detect version)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
           $APKSIGNER sign \
-            --ks /tmp/debug.jks \
+            --ks "$KS" \
             --ks-pass pass:android \
             --key-pass pass:android \
             --out "$SIGNED" "$UNSIGNED"
