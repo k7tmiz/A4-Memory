@@ -66,11 +66,7 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - Android 固定签名，后续版本可直接覆盖安装，无需卸载旧版
-            - PDF 导出改为页内全屏浮层：支持滑动翻页、键盘方向键，兼容 Android WebView
-            - 修复手机端显示释义时翻译文字比单词还大
-            - 修复设置界面版本号始终显示旧版本的问题
-            - 主页使用说明新增「下载桌面/安卓版」入口
+            - 修复若干问题，优化用户体验
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
@@ -229,12 +225,16 @@ jobs:
   finalize-release:
     needs: build-android
     runs-on: ubuntu-latest
+    env:
+      AI_KEY: ${{ secrets.RELEASE_AI_KEY }}
+      AI_BASE_URL: ${{ secrets.RELEASE_AI_BASE_URL || 'https://api.deepseek.com/v1' }}
+      AI_MODEL: ${{ secrets.RELEASE_AI_MODEL || 'deepseek-chat' }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Append commit log to release notes
+      - name: Generate release overview with AI
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -242,20 +242,59 @@ jobs:
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
           if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log --oneline --no-merges "$PREV_TAG..HEAD" | sed 's/^/- /')
+            COMMITS=$(git log --no-merges --format="%s" "$PREV_TAG..HEAD")
           else
-            COMMITS=$(git log --oneline --no-merges | sed 's/^/- /')
+            COMMITS=$(git log --no-merges --format="%s")
           fi
 
           gh release view "$TAG" --json body -q '.body' > /tmp/release-body.md
 
+          if [ -n "$AI_KEY" ] && [ -n "$COMMITS" ]; then
+            echo "→ Generating AI overview..."
+            PROMPT=$(cat <<PROMPT
+          你是 A4 Memory 项目的发布助理。根据以下提交记录，用中文生成一份简洁的版本更新概述（3-8 条要点）。
+
+          规则：
+          - 每条以 "- " 开头
+          - 面向普通用户，避免技术黑话
+          - 同类改动合并为一条
+          - 只输出要点列表，不要任何前言后缀
+
+          提交记录：
+          ${COMMITS}
+          PROMPT
+            )
+
+            RESP=$(curl -s https://api.deepseek.com/v1/chat/completions \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${AI_KEY}" \
+              -d "$(node -e "console.log(JSON.stringify({model:process.env.AI_MODEL,messages:[{role:'user',content:process.env.PROMPT}],max_tokens:500,temperature:0.3}))" \
+                PROMPT="$PROMPT" AI_MODEL="$AI_MODEL")")
+
+            OVERVIEW=$(echo "$RESP" | node -e "try{process.stdout.write(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).choices[0].message.content.trim())}catch(e){process.exit(1)}" 2>/dev/null)
+
+            if [ -n "$OVERVIEW" ]; then
+              # Replace the 本次更新 section
+              node -e "
+                const fs=require('fs');
+                let body=fs.readFileSync('/tmp/release-body.md','utf8');
+                const overview=process.env.OVERVIEW;
+                body=body.replace(/### 本次更新\n[\\s\\S]*?(?=### )/, '### 本次更新\n' + overview + '\n\n');
+                fs.writeFileSync('/tmp/release-body.md', body);
+              " OVERVIEW="$OVERVIEW"
+              echo "✓ AI overview generated"
+            fi
+          fi
+
+          # Append commit log
           if [ -n "$COMMITS" ]; then
+            FORMATTED=$(echo "$COMMITS" | sed 's/^/- /')
             {
               echo ""
               echo "<details>"
               echo "<summary>提交记录</summary>"
               echo ""
-              echo "$COMMITS"
+              echo "$FORMATTED"
               echo "</details>"
             } >> /tmp/release-body.md
           fi
