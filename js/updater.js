@@ -109,11 +109,15 @@
     // Download button: open in system browser
     downloadBtn.addEventListener("click", function () {
       var url = modal._releaseUrl || ("https://github.com/" + REPO + "/releases/latest")
-      var a = document.createElement("a")
-      a.href = url
-      a.target = "_blank"
-      a.rel = "noopener"
-      a.click()
+      if (window.__TAURI_INTERNALS__) {
+        import("@tauri-apps/plugin-shell").then(function (shell) {
+          shell.open(url)
+        }).catch(function () {
+          window.open(url, "_blank")
+        })
+      } else {
+        window.open(url, "_blank")
+      }
       dismissModal()
     })
 
@@ -160,9 +164,20 @@
       footer.appendChild(document.createElement("br"))
       var a = document.createElement("a")
       a.href = downloadUrl
-      a.target = "_blank"
-      a.rel = "noreferrer"
       a.textContent = downloadUrl
+      a.style.cursor = "pointer"
+      a.addEventListener("click", function (e) {
+        e.preventDefault()
+        if (window.__TAURI_INTERNALS__) {
+          import("@tauri-apps/plugin-shell").then(function (shell) {
+            shell.open(downloadUrl)
+          }).catch(function () {
+            window.open(downloadUrl, "_blank")
+          })
+        } else {
+          window.open(downloadUrl, "_blank")
+        }
+      })
       footer.appendChild(a)
       bodyEl.appendChild(footer)
     }
