@@ -3,7 +3,7 @@
   var REPO = "k7tmiz/A4-Memory"
   var CACHE_KEY = "a4-memory:update-check:v1"
   var SKIP_KEY = "a4-memory:update-skip:v1"
-  var CACHE_TTL = 24 * 60 * 60 * 1000 // 24h
+  var CACHE_TTL = 24 * 60 * 60 * 1000 // 24h — throttle re-showing modal after user already saw it
   var CHECK_DELAY = 3000
   var modal = null
 
@@ -199,32 +199,30 @@
         var sameVersionRereleased = false
 
         if (!isNewer(latest, current)) {
-          // Same or older version — but check if release was re-published
           if (cached && cached.releaseId && releaseId !== cached.releaseId && latest && current &&
               latest.major === current.major && latest.minor === current.minor && latest.patch === current.patch) {
             sameVersionRereleased = true
           } else {
-            // Cache the check and bail
-            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), releaseId: releaseId })) } catch (_) {}
+            // No update — don't cache so next app start re-checks
             return
           }
         }
 
-        // Cache the check
+        // Cache to throttle re-showing the same version modal
         try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), releaseId: releaseId })) } catch (_) {}
 
-        // Check if user skipped this version
         var skipped = ""
         try { skipped = localStorage.getItem(SKIP_KEY) || "" } catch (_) {}
         if (skipped === tag && !sameVersionRereleased) return
 
-        // Don't show for prereleases
         if (release.prerelease) return
 
         showModal(tag, release.body || "", release.html_url || "")
       })
       .catch(function () {
-        // Silently fail — no network or GitHub down
+        try {
+          window.dispatchEvent(new CustomEvent("a4-update-check-failed"))
+        } catch (e) {}
       })
   }
 

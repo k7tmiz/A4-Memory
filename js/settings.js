@@ -2261,11 +2261,18 @@
       dom.importBackupFile.click()
     })
 
+    var updateCheckFailed = false
+    window.addEventListener("a4-update-check-failed", () => {
+      updateCheckFailed = true
+      setUpdateStatus("检查失败：网络错误或 GitHub API 不可用")
+    })
+
     dom.checkUpdateBtn?.addEventListener("click", () => {
       if (!window.A4Updater) {
         setUpdateStatus("更新检测未加载")
         return
       }
+      updateCheckFailed = false
       setUpdateStatus("正在检查...")
       var cached = null
       try { cached = JSON.parse(localStorage.getItem("a4-memory:update-check:v1") || "null") } catch (_) {}
@@ -2275,6 +2282,7 @@
       window.A4Updater.checkUpdate()
       // Restore skip key after check completes (async)
       setTimeout(() => {
+        if (updateCheckFailed) return
         var el = document.getElementById("updateModal")
         if (el && !el.classList.contains("hidden")) {
           setUpdateStatus("")
