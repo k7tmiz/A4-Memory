@@ -1,13 +1,22 @@
 ;(function () {
   const STORAGE_KEY = "a4-memory:v1"
 
+  function stripSensitive(state) {
+    if (!state || typeof state !== "object") return state
+    if (state.aiConfig && typeof state.aiConfig === "object") {
+      state.aiConfig.apiKey = ""
+    }
+    return state
+  }
+
   function loadState() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return null
       const parsed = JSON.parse(raw)
       if (!parsed || typeof parsed !== "object") return null
-      return parsed
+      // Clean up API key that may have been persisted by older versions
+      return stripSensitive(parsed)
     } catch (e) {
       return null
     }
@@ -15,7 +24,10 @@
 
   function saveState(state) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      // Never persist sensitive fields to localStorage
+      var safe = JSON.parse(JSON.stringify(state))
+      stripSensitive(safe)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(safe))
       return true
     } catch (e) {
       return false

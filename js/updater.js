@@ -139,12 +139,29 @@
     var downloadUrl = releaseUrl || ("https://github.com/" + REPO + "/releases/latest")
     var bodyEl = document.getElementById("updateBody")
     if (bodyEl) {
+      bodyEl.innerHTML = ""
       var text = stripHtml(bodyHtml || "")
       if (text.length > 300) text = text.slice(0, 300) + "..."
-      var parts = []
-      if (text) parts.push(text.replace(/\n/g, "<br>"))
-      parts.push('<div style="margin-top:10px;font-size:13px;color:var(--muted);word-break:break-all">下载地址：<br><a href="' + downloadUrl + '" target="_blank" rel="noreferrer">' + downloadUrl + '</a></div>')
-      bodyEl.innerHTML = parts.join("")
+      if (text) {
+        var lines = text.split("\n")
+        var p = document.createElement("p")
+        for (var i = 0; i < lines.length; i++) {
+          if (i > 0) p.appendChild(document.createElement("br"))
+          p.appendChild(document.createTextNode(lines[i]))
+        }
+        bodyEl.appendChild(p)
+      }
+      var footer = document.createElement("div")
+      footer.style.cssText = "margin-top:10px;font-size:13px;color:var(--muted);word-break:break-all"
+      footer.appendChild(document.createTextNode("下载地址："))
+      footer.appendChild(document.createElement("br"))
+      var a = document.createElement("a")
+      a.href = downloadUrl
+      a.target = "_blank"
+      a.rel = "noreferrer"
+      a.textContent = downloadUrl
+      footer.appendChild(a)
+      bodyEl.appendChild(footer)
     }
 
     if (window.A4Common && window.A4Common.setModalVisible) {
@@ -156,14 +173,12 @@
   }
 
   function checkUpdate() {
-    // Check cache
-    try {
-      var cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null")
-      if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL) {
-        // Still fresh, don't check again
-        return
-      }
-    } catch (_) {}
+    var cached = null
+    try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null") } catch (_) {}
+
+    if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL) {
+      return
+    }
 
     var url = "https://api.github.com/repos/" + REPO + "/releases/latest"
     fetch(url, { headers: { Accept: "application/vnd.github+json" } })
@@ -172,20 +187,33 @@
         return res.json()
       })
       .then(function (release) {
-        // Cache the check timestamp
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now() })) } catch (_) {}
-
         var tag = (release.tag_name || "").trim()
         if (!tag) return
 
+        var releaseId = Number(release.id) || 0
         var latest = parseSemver(tag)
         var current = parseSemver(APP_VERSION)
-        if (!isNewer(latest, current)) return
+        var sameVersionRereleased = false
+
+        if (!isNewer(latest, current)) {
+          // Same or older version — but check if release was re-published
+          if (cached && cached.releaseId && releaseId !== cached.releaseId && latest && current &&
+              latest.major === current.major && latest.minor === current.minor && latest.patch === current.patch) {
+            sameVersionRereleased = true
+          } else {
+            // Cache the check and bail
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), releaseId: releaseId })) } catch (_) {}
+            return
+          }
+        }
+
+        // Cache the check
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), releaseId: releaseId })) } catch (_) {}
 
         // Check if user skipped this version
         var skipped = ""
         try { skipped = localStorage.getItem(SKIP_KEY) || "" } catch (_) {}
-        if (skipped === tag) return
+        if (skipped === tag && !sameVersionRereleased) return
 
         // Don't show for prereleases
         if (release.prerelease) return
