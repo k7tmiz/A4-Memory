@@ -29,7 +29,7 @@ const { normalizeThemeMode, normalizeAccent, normalizeVoiceMode, normalizePronun
 const { sanitizeFilename, downloadJsonFile } = window.A4Utils
 
 function makeId() {
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  return `${Date.now()}-${crypto.randomUUID()}`
 }
 
 function getWordsFromGlobal() {

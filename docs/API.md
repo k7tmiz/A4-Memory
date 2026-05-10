@@ -126,7 +126,7 @@ POST /api/email/register-with-code
 | `email` | 必填，合法邮箱 |
 | `code` | 必填，6 位验证码 |
 | `username` | 必填，3-32 字符 |
-| `password` | 必填，最少 6 字符 |
+| `password` | 必填，最少 8 字符 |
 
 **成功响应**（200）：
 ```json

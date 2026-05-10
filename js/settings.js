@@ -48,7 +48,7 @@
   }
 
   function isValidPassword(value) {
-    return String(value || "").length >= 6
+    return String(value || "").length >= 8
   }
 
   function formatAccountError(error) {
@@ -62,7 +62,7 @@
     if (/发送验证码过于频繁/i.test(text)) return "发送过于频繁，请稍后再试"
     if (/failed to send email/i.test(text)) return "邮件发送失败，请稍后重试"
     if (/valid email required/i.test(text)) return "请输入有效邮箱"
-    if (/password must be at least 6 characters/i.test(text)) return "密码至少需要 6 位"
+    if (/password must be at least 8 characters/i.test(text)) return "密码至少需要 8 位"
     if (/username must be 3-32 characters/i.test(text)) return "用户名长度需为 3-32 个字符"
     if (/invalid email or password/i.test(text)) return "邮箱或密码错误"
     if (/invalid username or password/i.test(text)) return "邮箱或密码错误"
@@ -187,7 +187,7 @@
     const roundsRaw = Array.isArray(next.rounds) ? next.rounds : []
     next.rounds = roundsRaw
       .map((r) => {
-        const id = String(r?.id || "").trim() || String(Date.now() + Math.random()).replace(".", "")
+        const id = String(r?.id || "").trim() || `${Date.now()}-${crypto.randomUUID()}`
         const items = Array.isArray(r?.items) ? r.items.map(normalizePlacedItem).filter(Boolean) : []
         const startedAt = String(r?.startedAt || "").trim() || new Date().toISOString()
         const finishedAt = String(r?.finishedAt || "").trim()
@@ -204,7 +204,7 @@
     const booksRaw = Array.isArray(next.customWordbooks) ? next.customWordbooks : []
     next.customWordbooks = booksRaw
       .map((b) => {
-        const id = String(b?.id || "").trim() || `import-${String(Date.now() + Math.random()).replace(".", "")}`
+        const id = String(b?.id || "").trim() || `import-${Date.now()}-${crypto.randomUUID()}`
         const name = String(b?.name || "").trim()
         if (!name) return null
         const language = String(b?.language || "").trim()
@@ -236,6 +236,7 @@
   function buildChatCompletionsUrl(baseUrl) {
     const b = String(baseUrl || "").trim().replace(/\/+$/, "")
     if (!b) return ""
+    if (!b.startsWith("https://")) return ""
     if (b.includes("/chat/completions")) return b
     if (b.endsWith("/openai") || b.includes("/openai/")) return `${b}/chat/completions`
     if (b.endsWith("/v1")) return `${b}/chat/completions`
@@ -1048,7 +1049,7 @@
     function getPasswordError(options = {}) {
       const value = dom.cloudPasswordInput?.value || ""
       if (!value) return options.required ? "请输入密码" : ""
-      return isValidPassword(value) ? "" : "密码至少需要 6 位"
+      return isValidPassword(value) ? "" : "密码至少需要 8 位"
     }
 
     function getLoginEmailError(options = {}) {
@@ -1060,7 +1061,7 @@
     function getLoginPasswordError(options = {}) {
       const value = dom.cloudLoginPasswordInput?.value || ""
       if (!value) return options.required ? "请输入密码" : ""
-      return isValidPassword(value) ? "" : "密码至少需要 6 位"
+      return isValidPassword(value) ? "" : "密码至少需要 8 位"
     }
 
     function getResetEmailError(options = {}) {
@@ -1078,7 +1079,7 @@
     function getResetPasswordError(options = {}) {
       const value = dom.cloudResetPasswordInput?.value || ""
       if (!value) return options.required ? "请输入新密码" : ""
-      return isValidPassword(value) ? "" : "新密码至少需要 6 位"
+      return isValidPassword(value) ? "" : "新密码至少需要 8 位"
     }
 
     function updateRegisterEmailHint(options = {}) {
@@ -2221,7 +2222,7 @@
 
     aiDom.confirmBtn?.addEventListener("click", () => {
       if (!pendingAiBook) return
-      const id = `ai-${Date.now()}-${Math.random().toString(16).slice(2)}`
+      const id = `ai-${Date.now()}-${crypto.randomUUID()}`
       const wordbook = {
         id,
         name: pendingAiBook.name,
@@ -2289,6 +2290,11 @@
     dom.importBackupFile?.addEventListener("change", async () => {
       const file = dom.importBackupFile.files && dom.importBackupFile.files[0]
       if (!file) return
+      const MAX_SIZE = 10 * 1024 * 1024
+      if (file.size > MAX_SIZE) {
+        window.alert("导入失败：文件过大（上限 10 MB）。")
+        return
+      }
       let rawText = ""
       try {
         rawText = await file.text()
@@ -2563,9 +2569,9 @@
             accountFieldTouched.username = true
             setFieldHint(dom.cloudUsernameInput, dom.cloudUsernameHint, "用户名已存在")
           }
-          if (/password must be at least 6 characters/i.test(errorText)) {
+          if (/password must be at least 8 characters/i.test(errorText)) {
             accountFieldTouched.password = true
-            setFieldHint(dom.cloudPasswordInput, dom.cloudPasswordHint, "密码至少需要 6 位")
+            setFieldHint(dom.cloudPasswordInput, dom.cloudPasswordHint, "密码至少需要 8 位")
           }
           setAccountStatus("注册失败：" + formatAccountError(result?.error), "error")
         }
@@ -2672,9 +2678,9 @@
             accountFieldTouched.resetCode = true
             setFieldHint(dom.cloudResetCodeInput, dom.cloudResetCodeHint, formatAccountError(errorText))
           }
-          if (/password must be at least 6 characters/i.test(errorText)) {
+          if (/password must be at least 8 characters/i.test(errorText)) {
             accountFieldTouched.resetPassword = true
-            setFieldHint(dom.cloudResetPasswordInput, dom.cloudResetPasswordHint, "新密码至少需要 6 位")
+            setFieldHint(dom.cloudResetPasswordInput, dom.cloudResetPasswordHint, "新密码至少需要 8 位")
           }
           setAccountStatus("重置失败：" + formatAccountError(result?.error), "error")
         }

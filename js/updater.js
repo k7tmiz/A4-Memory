@@ -21,9 +21,12 @@
   }
 
   function stripHtml(html) {
-    var div = document.createElement("div")
-    div.innerHTML = html
-    return (div.textContent || div.innerText || "").trim()
+    try {
+      var doc = new DOMParser().parseFromString(html, "text/html")
+      return (doc.body.textContent || doc.body.innerText || "").trim()
+    } catch (e) {
+      return String(html || "").replace(/<[^>]*>/g, "").trim()
+    }
   }
 
   function buildModal() {
