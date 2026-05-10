@@ -95,6 +95,9 @@ jobs:
 
             A4 纸随机排版背单词，打破列表式背书模式。
 
+            ### 本次更新
+            - 修复若干问题，优化用户体验
+
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
             - 内置 CET4 / CET6 / 西班牙语词书，支持自定义导入
@@ -265,19 +268,25 @@ jobs:
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
           if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log --no-merges --format="- %s" "$PREV_TAG..HEAD")
+            COMMITS=$(git log --no-merges --format="- %s" "$PREV_TAG..HEAD" | sed 's/^\(- \)\(feat\|fix\|docs\|ci\|chore\|refactor\|style\|test\|perf\|build\|revert\): /\1/')
           else
-            COMMITS=$(git log --no-merges --format="- %s")
+            COMMITS=$(git log --no-merges --format="- %s" | sed 's/^\(- \)\(feat\|fix\|docs\|ci\|chore\|refactor\|style\|test\|perf\|build\|revert\): /\1/')
           fi
 
           gh release view "$TAG" --json body -q '.body' > /tmp/release-body.md
 
           if [ -n "$COMMITS" ]; then
-            {
-              echo ""
-              echo "### 本次更新"
-              echo "$COMMITS"
-            } >> /tmp/release-body.md
+            export COMMITS
+            node -e "
+              const fs = require('fs');
+              const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
+              const commits = process.env.COMMITS;
+              const updated = body.replace(
+                /### 本次更新[\s\S]*?(?=### )/,
+                '### 本次更新\n' + commits + '\n\n'
+              );
+              fs.writeFileSync('/tmp/release-body.md', updated);
+            "
           fi
 
           gh release edit "$TAG" --notes-file /tmp/release-body.md --draft=false
