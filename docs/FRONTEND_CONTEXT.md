@@ -274,7 +274,7 @@ window.A4Lookup = {
   voiceMode: "auto" | "manual",
   voiceURI: string,
 
-  // AI 配置
+  // AI 配置（apiKey 仅内存保留，不写入 localStorage）
   aiConfig: { provider, baseUrl, apiKey, model },
 
   // 查词设置

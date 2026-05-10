@@ -118,7 +118,7 @@ npm run dev
 - 复习设置：`reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
 - 发音设置：`pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`
 - 词书：`selectedWordbookId`, `customWordbooks`
-- AI 配置：`aiConfig = { provider, baseUrl, apiKey, model }`
+- AI 配置：`aiConfig = { provider, baseUrl, apiKey, model }`（`apiKey` 仅内存保留，不持久化）
 - 查词：`lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
 
 ## 云同步（可选，需私有模块）
