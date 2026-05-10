@@ -16,14 +16,14 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete existing release for this tag
+      - name: Delete existing release (draft or published) for this tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
           if gh release view "$TAG" &>/dev/null; then
             gh release delete "$TAG" --yes --cleanup-tag
-            echo "✓ Deleted old release for $TAG"
+            echo "✓ Deleted old release (draft or published) for $TAG"
           else
             echo "No existing release for $TAG"
           fi
