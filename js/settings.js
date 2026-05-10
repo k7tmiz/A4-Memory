@@ -586,7 +586,7 @@
                 <div class="form-row">
                   <div class="form-label">密码</div>
                   <div class="form-control form-control-stack">
-                    <input id="cloudPasswordInput" class="text-input" type="password" minlength="6" placeholder="注册密码" autocomplete="new-password" />
+                    <input id="cloudPasswordInput" class="text-input" type="password" minlength="8" placeholder="注册密码" autocomplete="new-password" />
                     <div id="cloudPasswordHint" class="form-help field-help hidden"></div>
                   </div>
                 </div>
@@ -606,7 +606,7 @@
                 <div class="form-row">
                   <div class="form-label">密码</div>
                   <div class="form-control form-control-stack">
-                    <input id="cloudLoginPasswordInput" class="text-input" type="password" minlength="6" placeholder="输入密码" autocomplete="current-password" />
+                    <input id="cloudLoginPasswordInput" class="text-input" type="password" minlength="8" placeholder="输入密码" autocomplete="current-password" />
                     <div id="cloudLoginPasswordHint" class="form-help field-help hidden"></div>
                   </div>
                 </div>
@@ -636,7 +636,7 @@
                 <div class="form-row">
                   <div class="form-label">新密码</div>
                   <div class="form-control form-control-stack">
-                    <input id="cloudResetPasswordInput" class="text-input" type="password" minlength="6" placeholder="至少 6 位" autocomplete="new-password" />
+                    <input id="cloudResetPasswordInput" class="text-input" type="password" minlength="8" placeholder="至少 8 位" autocomplete="new-password" />
                     <div id="cloudResetPasswordHint" class="form-help field-help hidden"></div>
                   </div>
                 </div>
