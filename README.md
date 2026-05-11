@@ -124,7 +124,7 @@ npm run lint
 - 复习设置：`reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
 - 发音设置：`pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`
 - 词书：`selectedWordbookId`, `customWordbooks`
-- AI 配置：`aiConfig = { provider, baseUrl, apiKey, model }`（`apiKey` 仅内存保留，不持久化）
+- AI 配置：`aiConfig = { provider, baseUrl, apiKey, model }`（`apiKey` 仅内存保留，不写入 localStorage、备份文件或云端状态）
 - 查词：`lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
 
 ## 云同步（可选，需私有模块）
@@ -132,6 +132,8 @@ npm run lint
 云同步功能依赖后端 API 和 `js/cloud.js` 私有模块。启用后支持：
 - 用户登录与邮箱验证码注册（账号在服务端独立管理）
 - 登录后显示云端备份入口，支持学习状态上传/下载（多设备同步）
+- 从云端恢复会覆盖当前浏览器本地学习数据，前端会先要求确认；建议恢复前先导出完整备份
+- 云同步只保存学习状态与非敏感设置，不上传 AI API Key
 - 登录云账号后会自动接收系统公告；同一账号每条公告只会弹出一次，最新公告显示在最上方
 
 如需使用，请联系作者获取 `cloud.js`，放入 `js/` 目录即可。无需修改 HTML，页面会自动加载。

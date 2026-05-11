@@ -229,7 +229,7 @@ window.A4Updater = {
 ### 设置弹窗分区
 
 1. **账号** — 默认主入口为登录；支持邮箱验证码注册、重置密码、登录状态卡片、登出
-2. **云备份** — 仅在已登录时显示上传/下载按钮与同步状态
+2. **云备份** — 仅在已登录时显示上传/下载按钮与同步状态；恢复本机会覆盖当前本地数据，执行前必须确认
 3. **外观** — 主题模式（auto / light / dark）
 4. **学习目标** — 每日轮次目标、每日单词目标
 5. **学习设置** — 每轮上限（20–30）
@@ -301,7 +301,7 @@ window.A4Updater = {
   voiceMode: "auto" | "manual",
   voiceURI: string,
 
-  // AI 配置（apiKey 仅内存保留，不写入 localStorage）
+  // AI 配置（apiKey 仅内存保留，不写入 localStorage / 备份文件 / 云端状态）
   aiConfig: { provider, baseUrl, apiKey, model },
 
   // 查词设置
@@ -332,5 +332,5 @@ window.A4Updater = {
 
 - 旧数据兼容：`item.pageIndex` 缺失时按 `0` 处理；`round.type` 缺失时按 `normal` 处理
 - `currentPageIndex` 是运行态，不写入 `localStorage`；刷新后默认回到当前轮第 1 页
-- 备份导入（`settings.js` 的 `normalizeImportedState`）当前实现不会保留：`round.type`、`round.language`、`item.pageIndex`
+- 备份导入（`settings.js` 的 `normalizeImportedState`）当前实现不会保留：`round.type`、`round.language`、`item.pageIndex`、`aiConfig.apiKey`
 - 记录页监听 `storage` 事件，支持多标签页同步刷新显示

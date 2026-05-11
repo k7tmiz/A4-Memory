@@ -123,7 +123,7 @@ Open: http://localhost:8080/ or http://localhost:5173/
 - Review: `reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
 - Pronunciation: `pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`
 - Wordbooks: `selectedWordbookId`, `customWordbooks`
-- AI config: `aiConfig = { provider, baseUrl, apiKey, model }` (`apiKey` stays in memory, not persisted)
+- AI config: `aiConfig = { provider, baseUrl, apiKey, model }` (`apiKey` stays in memory and is not written to localStorage, backup files, or cloud state)
 - Lookup: `lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
 
 ## Cloud Sync (Optional, requires private module)
@@ -131,6 +131,8 @@ Open: http://localhost:8080/ or http://localhost:5173/
 Cloud sync depends on the backend API and the `js/cloud.js` private module. When enabled:
 - User registration/login (account managed server-side)
 - Learning state upload/download (multi-device sync)
+- Restoring from cloud overwrites the current browser's local learning data and requires confirmation first; export a full backup before restoring if needed
+- Cloud sync stores learning state and non-sensitive settings only; AI API keys are never uploaded
 - Cloud-logged-in users auto-receive system announcements; each announcement pops once per account, latest shown at top
 
 To use, contact the author to obtain `cloud.js`, place it in the `js/` directory. No HTML changes needed — the page loads it automatically.
