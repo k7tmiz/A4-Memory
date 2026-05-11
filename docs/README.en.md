@@ -73,7 +73,7 @@ Desktop (macOS / Windows / Linux) and Android APK are available, built with Taur
 
 Download prebuilt installers from [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) — includes full cloud sync.
 
-The in-app "Check for updates" flow reads the latest GitHub Release and prefers the matching installer for the current platform: `.apk` on Android, `.dmg` on macOS, `.msi` / `.exe` on Windows, and `.AppImage` / `.deb` on Linux. Android still requires the user to confirm download and installation in the system UI.
+The in-app "Check for updates" flow reads the latest GitHub Release and prefers the matching installer for the current platform: `a4-memory-v*-android.apk` on Android, `.dmg` on macOS, `.msi` / `.exe` on Windows, and `.AppImage` / `.deb` on Linux. Android still requires the user to confirm download and installation in the system UI.
 
 ```bash
 # Install dependencies

@@ -74,7 +74,7 @@ A4-Memory/
 
 预编译安装包从 [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) 下载，含完整云同步功能。
 
-应用内"检查更新"会读取最新 GitHub Release，并按当前平台优先打开对应安装包：Android 打开 `.apk`，macOS 打开 `.dmg`，Windows 打开 `.msi` / `.exe`，Linux 打开 `.AppImage` / `.deb`。Android 仍需按系统提示确认下载和安装。
+应用内"检查更新"会读取最新 GitHub Release，并按当前平台优先打开对应安装包：Android 打开 `a4-memory-v*-android.apk`，macOS 打开 `.dmg`，Windows 打开 `.msi` / `.exe`，Linux 打开 `.AppImage` / `.deb`。Android 仍需按系统提示确认下载和安装。
 
 ```bash
 # 安装依赖

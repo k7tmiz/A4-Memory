@@ -120,7 +120,7 @@ jobs:
             | macOS (Apple Silicon) | `A4 Memory_*_aarch64.dmg` |
             | Windows (x64) | `A4 Memory_*_x64.exe` |
             | Linux | `A4 Memory_*_amd64.deb` / `.AppImage` |
-            | Android | `A4 Memory_*_android.apk` |
+            | Android | `a4-memory-v*-android.apk` |
 
             ### 安装
             - **macOS**: 打开 `.dmg` → 拖入 Applications → 终端运行 `xattr -cr /Applications/A4\ Memory.app` 移除隔离标记
@@ -273,7 +273,7 @@ jobs:
           if [ -z "$UNSIGNED" ]; then
             UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
           fi
-          SIGNED="A4 Memory_${{ github.ref_name }}_android.apk"
+          SIGNED="a4-memory-${{ github.ref_name }}-android.apk"
 
           # Sign with apksigner (auto-detect version)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
@@ -287,7 +287,7 @@ jobs:
 
       - name: Upload APK to Release
         run: |
-          APK="A4 Memory_${{ github.ref_name }}_android.apk"
+          APK="a4-memory-${{ github.ref_name }}-android.apk"
           gh release upload ${{ github.ref_name }} "$APK" --clobber
           echo "✓ APK uploaded"
         env:

@@ -1,5 +1,5 @@
 ;(function () {
-  const APP_VERSION = "1.0.8"
+  const APP_VERSION = "1.0.9"
   const REPO = "k7tmiz/A4-Memory"
   const CACHE_KEY = "a4-memory:update-check:v1"
   const SKIP_KEY = "a4-memory:update-skip:v1"
@@ -32,10 +32,12 @@
   function getPlatformKind() {
     const ua = String(navigator.userAgent || "")
     const platform = String(navigator.platform || "")
+    const uaPlatform = String(navigator.userAgentData?.platform || "")
+    const text = [ua, platform, uaPlatform].join(" ")
     if (/Android/i.test(ua)) return "android"
-    if (/Win/i.test(platform) || /Windows/i.test(ua)) return "windows"
-    if (/Mac/i.test(platform) || /Macintosh|Mac OS X/i.test(ua)) return "macos"
-    if (/Linux/i.test(platform) || /Linux/i.test(ua)) return "linux"
+    if (/Win/i.test(text) || /Windows/i.test(text)) return "windows"
+    if (/Mac/i.test(text) || /Macintosh|Mac OS X/i.test(text)) return "macos"
+    if (/Linux/i.test(text)) return "linux"
     return "unknown"
   }
 
@@ -44,6 +46,7 @@
     const url = String(asset?.browser_download_url || "").trim()
     if (!url) return false
     if (name.endsWith(".sig") || name.endsWith(".sha256") || name.endsWith(".json")) return false
+    if (name.endsWith(".app.tar.gz") || name.endsWith(".tar.gz") || name.endsWith(".zip")) return false
     return true
   }
 
@@ -52,17 +55,21 @@
     const assets = Array.isArray(release?.assets) ? release.assets.filter(isDownloadAsset) : []
     const platform = getPlatformKind()
 
-    const match = (predicate) => {
-      const asset = assets.find((item) => predicate(String(item?.name || "").toLowerCase()))
-      return String(asset?.browser_download_url || "").trim()
+    const match = (patterns) => {
+      for (const pattern of patterns) {
+        const asset = assets.find((item) => pattern.test(String(item?.name || "").toLowerCase()))
+        const url = String(asset?.browser_download_url || "").trim()
+        if (url) return url
+      }
+      return ""
     }
 
-    if (platform === "android") return match((name) => name.endsWith(".apk")) || fallback
-    if (platform === "macos") return match((name) => name.endsWith(".dmg")) || fallback
-    if (platform === "windows") return match((name) => name.endsWith(".msi") || name.endsWith(".exe")) || fallback
-    if (platform === "linux") return match((name) => name.endsWith(".appimage") || name.endsWith(".deb")) || fallback
+    if (platform === "android") return match([/a4-memory-v[\d.]+-android\.apk$/, /android\.apk$/, /\.apk$/]) || fallback
+    if (platform === "macos") return match([/_aarch64\.dmg$/, /\.dmg$/]) || fallback
+    if (platform === "windows") return match([/_x64-setup\.exe$/, /_x64.*\.msi$/, /\.exe$/, /\.msi$/]) || fallback
+    if (platform === "linux") return match([/_amd64\.appimage$/, /_amd64\.deb$/, /\.appimage$/, /\.deb$/]) || fallback
 
-    return String(assets[0]?.browser_download_url || "").trim() || fallback
+    return fallback
   }
 
   function openExternalUrl(url) {
@@ -294,6 +301,7 @@
     APP_VERSION: APP_VERSION,
     isTauri: isTauri,
     openExternalUrl: openExternalUrl,
+    getPlatformKind: getPlatformKind,
     selectReleaseDownloadUrl: selectReleaseDownloadUrl,
   }
 })()
