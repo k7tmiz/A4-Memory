@@ -1897,14 +1897,20 @@ body.theme-dark .account-badge {
   box-sizing: border-box;
 }
 
+.pdf-preview-viewport {
+  position: relative;
+  flex: 0 0 auto;
+}
+
 #pdfPrintOverlay .a4-print-page {
-  width: min(calc(100vw - 24px), calc((100vh - 116px) * 210 / 297));
-  aspect-ratio: 210 / 297;
+  width: 794px;
+  height: 1123px;
   background: #ffffff;
   color: #0b1220;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
   overflow: hidden;
   flex: 0 0 auto;
+  transform-origin: top left;
 }
 
 #pdfPrintOverlay .a4-print-paper {

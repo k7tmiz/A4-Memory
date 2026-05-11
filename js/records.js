@@ -46,6 +46,8 @@
     const n = Math.round(Number(value) || 30)
     return Math.max(20, Math.min(30, n || 30))
   })
+  const PRINT_PREVIEW_WIDTH = 794
+  const PRINT_PREVIEW_HEIGHT = 1123
 
   function clearPrintPages() {
     const existing = document.getElementById("pdfPrintPages")
@@ -650,6 +652,9 @@
     // Preview area uses the same A4 DOM as the actual print output.
     const previewStage = document.createElement("div")
     previewStage.className = "pdf-preview-stage"
+    const previewViewport = document.createElement("div")
+    previewViewport.className = "pdf-preview-viewport"
+    previewStage.appendChild(previewViewport)
 
     // Bottom bar
     const bottomBar = document.createElement("div")
@@ -686,12 +691,30 @@
 
     // State
     let currentIdx = 0
+    function fitPreviewPage() {
+      const page = previewViewport.querySelector(".a4-print-page")
+      if (!page) return
+
+      const rect = previewStage.getBoundingClientRect()
+      const scale = Math.max(0.1, Math.min(
+        1,
+        (rect.width - 24) / PRINT_PREVIEW_WIDTH,
+        (rect.height - 24) / PRINT_PREVIEW_HEIGHT
+      ))
+      previewViewport.style.width = `${Math.round(PRINT_PREVIEW_WIDTH * scale)}px`
+      previewViewport.style.height = `${Math.round(PRINT_PREVIEW_HEIGHT * scale)}px`
+      page.style.transform = `scale(${scale})`
+    }
+
     function showPage(idx) {
       currentIdx = ((idx % pageInfos.length) + pageInfos.length) % pageInfos.length
       pageLabel.textContent = `${currentIdx + 1} / ${pageInfos.length}`
       const info = pageInfos[currentIdx]
-      previewStage.replaceChildren(createPrintPage(info))
+      previewViewport.replaceChildren(createPrintPage(info))
+      requestAnimationFrame(fitPreviewPage)
     }
+
+    window.addEventListener("resize", fitPreviewPage)
 
     prevBtn.addEventListener("click", () => showPage(currentIdx - 1))
     nextBtn.addEventListener("click", () => showPage(currentIdx + 1))
@@ -709,6 +732,7 @@
     // Fallback: use MutationObserver since 'remove' event isn't standard
     const observer = new MutationObserver(() => {
       if (!document.getElementById("pdfPrintOverlay")) {
+        window.removeEventListener("resize", fitPreviewPage)
         observer.disconnect()
       }
     })
