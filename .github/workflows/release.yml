@@ -309,28 +309,33 @@ jobs:
           PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^${TAG}$" | head -1)
 
           if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log --no-merges --format="%s" "$PREV_TAG..HEAD" \
-              | grep -vE '^(chore|ci|build):' \
-              | sed 's/^\(feat\|fix\|docs\|refactor\|style\|test\|perf\|revert\): //' \
-              | sed 's/^/- /')
+            COMMITS_RAW=$(git log --no-merges --format="%s" "$PREV_TAG..HEAD")
           else
-            COMMITS=$(git log --no-merges --format="%s" -20 \
-              | grep -vE '^(chore|ci|build):' \
-              | sed 's/^\(feat\|fix\|docs\|refactor\|style\|test\|perf\|revert\): //' \
-              | sed 's/^/- /')
-          fi
-
-          if [ -z "$COMMITS" ]; then
-            COMMITS="- 修复若干问题，优化用户体验"
+            COMMITS_RAW=$(git log --no-merges --format="%s" -20)
           fi
 
           gh release view "$TAG" --json body -q '.body' > /tmp/release-body.md
 
-          export COMMITS
+          export COMMITS_RAW
           node -e "
             const fs = require('fs');
             const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
-            const commits = process.env.COMMITS;
+            const translations = new Map([
+              ['fix pdf export preview rendering', '修复 PDF 导出预览与实际打印内容不一致的问题'],
+              ['fix pdf preview scale ratio', '修复 PDF 导出预览比例显示不一致的问题'],
+              ['fix android update apk download asset', '修复 Android 端检查更新下载成 .bin 或错误文件的问题'],
+              ['shorten desktop release job names', '简化桌面端 Release 构建任务名称'],
+              ['fix macos release dmg packaging', '修复 macOS Release DMG 打包失败的问题'],
+              ['fix tauri pdf export and update downloads', '修复桌面端/Android 端 PDF 导出和更新下载跳转问题']
+            ]);
+            const lines = (process.env.COMMITS_RAW || '')
+              .split(/\r?\n/)
+              .map((line) => line.trim())
+              .filter(Boolean)
+              .filter((line) => !/^(chore|ci|build):/i.test(line))
+              .map((line) => line.replace(/^(feat|fix|docs|refactor|style|test|perf|revert):\s*/i, '').trim())
+              .map((line) => translations.get(line) || (/[\u4e00-\u9fff]/.test(line) ? line : '优化内部实现与发布流程'));
+            const commits = [...new Set(lines)].map((line) => '- ' + line).join('\n') || '- 修复若干问题，优化用户体验';
             const updated = body.replace(
               /### 本次更新[\s\S]*?(?=### )/,
               '### 本次更新\n' + commits + '\n\n'
