@@ -23,7 +23,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Records: round view, status view, CSV/PDF export, generate review rounds; desktop and Android builds invoke the system print / save-as-PDF flow
 - Wordbooks: built-in CET4 / CET6 / Spanish samples, TXT/CSV/JSON import, GitHub online import
 - Lookup: local-first, online supplement (MyMemory + dictionaryapi.dev), Spanish conjugation, AI supplement
-- Pronunciation: SpeechSynthesis (en/es/ja/ko/pt/fr/de/it/eo)
+- Pronunciation: SpeechSynthesis on Web; Android Tauri prefers the native system TextToSpeech engine (en/es/ja/ko/pt/fr/de/it/eo, requires a system TTS engine to be installed/enabled)
 - Appearance: meaning toggle, immersive mode, auto/light/dark theme
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom

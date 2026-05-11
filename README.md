@@ -24,7 +24,7 @@ Demo：https://k7tmiz.com/words
 - 学习记录：轮次视图、状态视图、导出 CSV/PDF、生成复习轮；桌面端和 Android 端会调用系统打印/保存为 PDF
 - 词书：内置 CET4 / CET6 / 西班牙语示例，支持 TXT/CSV/JSON 导入和 GitHub 在线导入
 - 查词：本地优先、联网补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充
-- 发音：SpeechSynthesis，支持 en/es/ja/ko/pt/fr/de/it/eo
+- 发音：Web 端使用 SpeechSynthesis；Android Tauri 端优先调用系统 TextToSpeech，支持 en/es/ja/ko/pt/fr/de/it/eo（需系统已安装或启用 TTS 引擎）
 - 外观：释义显示/隐藏、沉浸模式、auto/light/dark 主题
 - 备份：完整 JSON 导入/导出
 - AI 生成词书：OpenAI / Gemini / DeepSeek / SiliconCloud / Custom

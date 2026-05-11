@@ -151,11 +151,13 @@ window.A4Utils = {
 ```
 
 ### `js/speech.js`
-SpeechSynthesis 语音安装、语音列表、自动/手动 voice 选择、发音。
+语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端优先调用原生 `a4_android_speak`，由系统 TextToSpeech 引擎朗读，系统没有可用 TTS 引擎时提示用户安装或启用。
 ```javascript
 window.A4Speech = {
   installSpeech({ onVoicesChanged }),
   getVoicesSorted(),
+  getNativeSpeechLang({ pronunciationLang, wordbookLanguage, accent }),
+  isAndroidTauriSpeech(),
   speak({ text, pronunciationEnabled, pronunciationLang, wordbookLanguage, accent, voiceMode, voiceURI }),
   // ...
 }
@@ -210,6 +212,13 @@ window.A4Updater = {
 - 自动检查最新 GitHub Release，设置页"检查更新"会清除本地跳过/缓存后强制检查一次
 - 从 `release.assets[].browser_download_url` 选择当前平台安装包：Android 优先 `a4-memory-v*-android.apk`，macOS `.dmg`，Windows `.msi` / `.exe`，Linux `.AppImage` / `.deb`；未知平台打开 Release 页面，避免误下载第一个 asset
 - Tauri 端通过 Rust 命令 `a4_open_external` 打开系统默认浏览器/下载处理器；Web 端使用 `window.open` / `location.href` 兜底
+
+### Tauri 原生命令桥接
+
+`src-tauri/src/lib.rs` 暴露最小平台能力：
+- `a4_open_external(url)`：桌面端 / Android 打开系统默认浏览器或下载处理器。
+- `a4_android_print()`：Android 端调用 WebView 原生打印接口。
+- `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读；不内置离线语音模型。
 
 ---
 

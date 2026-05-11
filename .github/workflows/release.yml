@@ -112,7 +112,7 @@ jobs:
             - 内置 CET4 / CET6 / 西班牙语词书，支持自定义导入
             - 云同步（登录后可在桌面端 / Android / Web 同步学习进度）
             - AI 词书生成
-            - Android 端发音需安装 Google 文字转语音引擎
+            - Android 端发音优先调用系统文字转语音引擎
 
             ### 下载
             | 平台 | 文件 |
@@ -324,6 +324,7 @@ jobs:
               ['fix pdf export preview rendering', '修复 PDF 导出预览与实际打印内容不一致的问题'],
               ['fix pdf preview scale ratio', '修复 PDF 导出预览比例显示不一致的问题'],
               ['fix android update apk download asset', '修复 Android 端检查更新下载成 .bin 或错误文件的问题'],
+              ['add android native text to speech', '新增 Android 端系统文字转语音朗读支持'],
               ['shorten desktop release job names', '简化桌面端 Release 构建任务名称'],
               ['fix macos release dmg packaging', '修复 macOS Release DMG 打包失败的问题'],
               ['fix tauri pdf export and update downloads', '修复桌面端/Android 端 PDF 导出和更新下载跳转问题']
