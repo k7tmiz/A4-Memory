@@ -210,7 +210,7 @@ window.A4Updater = {
 ```
 行为：
 - 自动检查最新 GitHub Release，设置页"检查更新"会清除本地跳过/缓存后强制检查一次
-- 从 `release.assets[].browser_download_url` 选择当前平台安装包：Android 优先 `a4-memory-v*-android.apk`，macOS `.dmg`，Windows `.msi` / `.exe`，Linux `.AppImage` / `.deb`；未知平台打开 Release 页面，避免误下载第一个 asset
+- 从 `release.assets[].browser_download_url` 选择当前平台安装包：Android 优先识别 `a4-memory-v*-android.apk`，但主按钮打开 Release 页面并在弹窗中提示 APK 文件名，直链作为备用，避免部分 Android 下载器把 GitHub 重定向流保存为 `.bin`；macOS `.dmg`，Windows `.msi` / `.exe`，Linux `.AppImage` / `.deb`；未知平台打开 Release 页面，避免误下载第一个 asset
 - Tauri 端通过 Rust 命令 `a4_open_external` 打开系统默认浏览器/下载处理器；Web 端使用 `window.open` / `location.href` 兜底
 
 ### Tauri 原生命令桥接

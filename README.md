@@ -28,7 +28,7 @@ Demo：https://k7tmiz.com/words
 - 外观：释义显示/隐藏、沉浸模式、auto/light/dark 主题
 - 备份：完整 JSON 导入/导出
 - AI 生成词书：OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
-- 版本更新检测：自动检测 GitHub Release 新版本，桌面端和 Android 端会打开对应平台安装包（Android 直达 APK 下载）
+- 版本更新检测：自动检测 GitHub Release 新版本，桌面端会打开对应平台安装包，Android 端打开 Release 页面并提示点击 APK 文件
 
 ## 技术栈
 
@@ -74,7 +74,7 @@ A4-Memory/
 
 预编译安装包从 [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) 下载，含完整云同步功能。
 
-应用内"检查更新"会读取最新 GitHub Release，并按当前平台优先打开对应安装包：Android 打开 `a4-memory-v*-android.apk`，macOS 打开 `.dmg`，Windows 打开 `.msi` / `.exe`，Linux 打开 `.AppImage` / `.deb`。Android 仍需按系统提示确认下载和安装。
+应用内"检查更新"会读取最新 GitHub Release，并按当前平台优先打开对应安装包：Android 打开 Release 页面并提示点击 `a4-memory-v*-android.apk`（弹窗内保留 APK 直链作为备用），macOS 打开 `.dmg`，Windows 打开 `.msi` / `.exe`，Linux 打开 `.AppImage` / `.deb`。Android 仍需按系统提示确认下载和安装。
 
 ```bash
 # 安装依赖

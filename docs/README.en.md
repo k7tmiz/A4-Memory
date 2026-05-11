@@ -27,7 +27,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Appearance: meaning toggle, immersive mode, auto/light/dark theme
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
-- Version update check: auto-detects new GitHub Releases and opens the platform-specific installer (Android links directly to the APK)
+- Version update check: auto-detects new GitHub Releases, opens the platform-specific desktop installer, and opens the Release page on Android with the APK filename highlighted
 
 ## Tech Stack
 
@@ -73,7 +73,7 @@ Desktop (macOS / Windows / Linux) and Android APK are available, built with Taur
 
 Download prebuilt installers from [GitHub Releases](https://github.com/k7tmiz/A4-Memory/releases) — includes full cloud sync.
 
-The in-app "Check for updates" flow reads the latest GitHub Release and prefers the matching installer for the current platform: `a4-memory-v*-android.apk` on Android, `.dmg` on macOS, `.msi` / `.exe` on Windows, and `.AppImage` / `.deb` on Linux. Android still requires the user to confirm download and installation in the system UI.
+The in-app "Check for updates" flow reads the latest GitHub Release and prefers the matching installer for the current platform: on Android it opens the Release page and highlights `a4-memory-v*-android.apk` (the APK direct link remains available as a fallback), `.dmg` on macOS, `.msi` / `.exe` on Windows, and `.AppImage` / `.deb` on Linux. Android still requires the user to confirm download and installation in the system UI.
 
 ```bash
 # Install dependencies
