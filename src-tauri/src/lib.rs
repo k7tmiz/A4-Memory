@@ -17,51 +17,72 @@ fn a4_open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
 #[tauri::command]
 fn a4_android_print(webview_window: tauri::WebviewWindow) -> Result<(), String> {
     use jni::objects::{JObject, JValue};
+    use std::sync::{Arc, Mutex};
+
+    let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    let error_clone = error.clone();
 
     webview_window
-        .with_webview(|webview| {
-            webview.jni_handle().exec(|env, activity, webview| {
-                let print_service = env
-                    .new_string("print")
-                    .expect("failed to allocate print service name");
-                let print_service_obj = JObject::from(print_service);
-                let print_manager = env
-                    .call_method(
-                        activity,
-                        "getSystemService",
-                        "(Ljava/lang/String;)Ljava/lang/Object;",
-                        &[JValue::Object(&print_service_obj)],
-                    )
-                    .expect("failed to get Android print service")
-                    .l()
-                    .expect("Android print service was not an object");
+        .with_webview(move |webview| {
+            webview.jni_handle().exec(move |env, activity, webview| {
+                let fail = |msg: &str| {
+                    *error_clone.lock().unwrap() = Some(msg.into());
+                };
 
-                let job_name = env
-                    .new_string("A4 Memory")
-                    .expect("failed to allocate print job name");
+                let print_service = match env.new_string("print") {
+                    Ok(s) => s,
+                    Err(e) => { fail(&format!("failed to allocate string: {}", e)); return; }
+                };
+                let print_service_obj = JObject::from(print_service);
+                let print_manager = match env.call_method(
+                    activity,
+                    "getSystemService",
+                    "(Ljava/lang/String;)Ljava/lang/Object;",
+                    &[JValue::Object(&print_service_obj)],
+                ) {
+                    Ok(val) => match val.l() {
+                        Ok(obj) => obj,
+                        Err(e) => { fail(&format!("print service error: {}", e)); return; }
+                    },
+                    Err(e) => { fail(&format!("getSystemService failed: {}", e)); return; }
+                };
+
+                let job_name = match env.new_string("A4 Memory") {
+                    Ok(s) => s,
+                    Err(e) => { fail(&format!("failed to allocate string: {}", e)); return; }
+                };
                 let job_name_obj = JObject::from(job_name);
-                let adapter = env
-                    .call_method(
-                        webview,
-                        "createPrintDocumentAdapter",
-                        "(Ljava/lang/String;)Landroid/print/PrintDocumentAdapter;",
-                        &[JValue::Object(&job_name_obj)],
-                    )
-                    .expect("failed to create Android print adapter")
-                    .l()
-                    .expect("Android print adapter was not an object");
+                let adapter = match env.call_method(
+                    webview,
+                    "createPrintDocumentAdapter",
+                    "(Ljava/lang/String;)Landroid/print/PrintDocumentAdapter;",
+                    &[JValue::Object(&job_name_obj)],
+                ) {
+                    Ok(val) => match val.l() {
+                        Ok(obj) => obj,
+                        Err(e) => { fail(&format!("print adapter error: {}", e)); return; }
+                    },
+                    Err(e) => { fail(&format!("createPrintDocumentAdapter failed: {}", e)); return; }
+                };
                 let attrs = JObject::null();
 
-                env.call_method(
+                if let Err(e) = env.call_method(
                     print_manager,
                     "print",
                     "(Ljava/lang/String;Landroid/print/PrintDocumentAdapter;Landroid/print/PrintAttributes;)Landroid/print/PrintJob;",
                     &[JValue::Object(&job_name_obj), JValue::Object(&adapter), JValue::Object(&attrs)],
-                )
-                .expect("failed to start Android print job");
+                ) {
+                    fail(&format!("print failed: {}", e));
+                }
             })
         })
-        .map_err(|err| err.to_string())
+        .map_err(|err| err.to_string())?;
+
+    if let Some(msg) = Arc::try_unwrap(error).unwrap().into_inner().unwrap() {
+        return Err(msg);
+    }
+
+    Ok(())
 }
 
 #[cfg(target_os = "android")]
@@ -86,71 +107,85 @@ fn a4_android_speak(webview_window: tauri::WebviewWindow, text: String, lang: St
     webview_window
         .with_webview(move |webview| {
             webview.jni_handle().exec(move |env, activity, _webview| {
-                let tts = env
-                    .new_object(
-                        "android/speech/tts/TextToSpeech",
-                        "(Landroid/content/Context;Landroid/speech/tts/TextToSpeech$OnInitListener;)V",
-                        &[jni::objects::JValue::Object(activity), jni::objects::JValue::Object(&jni::objects::JObject::null())],
-                    )
-                    .expect("failed to create Android TextToSpeech");
+                let fail = |msg: &str| {
+                    *error_clone.lock().unwrap() = Some(msg.into());
+                };
 
-                let lang_string = env
-                    .new_string(lang_tag)
-                    .expect("failed to allocate language tag");
+                let tts = match env.new_object(
+                    "android/speech/tts/TextToSpeech",
+                    "(Landroid/content/Context;Landroid/speech/tts/TextToSpeech$OnInitListener;)V",
+                    &[jni::objects::JValue::Object(activity), jni::objects::JValue::Object(&jni::objects::JObject::null())],
+                ) {
+                    Ok(obj) => obj,
+                    Err(e) => { fail(&format!("failed to create TextToSpeech: {}", e)); return; }
+                };
+
+                let lang_string = match env.new_string(&lang_tag) {
+                    Ok(s) => s,
+                    Err(e) => { fail(&format!("failed to allocate string: {}", e)); return; }
+                };
                 let lang_obj = jni::objects::JObject::from(lang_string);
-                let locale = env
-                    .call_static_method(
-                        "java/util/Locale",
-                        "forLanguageTag",
-                        "(Ljava/lang/String;)Ljava/util/Locale;",
-                        &[jni::objects::JValue::Object(&lang_obj)],
-                    )
-                    .expect("failed to build Locale")
-                    .l()
-                    .expect("Locale was not an object");
+                let locale = match env.call_static_method(
+                    "java/util/Locale",
+                    "forLanguageTag",
+                    "(Ljava/lang/String;)Ljava/util/Locale;",
+                    &[jni::objects::JValue::Object(&lang_obj)],
+                ) {
+                    Ok(val) => match val.l() {
+                        Ok(obj) => obj,
+                        Err(e) => { fail(&format!("Locale was not an object: {}", e)); return; }
+                    },
+                    Err(e) => { fail(&format!("failed to build Locale: {}", e)); return; }
+                };
 
-                let lang_result = env
-                    .call_method(
-                        &tts,
-                        "setLanguage",
-                        "(Ljava/util/Locale;)I",
-                        &[jni::objects::JValue::Object(&locale)],
-                    )
-                    .expect("failed to set Android TTS language")
-                    .i()
-                    .expect("Android TTS language result was not an int");
+                let lang_result = match env.call_method(
+                    &tts,
+                    "setLanguage",
+                    "(Ljava/util/Locale;)I",
+                    &[jni::objects::JValue::Object(&locale)],
+                ) {
+                    Ok(val) => match val.i() {
+                        Ok(i) => i,
+                        Err(e) => { fail(&format!("setLanguage result error: {}", e)); return; }
+                    },
+                    Err(e) => { fail(&format!("setLanguage failed: {}", e)); return; }
+                };
                 if lang_result == -1 || lang_result == -2 {
-                    *error_clone.lock().unwrap() = Some("Android TTS language is not available".into());
+                    fail("Android TTS language is not available");
                     return;
                 }
 
-                let text_string = env
-                    .new_string(speech_text)
-                    .expect("failed to allocate speech text");
+                let text_string = match env.new_string(&speech_text) {
+                    Ok(s) => s,
+                    Err(e) => { fail(&format!("failed to allocate text: {}", e)); return; }
+                };
                 let text_obj = jni::objects::JObject::from(text_string);
-                let utterance_id = env
-                    .new_string("a4-memory")
-                    .expect("failed to allocate utterance id");
+                let utterance_id = match env.new_string("a4-memory") {
+                    Ok(s) => s,
+                    Err(e) => { fail(&format!("failed to allocate id: {}", e)); return; }
+                };
                 let utterance_id_obj = jni::objects::JObject::from(utterance_id);
                 let bundle = jni::objects::JObject::null();
 
-                let speak_result = env
-                    .call_method(
-                        &tts,
-                        "speak",
-                        "(Ljava/lang/CharSequence;ILandroid/os/Bundle;Ljava/lang/String;)I",
-                        &[
-                            jni::objects::JValue::Object(&text_obj),
-                            jni::objects::JValue::Int(0),
-                            jni::objects::JValue::Object(&bundle),
-                            jni::objects::JValue::Object(&utterance_id_obj),
-                        ],
-                    )
-                    .expect("failed to start Android TTS")
-                    .i()
-                    .expect("Android TTS speak result was not an int");
+                let speak_result = match env.call_method(
+                    &tts,
+                    "speak",
+                    "(Ljava/lang/CharSequence;ILandroid/os/Bundle;Ljava/lang/String;)I",
+                    &[
+                        jni::objects::JValue::Object(&text_obj),
+                        jni::objects::JValue::Int(0),
+                        jni::objects::JValue::Object(&bundle),
+                        jni::objects::JValue::Object(&utterance_id_obj),
+                    ],
+                ) {
+                    Ok(val) => match val.i() {
+                        Ok(i) => i,
+                        Err(e) => { fail(&format!("speak result error: {}", e)); return; }
+                    },
+                    Err(e) => { fail(&format!("speak failed: {}", e)); return; }
+                };
                 if speak_result != 0 {
-                    *error_clone.lock().unwrap() = Some("Android TTS speak failed".into());
+                    fail("Android TTS speak failed");
                 }
             })
         })
