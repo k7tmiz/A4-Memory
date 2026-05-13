@@ -194,14 +194,14 @@ window.A4Lookup = {
 - 轮次视图与状态视图切换
 - 统计计算
 - CSV/PDF 导出；PDF 会生成隐藏的 A4 打印输出层，桌面端走 Tauri WebView 打印权限，Android 端走原生打印桥接
-- 轮次删除
+- 轮次删除（确认弹窗使用 DOM 自定义 `showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`）
 - 跳转首页触发复习轮生成
 
 ### `js/updater.js`
 GitHub Release 版本更新检测，暴露 `window.A4Updater`：
 ```javascript
 window.A4Updater = {
-  checkUpdate(),
+  checkUpdate(),  // 返回 Promise<string>： "update"/"latest"/"error"/"skipped"/"cached"/"prerelease"
   openExternalUrl(url),
   selectReleaseDownloadUrl(release),
   APP_VERSION,
@@ -209,6 +209,7 @@ window.A4Updater = {
 }
 ```
 行为：
+- `checkUpdate()` 返回 `Promise<string>`，解析值为 `"update"`（弹窗已展示）/ `"latest"`（已是最新）/ `"error"`（网络错误或 API 不可用）/ `"skipped"`（用户跳过此版本）/ `"cached"`（缓存未过期跳过）/ `"prerelease"`（忽略预发布版）。设置页按钮 `await` 此 Promise 直接判断结果，不再用固定 3 秒 `setTimeout` 猜测异步状态。
 - 自动检查最新 GitHub Release，设置页"检查更新"会清除本地跳过/缓存后强制检查一次
 - 从 `release.assets[].browser_download_url` 选择当前平台安装包：Android 优先识别 `a4-memory-v*-android.apk`，但主按钮打开 Release 页面并在弹窗中提示 APK 文件名，直链作为备用，避免部分 Android 下载器把 GitHub 重定向流保存为 `.bin`；macOS `.dmg`，Windows `.msi` / `.exe`，Linux `.AppImage` / `.deb`；未知平台打开 Release 页面，避免误下载第一个 asset
 - Tauri 端通过 Rust 命令 `a4_open_external` 打开系统默认浏览器/下载处理器；Web 端使用 `window.open` / `location.href` 兜底
