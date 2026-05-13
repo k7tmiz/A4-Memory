@@ -78,6 +78,11 @@ fn a4_android_speak(webview_window: tauri::WebviewWindow, text: String, lang: St
         lang.trim().to_string()
     };
 
+    use std::sync::{Arc, Mutex};
+
+    let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    let error_clone = error.clone();
+
     webview_window
         .with_webview(move |webview| {
             webview.jni_handle().exec(move |env, activity, _webview| {
@@ -115,7 +120,8 @@ fn a4_android_speak(webview_window: tauri::WebviewWindow, text: String, lang: St
                     .i()
                     .expect("Android TTS language result was not an int");
                 if lang_result == -1 || lang_result == -2 {
-                    panic!("Android TTS language is not available");
+                    *error_clone.lock().unwrap() = Some("Android TTS language is not available".into());
+                    return;
                 }
 
                 let text_string = env
@@ -144,11 +150,17 @@ fn a4_android_speak(webview_window: tauri::WebviewWindow, text: String, lang: St
                     .i()
                     .expect("Android TTS speak result was not an int");
                 if speak_result != 0 {
-                    panic!("Android TTS speak failed");
+                    *error_clone.lock().unwrap() = Some("Android TTS speak failed".into());
                 }
             })
         })
-        .map_err(|err| err.to_string())
+        .map_err(|err| err.to_string())?;
+
+    if let Some(msg) = Arc::try_unwrap(error).unwrap().into_inner().unwrap() {
+        return Err(msg);
+    }
+
+    Ok(())
 }
 
 #[cfg(not(target_os = "android"))]
