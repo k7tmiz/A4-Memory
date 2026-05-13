@@ -123,7 +123,13 @@ fn a4_android_speak(webview_window: tauri::WebviewWindow, text: String, lang: St
                         Ok(obj) => obj,
                         Err(e) => { fail(&format!("speak result error: {}", e)); return; }
                     },
-                    Err(e) => { fail(&format!("speak failed: {}", e)); return; }
+                    Err(e) => {
+                        if env.exception_check().unwrap_or(false) {
+                            let _ = env.exception_clear();
+                        }
+                        fail(&format!("speak failed: {}", e));
+                        return;
+                    }
                 };
 
                 if !result.is_null() {

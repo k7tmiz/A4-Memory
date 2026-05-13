@@ -232,6 +232,12 @@ jobs:
           rm -rf src-tauri/gen/android
           npx tauri android init
 
+      - name: Install Android native bridge
+        run: |
+          mkdir -p src-tauri/gen/android/app/src/main/java/app/tauri
+          cp src-tauri/android/A4SpeechBridge.kt src-tauri/gen/android/app/src/main/java/app/tauri/A4SpeechBridge.kt
+          echo "✓ Android native bridge installed"
+
       - name: Replace Android icons
         run: |
           RES="src-tauri/gen/android/app/src/main/res"
