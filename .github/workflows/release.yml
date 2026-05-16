@@ -334,11 +334,16 @@ jobs:
             echo "⚠ No ANDROID_KEYSTORE_BASE64 secret — using temporary keystore (won't survive reinstall)"
           fi
 
-          # Find release APK (universal has no qualifier in path)
-          UNSIGNED=$(find src-tauri/gen/android -name "*release*.apk" 2>/dev/null | head -1)
+          # Find release APK: tauri puts APK in architecture-specific subdirs
+          # e.g. outputs/apk/aarch64/release/*.apk
+          UNSIGNED=$(find src-tauri/gen/android/app/build/outputs/apk -type f -name "*.apk" | grep -v espeak | head -1)
           if [ -z "$UNSIGNED" ]; then
-            UNSIGNED=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | head -1)
+            echo "ERROR: No APK found in app/build/outputs/apk"
+            find src-tauri/gen/android/app/build/outputs/ -type f -name "*.apk" 2>/dev/null || echo "No APK files found"
+            ls -la src-tauri/gen/android/app/build/outputs/ 2>/dev/null || echo "No outputs dir"
+            exit 1
           fi
+          echo "Found APK: $UNSIGNED"
           SIGNED="a4-memory-${{ github.ref_name }}-android.apk"
 
           # Sign with apksigner (auto-detect version)
