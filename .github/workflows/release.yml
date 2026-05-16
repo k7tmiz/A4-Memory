@@ -190,6 +190,36 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android NDK
+        run: |
+          NDK_VER=$(ls $ANDROID_HOME/ndk 2>/dev/null | head -1)
+          if [ -n "$NDK_VER" ] && [ -d "$ANDROID_HOME/ndk/$NDK_VER/toolchains/llvm/prebuilt" ]; then
+            echo "✓ NDK $NDK_VER already present"
+          else
+            echo "Installing NDK..."
+            $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;default" 2>&1 | tail -5
+          fi
+          NDK_VER=$(ls $ANDROID_HOME/ndk | head -1)
+          echo "NDK_ROOT=$ANDROID_HOME/ndk/$NDK_VER"
+          echo "NDK_ROOT=$ANDROID_HOME/ndk/$NDK_VER" >> "$GITHUB_ENV"
+
+      - name: Set NDK clang as linker for Android target
+        run: |
+          NDK_VER=$(ls $ANDROID_HOME/ndk | head -1)
+          NDK_TOOLCHAIN="$ANDROID_HOME/ndk/$NDK_VER/toolchains/llvm/prebuilt"
+          # Find clang for aarch64 target (API level 21)
+          NDK_CLANG=$(find "$NDK_TOOLCHAIN" -name "aarch64-linux-android21-clang*" -type f 2>/dev/null | grep -v ++ | head -1)
+          if [ -z "$NDK_CLANG" ]; then
+            echo "ERROR: aarch64-linux-android21-clang not found"
+            find "$NDK_TOOLCHAIN" -name "aarch64*" -type f 2>/dev/null | head -10
+            exit 1
+          fi
+          echo "Found NDK clang: $NDK_CLANG"
+          echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=${NDK_CLANG}" >> "$GITHUB_ENV"
+          echo "CC_aarch64_linux_android=${NDK_CLANG}" >> "$GITHUB_ENV"
+          echo "CXX_aarch64_linux_android=${NDK_CLANG}++" >> "$GITHUB_ENV"
+          echo "✓ NDK linker configured"
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
@@ -321,7 +351,6 @@ jobs:
           retention-days: 5
 
       - name: Sign APK
-        if: success() && steps.build-apk.result == 'success'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
@@ -350,7 +379,9 @@ jobs:
             exit 1
           fi
           echo "Found APK: $UNSIGNED"
-          SIGNED="a4-memory-${{ github.ref_name }}-android.apk"
+          TAG="${{ github.event.release && github.event.release.tag_name || github.ref_name }}"
+          SIGNED="a4-memory-${TAG#v}-android.apk"
+          echo "Output APK: $SIGNED"
 
           # Sign with apksigner (auto-detect version)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
@@ -361,12 +392,15 @@ jobs:
             --out "$SIGNED" "$UNSIGNED"
 
           echo "✓ APK signed: $SIGNED"
+          echo "SIGNED_APK=$SIGNED" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK to Release
         run: |
-          APK=$(find . -maxdepth 1 -name "a4-memory-*.apk" -type f | head -1)
-          if [ -z "$APK" ]; then
-            echo "ERROR: No signed APK found"
+          # Read APK path from previous step output
+          APK="${{ steps.sign-apk.outputs.SIGNED_APK }}"
+          if [ -z "$APK" ] || [ ! -f "$APK" ]; then
+            echo "ERROR: Signed APK not found at '$APK'"
+            ls -la *.apk 2>/dev/null || echo "No APK in PWD"
             exit 1
           fi
           gh release upload ${{ github.ref_name }} "$APK" --clobber
