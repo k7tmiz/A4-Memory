@@ -161,7 +161,7 @@ window.A4Utils = {
 ```
 
 ### `js/speech.js`
-语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端优先调用原生 `a4_android_speak`，由系统 TextToSpeech 引擎朗读，系统没有可用 TTS 引擎时提示用户安装或启用。
+语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过原生 `a4_android_speak` 调用 TTS，优先使用内置 eSpeak NG（离线，100+ 语言），其次 Google TTS（需 GMS），最后系统默认 TTS。eSpeak 未安装时会自动触发内置 APK 安装。
 ```javascript
 window.A4Speech = {
   installSpeech({ onVoicesChanged }),
@@ -229,7 +229,7 @@ window.A4Updater = {
 `src-tauri/src/lib.rs` 暴露最小平台能力：
 - `a4_open_external(url)`：桌面端 / Android 打开系统默认浏览器或下载处理器。
 - `a4_android_print()`：Android 端调用 WebView 原生打印接口。
-- `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读；不内置离线语音模型。
+- `a4_android_speak(text, lang)`：Android 端朗读；优先内置 eSpeak NG（离线），其次 Google TTS，最后系统默认。eSpeak 未安装时自动触发内置 APK 安装。
 
 ---
 
