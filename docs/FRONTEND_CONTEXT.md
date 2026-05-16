@@ -161,7 +161,7 @@ window.A4Utils = {
 ```
 
 ### `js/speech.js`
-语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过原生 `a4_android_speak` 调用 TTS，优先使用内置 eSpeak NG（离线，100+ 语言），其次 Google TTS（需 GMS），最后系统默认 TTS。eSpeak 未安装时会自动触发内置 APK 安装。
+语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过原生 `a4_android_speak` 调用 TTS，优先使用内置 eSpeak NG（离线，100+ 语言，包含英/西/日/韩/葡/法/德/意/世界语等），其次 Google TTS（需 GMS），最后系统默认 TTS。eSpeak 未安装时会自动触发内置 APK 安装。
 ```javascript
 window.A4Speech = {
   installSpeech({ onVoicesChanged }),
@@ -239,15 +239,15 @@ window.A4Updater = {
 
 ### 设置弹窗分区
 
-1. **账号** — 默认主入口为登录；支持邮箱验证码注册、重置密码、登录状态卡片、登出
-2. **云备份** — 仅在已登录时显示上传/下载按钮与同步状态；恢复本机会覆盖当前本地数据，执行前必须确认
-3. **外观** — 主题模式（auto / light / dark）
-4. **学习目标** — 每日轮次目标、每日单词目标
-5. **学习设置** — 每轮上限（20–30）
-6. **复习** — 轻量复习开关、复习间隔、持续背书模式、卡片翻面（复习结束自动关闭固定开启）
-7. **发音** — 发音开关、语种/口音/语音模式选择、当前语音显示、测试按钮
-8. **查词** — 在线补充开关、补充来源、西语变位开关、缓存开关与时长
-9. **学习数据** — 完整备份导出/导入（JSON）
+1. **外观** — 主题模式（auto / light / dark）
+2. **学习目标** — 每日轮次目标、每日单词目标
+3. **学习设置** — 每轮上限（20–30）
+4. **复习** — 轻量复习开关、复习间隔、持续背书模式、卡片翻面（复习结束自动关闭固定开启）
+5. **发音** — 发音开关、语言/口音/语音模式选择、当前语音显示、测试按钮
+6. **查词** — 联网补充开关、补充来源、西语变位开关、缓存开关与时长
+7. **学习数据** — 完整备份导出/导入（JSON）
+8. **账号** — 默认主入口为登录；支持邮箱验证码注册、重置密码、登录状态卡片、登出
+9. **云备份** — 仅在已登录时显示上传/下载按钮与同步状态；恢复本机会覆盖当前本地数据，执行前必须确认
 10. **AI** — 服务商选择、API 配置、模型选择、词书生成
 
 ---
@@ -345,3 +345,4 @@ window.A4Updater = {
 - `currentPageIndex` 是运行态，不写入 `localStorage`；刷新后默认回到当前轮第 1 页
 - 备份导入（`settings.js` 的 `normalizeImportedState`）当前实现不会保留：`round.type`、`round.language`、`item.pageIndex`、`aiConfig.apiKey`
 - 记录页监听 `storage` 事件，支持多标签页同步刷新显示
+- 轮次删除确认弹窗使用 `records.js` 自定义的 `showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`；设置页的云端恢复确认也使用自定义弹窗

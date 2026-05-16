@@ -105,6 +105,7 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
+            - 新增 Android 端内置 eSpeak NG TTS 引擎，支持离线发音（英/西等 100+ 语言）
             - 修复 Android 端 TTS 在部分设备上崩溃的问题
             - 修复 Android 端 TTS 在 release 构建中无法正常工作的问题
             - 新增前端 XSS 防护模块并同步到所有文档
@@ -374,7 +375,8 @@ jobs:
               ['add android native text to speech', '新增 Android 端系统文字转语音朗读支持'],
               ['shorten desktop release job names', '简化桌面端 Release 构建任务名称'],
               ['fix macos release dmg packaging', '修复 macOS Release DMG 打包失败的问题'],
-              ['fix tauri pdf export and update downloads', '修复桌面端/Android 端 PDF 导出和更新下载跳转问题']
+              ['fix tauri pdf export and update downloads', '修复桌面端/Android 端 PDF 导出和更新下载跳转问题'],
+              ['docs: sync espeak ng builtin tts description in frontend_context', '同步 eSpeak NG 内置 TTS 描述到前端文档']
             ]);
             const lines = (process.env.COMMITS_RAW || '')
               .split(/\r?\n/)
