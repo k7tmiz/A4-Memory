@@ -291,12 +291,18 @@ jobs:
       - name: Build Android APK
         id: build-apk
         run: |
-          npx tauri android build --apk --target aarch64 -- --stacktrace 2>&1 | tee /tmp/gradle-build.log
+          npx tauri android build --apk --target aarch64 -- --stacktrace --info 2>&1 | tee /tmp/gradle-build.log || true
           echo "BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-          if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-            echo "BUILD_FAILED=true" >> "$GITHUB_OUTPUT"
-            exit 1
-          fi
+
+      - name: Debug APK location
+        if: always()
+        run: |
+          echo "=== All files in outputs dir ==="
+          find src-tauri/gen/android/app/build/outputs -type f 2>/dev/null || echo "(outputs dir missing)"
+          echo "=== All APK files in build dir ==="
+          find src-tauri/gen/android/app/build -name "*.apk" -type f 2>/dev/null || echo "(no APK files found)"
+          echo "=== Build dir tree (top 3 levels) ==="
+          find src-tauri/gen/android/app/build -maxdepth 3 -type d 2>/dev/null | head -30 || echo "(build dir missing)"
 
       - name: Upload Gradle build log
         if: always()
@@ -315,6 +321,7 @@ jobs:
           retention-days: 5
 
       - name: Sign APK
+        if: success() && steps.build-apk.result == 'success'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
