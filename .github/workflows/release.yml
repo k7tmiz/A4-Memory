@@ -283,6 +283,40 @@ jobs:
           CI=true npx tauri android init --ci 2>&1 | tee /tmp/android-init.log
           echo "Init exit: $?"
 
+      - name: Inject lifecycle-process dependency
+        run: |
+          GRADLE_FILE="src-tauri/gen/android/app/build.gradle.kts"
+          if [ -f "$GRADLE_FILE" ]; then
+            if ! grep -q "lifecycle-process" "$GRADLE_FILE"; then
+              python3 -c "
+              import re
+              with open('$GRADLE_FILE', 'r', encoding='utf-8') as f:
+                  content = f.read()
+              # Find the dependencies block and add lifecycle-process before the closing brace
+              # Match the dependencies { ... } block (last occurrence)
+              deps_match = re.search(r'(dependencies\s*\{[^}]+)(\})', content, re.DOTALL)
+              if deps_match:
+                  inner = deps_match.group(1)
+                  last_impl = list(re.finditer(r'implementation\(\"[^\"]+\"\)', inner))
+                  if last_impl:
+                      last_pos = last_impl[-1].end()
+                      new_line = '\n    implementation(\"androidx.lifecycle:lifecycle-process:2.10.0\")'
+                      content = content[:last_pos] + new_line + content[last_pos:]
+                      with open('$GRADLE_FILE', 'w', encoding='utf-8') as f:
+                          f.write(content)
+                      print('lifecycle-process injected')
+                  else:
+                      print('WARNING: no implementation() found in dependencies block')
+              else:
+                  print('WARNING: dependencies block not found')
+              "
+            else
+              echo "lifecycle-process already present"
+            fi
+          else
+            echo "WARNING: $GRADLE_FILE not found"
+          fi
+
       - name: Install Android native bridge
         run: |
           mkdir -p src-tauri/gen/android/app/src/main/java/app/tauri
@@ -353,12 +387,16 @@ jobs:
           rustup target list --installed | grep aarch64
           echo "=== Build start ==="
           set -x
+          # Run with --info to capture Kotlin compilation errors (they appear at the START of the build log)
+          # Use script to capture exit code: PIPESTATUS[0] is npx, PIPESTATUS[1] is the inner tee
           npx tauri android build --apk --target aarch64 2>&1 | tee /tmp/gradle-build.log
           BUILD_EXIT=${PIPESTATUS[0]}
           set +x
           echo "BUILD_EXIT_CODE=$BUILD_EXIT" >> "$GITHUB_OUTPUT"
-          echo "=== Last 50 lines of log ==="
-          tail -50 /tmp/gradle-build.log
+          echo "=== First 100 lines of Gradle log (Kotlin errors appear here) ==="
+          head -100 /tmp/gradle-build.log
+          echo "=== Last 20 lines of log ==="
+          tail -20 /tmp/gradle-build.log
           echo "=== Verify APK exists ==="
           find src-tauri/gen/android/app/build/outputs -name "*.apk" -type f 2>/dev/null || echo "NO APK FOUND in outputs/"
           if [ $BUILD_EXIT -ne 0 ]; then
