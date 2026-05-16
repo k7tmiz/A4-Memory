@@ -289,7 +289,30 @@ jobs:
           echo "✓ Icons replaced"
 
       - name: Build Android APK
-        run: npx tauri android build --apk
+        id: build-apk
+        run: |
+          npx tauri android build --apk --target aarch64 -- --stacktrace 2>&1 | tee /tmp/gradle-build.log
+          echo "BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            echo "BUILD_FAILED=true" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Upload Gradle build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: /tmp/gradle-build.log
+          retention-days: 5
+
+      - name: Upload Gradle problems report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-problems-report
+          path: src-tauri/gen/android/build/reports/problems/
+          retention-days: 5
 
       - name: Sign APK
         env:
