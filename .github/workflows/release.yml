@@ -247,32 +247,10 @@ jobs:
           cp src-tauri/android/res/raw/espeak.apk src-tauri/gen/android/app/src/main/res/raw/espeak.apk
           echo "✓ espeak TTS APK installed"
 
-      - name: Merge AndroidManifest permissions
+      - name: Install AndroidManifest with permissions
         run: |
-          MANIFEST="src-tauri/gen/android/app/src/main/AndroidManifest.xml"
-          python3 -c "
-          import re
-
-          with open('$MANIFEST', 'r', encoding='utf-8') as f:
-              content = f.read()
-
-          perms = [
-              '    <uses-permission android:name=\"android.permission.REQUEST_DELETE_PACKAGES\" />',
-              '    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />',
-              '    <uses-permission android:name=\"android.permission.INSTALL_TTS_ENGINE\" />',
-          ]
-          existing = re.findall(r'android\.permission\.[A-Z_]+', content)
-          injected = 0
-          for p in perms:
-              short = re.search(r'android\.permission\.([A-Z_]+)', p).group(1)
-              if short not in existing:
-                  content = content.replace('</manifest>', p + '\n</manifest>')
-                  injected += 1
-
-          with open('$MANIFEST', 'w', encoding='utf-8') as f:
-              f.write(content)
-          print(f'✓ Injected {injected} permissions')
-          "
+          cp src-tauri/android/AndroidManifest.xml src-tauri/gen/android/app/src/main/AndroidManifest.xml
+          echo "✓ AndroidManifest with TTS permissions installed"
 
       - name: Replace Android icons
         run: |
