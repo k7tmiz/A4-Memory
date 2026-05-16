@@ -60,6 +60,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ runner.os == 'macOS' && matrix.target || '' }}
+          toolchain: "1.95"
 
       - name: Cache Rust
         uses: actions/cache@v4
@@ -74,8 +75,20 @@ jobs:
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
+          echo "::notice::Starting apt-get update at $(date +%H:%M:%S)"
+          date +%s > /tmp/apt_start.txt
           sudo apt-get update
+          echo "::notice::apt-get update done at $(date +%H:%M:%S)"
+          date +%s > /tmp/apt_install_start.txt
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          echo "::notice::apt-get install done at $(date +%H:%M:%S)"
+          echo "Install duration: $(($(date +%s) - $(cat /tmp/apt_start.txt)))s total, $(($(date +%s) - $(cat /tmp/apt_install_start.txt)))s install-only"
+
+      - name: Check Rust versions
+        run: |
+          rustc --version
+          cargo --version
+          echo "::notice::Rust setup done at $(date +%H:%M:%S)"
 
       - run: npm ci
 
