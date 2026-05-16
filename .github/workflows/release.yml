@@ -232,12 +232,8 @@ jobs:
 
       - name: Init Android project
         run: |
-          if [ ! -d "src-tauri/gen/android" ]; then
-            echo "Initializing Android project..."
-            CI=true npx tauri android init --ci
-          else
-            echo "Android project already exists, skipping init."
-          fi
+          rm -rf src-tauri/gen/android
+          CI=true npx tauri android init --ci
 
       - name: Install Android native bridge
         run: |
