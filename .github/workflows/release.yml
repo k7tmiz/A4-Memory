@@ -359,6 +359,12 @@ jobs:
           echo "BUILD_EXIT_CODE=$BUILD_EXIT" >> "$GITHUB_OUTPUT"
           echo "=== Last 50 lines of log ==="
           tail -50 /tmp/gradle-build.log
+          echo "=== Verify APK exists ==="
+          find src-tauri/gen/android/app/build/outputs -name "*.apk" -type f 2>/dev/null || echo "NO APK FOUND in outputs/"
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "::error::tauri android build exited with code $BUILD_EXIT"
+            exit $BUILD_EXIT
+          fi
 
       - name: Debug Android project structure
         if: always()
