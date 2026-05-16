@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.k7tmiz.a4memory">
+
+    <!-- 安装/卸载第三方 APK（用于内置 eSpeak NG TTS 引擎） -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- 让 TTS 引擎自动完成安装 -->
+    <uses-permission android:name="android.permission.INSTALL_TTS_ENGINE" />
+
+</manifest>

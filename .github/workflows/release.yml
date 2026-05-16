@@ -114,7 +114,7 @@ jobs:
             - 内置 CET4 / CET6 / 西班牙语词书，支持自定义导入
             - 云同步（登录后可在桌面端 / Android / Web 同步学习进度）
             - AI 词书生成
-            - Android 端发音优先调用系统文字转语音引擎
+            - Android 端内置 eSpeak NG TTS 引擎（离线英/西等 100+ 语言），无 GMS 设备也能发音
 
             ### 下载
             | 平台 | 文件 |
@@ -240,6 +240,41 @@ jobs:
           cp src-tauri/android/A4SpeechBridge.kt src-tauri/gen/android/app/src/main/java/app/tauri/A4SpeechBridge.kt
           echo "✓ Android native bridge installed"
 
+      - name: Install Android raw resources (espeak TTS APK)
+        run: |
+          mkdir -p src-tauri/gen/android/app/src/main/res/raw
+          cp src-tauri/android/res/raw/espeak.apk src-tauri/gen/android/app/src/main/res/raw/espeak.apk
+          echo "✓ espeak TTS APK installed"
+
+      - name: Merge AndroidManifest permissions
+        run: |
+          MANIFEST="src-tauri/gen/android/app/src/main/AndroidManifest.xml"
+          # Add eSpeak NG TTS required permissions to the generated manifest
+          # Use Python for reliable XML manipulation without external tools
+          python3 -c "
+          import xml.etree.ElementTree as ET
+
+          ns = 'http://schemas.android.com/apk/res/android'
+          tree = ET.parse('$MANIFEST')
+          root = tree.getroot()
+
+          # Permissions to add
+          perms = [
+              ('android.permission.REQUEST_DELETE_PACKAGES', 'android', ns),
+              ('android.permission.REQUEST_INSTALL_PACKAGES', 'android', ns),
+              ('android.permission.INSTALL_TTS_ENGINE', 'android', ns),
+          ]
+          existing = {p.get(f'{{{ns}}}name') for p in root.findall(f'{{{ns}}}uses-permission') if p.get(f'{{{ns}}}name')}
+
+          for name, _prefix, _ns_uri in perms:
+              if name not in existing:
+                  elem = ET.SubElement(root, f'{{{ns}}}uses-permission')
+                  elem.set(f'{{{ns}}}name', name)
+
+          tree.write('$MANIFEST', encoding='utf-8', xml_declaration=True)
+          print('✓ AndroidManifest permissions merged')
+          "
+
       - name: Replace Android icons
         run: |
           RES="src-tauri/gen/android/app/src/main/res"
@@ -329,6 +364,7 @@ jobs:
             const fs = require('fs');
             const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
             const translations = new Map([
+              ['add espeak ng builtin tts engine for android offline support', '新增 Android 端内置 eSpeak NG TTS 引擎，支持离线发音（英/西等 100+ 语言）'],
               ['fix android tts crash: spawn jni call in detached async task', '修复 Android 端 TTS 在部分设备上崩溃的问题'],
               ['fix android tts release bridge', '修复 Android 端 TTS 在 release 构建中无法正常工作的问题'],
               ['docs: add js/core/sanitize.js and sync apiKey protection across all docs', '新增前端 XSS 防护模块并同步到所有文档'],

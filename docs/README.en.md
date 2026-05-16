@@ -23,7 +23,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Records: round view, status view, CSV/PDF export, generate review rounds; desktop and Android builds invoke the system print / save-as-PDF flow
 - Wordbooks: built-in CET4 / CET6 / Spanish samples, TXT/CSV/JSON import, GitHub online import
 - Lookup: local-first, online supplement (MyMemory + dictionaryapi.dev), Spanish conjugation, AI supplement
-- Pronunciation: SpeechSynthesis on Web; Android Tauri prefers the native system TextToSpeech engine (en/es/ja/ko/pt/fr/de/it/eo, requires a system TTS engine to be installed/enabled)
+- Pronunciation: SpeechSynthesis on Web; Android Tauri has [eSpeak NG](https://github.com/espeak-ng/espeak-ng) built in (offline, works on any device), supporting 100+ languages including en/es/ja/ko/pt/fr/de/it/eo — Google TTS is used as fallback on GMS devices for better quality
 - Appearance: meaning toggle, immersive mode, auto/light/dark theme
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
@@ -150,3 +150,7 @@ To use, contact the author to obtain `cloud.js`, place it in the `js/` directory
 
 - GitHub: https://github.com/k7tmiz/A4-Memory
 - Email: kcyx01@gmail.com
+
+## Third-Party Open Source Components
+
+- [eSpeak NG](https://github.com/espeak-ng/espeak-ng) — GPLv3, Android built-in TTS engine, 100+ languages with offline pronunciation
