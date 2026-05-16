@@ -341,12 +341,11 @@ jobs:
             echo "⚠ No ANDROID_KEYSTORE_BASE64 secret — using temporary keystore (won't survive reinstall)"
           fi
 
-          # Find release APK: tauri puts APK in architecture-specific subdirs
-          # e.g. outputs/apk/aarch64/release/*.apk
-          UNSIGNED=$(find src-tauri/gen/android/app/build/outputs/apk -type f -name "*.apk" | grep -v espeak | head -1)
+          # Find APK: search whole outputs tree (arch-specific subdirs like aarch64/release/)
+          UNSIGNED=$(find src-tauri/gen/android/app/build/outputs -type f -name "*.apk" | grep -v espeak | head -1)
           if [ -z "$UNSIGNED" ]; then
-            echo "ERROR: No APK found in app/build/outputs/apk"
-            find src-tauri/gen/android/app/build/outputs/ -type f -name "*.apk" 2>/dev/null || echo "No APK files found"
+            echo "ERROR: No APK found in app/build/outputs"
+            find src-tauri/gen/android/app/build/outputs -type f -name "*.apk" 2>/dev/null || echo "No APK files found"
             ls -la src-tauri/gen/android/app/build/outputs/ 2>/dev/null || echo "No outputs dir"
             exit 1
           fi
@@ -365,9 +364,13 @@ jobs:
 
       - name: Upload APK to Release
         run: |
-          APK="a4-memory-${{ github.ref_name }}-android.apk"
+          APK=$(find . -maxdepth 1 -name "a4-memory-*.apk" -type f | head -1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: No signed APK found"
+            exit 1
+          fi
           gh release upload ${{ github.ref_name }} "$APK" --clobber
-          echo "✓ APK uploaded"
+          echo "✓ APK uploaded: $APK"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
