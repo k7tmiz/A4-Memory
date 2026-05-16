@@ -219,11 +219,15 @@ jobs:
       - name: Set NDK clang as linker for Android target
         run: |
           NDK_VER=$(ls $ANDROID_HOME/ndk | head -1)
+          echo "NDK_VER=$NDK_VER"
           NDK_TOOLCHAIN="$ANDROID_HOME/ndk/$NDK_VER/toolchains/llvm/prebuilt"
+          echo "NDK_TOOLCHAIN=$NDK_TOOLCHAIN"
+          echo "=== Available NDK binaries ==="
+          find "$NDK_TOOLCHAIN" -name "*aarch64*" -type f 2>/dev/null | head -10
           # Find clang for aarch64 target (API level 21)
           NDK_CLANG=$(find "$NDK_TOOLCHAIN" -name "aarch64-linux-android21-clang*" -type f 2>/dev/null | grep -v ++ | head -1)
           if [ -z "$NDK_CLANG" ]; then
-            echo "ERROR: aarch64-linux-android21-clang not found"
+            echo "::error::aarch64-linux-android21-clang not found"
             find "$NDK_TOOLCHAIN" -name "aarch64*" -type f 2>/dev/null | head -10
             exit 1
           fi
@@ -276,7 +280,8 @@ jobs:
       - name: Init Android project
         run: |
           rm -rf src-tauri/gen/android
-          CI=true npx tauri android init --ci
+          CI=true npx tauri android init --ci 2>&1 | tee /tmp/android-init.log
+          echo "Init exit: $?"
 
       - name: Install Android native bridge
         run: |
@@ -334,8 +339,40 @@ jobs:
       - name: Build Android APK
         id: build-apk
         run: |
-          npx tauri android build --apk --target aarch64 -- --stacktrace --info 2>&1 | tee /tmp/gradle-build.log || true
-          echo "BUILD_EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          echo "=== npx tauri check ==="
+          which npx && npx --version
+          npx tauri --version 2>&1 || echo "tauri CLI not found via npx"
+          echo "=== node_modules/.bin/tauri ==="
+          ls -la node_modules/.bin/tauri 2>/dev/null || echo "not found"
+          echo "=== Env: CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER ==="
+          echo "$CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER"
+          echo "=== NDK clang check ==="
+          NDK_VER=$(ls $ANDROID_HOME/ndk | head -1)
+          find "$ANDROID_HOME/ndk/$NDK_VER/toolchains/llvm/prebuilt" -name "aarch64-linux-android*clang*" -type f 2>/dev/null | head -5
+          echo "=== Rust target check ==="
+          rustup target list --installed | grep aarch64
+          echo "=== Build start ==="
+          set -x
+          npx tauri android build --apk --target aarch64 2>&1 | tee /tmp/gradle-build.log
+          BUILD_EXIT=${PIPESTATUS[0]}
+          set +x
+          echo "BUILD_EXIT_CODE=$BUILD_EXIT" >> "$GITHUB_OUTPUT"
+          echo "=== Last 50 lines of log ==="
+          tail -50 /tmp/gradle-build.log
+
+      - name: Debug Android project structure
+        if: always()
+        run: |
+          echo "=== gen/android/ top-level structure ==="
+          ls -la src-tauri/gen/android/ 2>/dev/null || echo "(gen/android missing)"
+          echo "=== gen/android/app/ structure ==="
+          ls -la src-tauri/gen/android/app/ 2>/dev/null || echo "(gen/android/app missing)"
+          echo "=== gen/android/app/build/ structure ==="
+          ls -la src-tauri/gen/android/app/build/ 2>/dev/null || echo "(gen/android/app/build missing)"
+          echo "=== Cargo target android dir ==="
+          ls ~/.cargo/registry/src/ 2>/dev/null | head -5
+          echo "=== android gen log ==="
+          cat /tmp/android-init.log 2>/dev/null || echo "(no init log)"
 
       - name: Debug APK location
         if: always()
@@ -346,6 +383,10 @@ jobs:
           find src-tauri/gen/android/app/build -name "*.apk" -type f 2>/dev/null || echo "(no APK files found)"
           echo "=== Build dir tree (top 3 levels) ==="
           find src-tauri/gen/android/app/build -maxdepth 3 -type d 2>/dev/null | head -30 || echo "(build dir missing)"
+          echo "=== Rust target dir ==="
+          ls ~/.cargo/registry/cache/ 2>/dev/null || echo "(no cargo cache)"
+          echo "=== Cargo env ==="
+          env | grep -E "CARGO|NDK|ANDROID" || true
 
       - name: Upload Gradle build log
         if: always()
