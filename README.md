@@ -49,7 +49,9 @@ A4-Memory/
 ├── css/style.css          # 样式
 ├── data/words.js          # 内置词书
 ├── js/
-│   ├── core/common.js     # 跨页共享业务逻辑
+│   ├── core/
+│   │   ├── common.js     # 跨页共享业务逻辑
+│   │   └── sanitize.js   # XSS 防护（HTML/属性转义）
 │   ├── app.js             # 首页控制器
 │   ├── lookup.js          # 查词控制器
 │   ├── records.js         # 记录页控制器

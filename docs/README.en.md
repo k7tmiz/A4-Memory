@@ -48,7 +48,9 @@ A4-Memory/
 ├── css/style.css          # Styles
 ├── data/words.js          # Built-in wordbooks
 ├── js/
-│   ├── core/common.js     # Cross-page shared business logic
+│   ├── core/
+│   │   ├── common.js      # Cross-page shared business logic
+│   │   └── sanitize.js    # XSS protection (HTML/attribute escaping)
 │   ├── app.js             # Home page controller
 │   ├── lookup.js          # Lookup controller
 │   ├── records.js         # Records page controller

@@ -20,7 +20,8 @@ A4-Memory/
 │   └── words.js            # 内置词书（CET4 / CET6 / 西班牙语示例）
 ├── js/
 │   ├── core/
-│   │   └── common.js      # 跨页共享纯业务逻辑
+│   │   ├── common.js      # 跨页共享纯业务逻辑
+│   │   └── sanitize.js    # XSS 防护（HTML/属性转义）
 │   ├── __cloud_stub.js    # cloud.js 占位（仅公开仓库构建时使用）
 │   ├── app.js             # 首页控制器
 │   ├── lookup.js          # 查词弹窗控制器
@@ -128,13 +129,22 @@ records.html
 - 通用 normalize 与默认设置
 - 词库/单词归一化（`getWordsFromGlobal`、`getWordbooksFromGlobal`、`normalizeWordObject`）
 
+### `js/core/sanitize.js`
+XSS 防护模块，提供 HTML 和属性转义。记录页 CSV 导出时对释义/例句等内容调用 `escapeHtml` 清洗，防止恶意内容在导出文件中执行。
+```javascript
+window.A4Sanitize = {
+  escapeHtml(value),   // HTML 转义（& < > " '）
+  escapeAttr(value),   // 属性转义（" '）
+}
+```
+
 ### `js/storage.js`
-`localStorage` 读写封装，暴露 `window.A4Storage`：
+`localStorage` 读写封装，暴露 `window.A4Storage`。写入时自动清除 `apiKey` 等敏感字段，防止旧版本数据或导入数据中的 API Key 被持久化到 localStorage。
 ```javascript
 window.A4Storage = {
   STORAGE_KEY,         // "a4-memory:v1"
-  loadState(),         // 返回解析后的 JSON 或 null
-  saveState(state),   // 序列化后写入 localStorage
+  loadState(),         // 返回解析后的 JSON 或 null；读取时清除 apiKey
+  saveState(state),   // 序列化后写入 localStorage；写入时强制清除 apiKey
   readStateRaw(),      // alias for loadState
   writeStateRaw(state) // alias for saveState
 }
