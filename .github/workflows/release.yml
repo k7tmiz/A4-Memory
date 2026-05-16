@@ -105,7 +105,9 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 修复若干问题，优化用户体验
+            - 修复 Android 端 TTS 在部分设备上崩溃的问题
+            - 修复 Android 端 TTS 在 release 构建中无法正常工作的问题
+            - 新增前端 XSS 防护模块并同步到所有文档
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
@@ -327,6 +329,9 @@ jobs:
             const fs = require('fs');
             const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
             const translations = new Map([
+              ['fix android tts crash: spawn jni call in detached async task', '修复 Android 端 TTS 在部分设备上崩溃的问题'],
+              ['fix android tts release bridge', '修复 Android 端 TTS 在 release 构建中无法正常工作的问题'],
+              ['docs: add js/core/sanitize.js and sync apiKey protection across all docs', '新增前端 XSS 防护模块并同步到所有文档'],
               ['fix pdf export preview rendering', '修复 PDF 导出预览与实际打印内容不一致的问题'],
               ['fix pdf preview scale ratio', '修复 PDF 导出预览比例显示不一致的问题'],
               ['fix android update apk download asset', '修复 Android 端检查更新下载成 .bin 或错误文件的问题'],
