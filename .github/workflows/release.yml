@@ -233,7 +233,7 @@ jobs:
       - name: Init Android project
         run: |
           rm -rf src-tauri/gen/android
-          npx tauri android init
+          CI=true npx tauri android init --ci
 
       - name: Install Android native bridge
         run: |
