@@ -230,7 +230,7 @@ jobs:
 
       - run: npm run build
 
-      - name: Init Android project (idempotent: only creates missing files)
+      - name: Init Android project
         run: |
           if [ ! -d "src-tauri/gen/android" ]; then
             echo "Initializing Android project..."
