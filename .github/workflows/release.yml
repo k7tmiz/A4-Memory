@@ -322,6 +322,8 @@ jobs:
           mkdir -p src-tauri/gen/android/app/src/main/java/app/tauri
           cp src-tauri/android/A4SpeechBridge.kt src-tauri/gen/android/app/src/main/java/app/tauri/A4SpeechBridge.kt
           echo "✓ Android native bridge installed"
+          echo "=== A4SpeechBridge.kt content ==="
+          cat src-tauri/gen/android/app/src/main/java/app/tauri/A4SpeechBridge.kt | head -30
 
       - name: Install Android raw resources (espeak TTS APK)
         run: |

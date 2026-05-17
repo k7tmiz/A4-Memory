@@ -87,7 +87,22 @@ object A4SpeechBridge {
     }
 
     private fun isEngineAvailable(context: Context, packageName: String): Boolean {
-        return TextToSpeech.getEngines(context).any { it.name == packageName }
+        return try {
+            val tts = TextToSpeech(context, null)
+            val engines = tts.getEngines()
+            tts.shutdown()
+            engines.any { it.name == packageName }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    private fun getAvailableEngines(tts: TextToSpeech): List<TextToSpeech.EngineInfo> {
+        return try {
+            tts.getEngines()
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     private fun speakOnMainThread(context: Context, speechText: String, locale: Locale) {
@@ -105,9 +120,10 @@ object A4SpeechBridge {
         }
 
         // 优先 eSpeak NG（离线），其次 Google TTS（质量更好），最后系统默认
+        val engines = getAvailableEngines(current)
         val preferredEngine = when {
-            isEngineAvailable(current, ENGINE_ESPEAK) -> ENGINE_ESPEAK
-            isEngineAvailable(current, ENGINE_GOOGLE) -> ENGINE_GOOGLE
+            engines.any { it.name == ENGINE_ESPEAK } -> ENGINE_ESPEAK
+            engines.any { it.name == ENGINE_GOOGLE } -> ENGINE_GOOGLE
             else -> null
         }
         if (preferredEngine != null) {
