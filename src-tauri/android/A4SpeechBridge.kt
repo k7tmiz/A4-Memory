@@ -2,9 +2,6 @@ package app.tauri
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -18,7 +15,6 @@ object A4SpeechBridge {
     private var engine: TextToSpeech? = null
 
     private const val ENGINE_ESPEAK = "com.googlecode.eyesfree.espeak"
-    private const val ENGINE_GOOGLE = "com.google.android.tts"
 
     @JvmStatic
     fun speak(activity: Activity, text: String, langTag: String): String? {
@@ -34,15 +30,7 @@ object A4SpeechBridge {
 
         mainHandler.post {
             try {
-                val ctx = activity.applicationContext
-                if (!isEngineAvailable(ctx, ENGINE_ESPEAK) && !isEngineInstalled(ctx, ENGINE_ESPEAK)) {
-                    // eSpeak 未安装，内置 APK 存在时触发安装
-                    if (hasBuiltinEspeak(ctx)) {
-                        triggerEspeakInstall(activity)
-                        return@post
-                    }
-                }
-                speakOnMainThread(ctx, speechText, locale)
+                speakOnMainThread(activity.applicationContext, speechText, locale)
             } catch (_: Exception) {
                 shutdownEngine()
             }
@@ -51,84 +39,21 @@ object A4SpeechBridge {
         return null
     }
 
-    private fun hasBuiltinEspeak(context: Context): Boolean {
-        return try {
-            val resId = context.resources.getIdentifier("espeak", "raw", context.packageName)
-            resId != 0
-        } catch (_: Exception) {
-            false
-        }
-    }
-
-    private fun triggerEspeakInstall(activity: Activity) {
-        try {
-            val ctx = activity.applicationContext
-            val resId = ctx.resources.getIdentifier("espeak", "raw", ctx.packageName)
-            if (resId == 0) return
-
-            val uri = Uri.parse("android.resource://${ctx.packageName}/$resId")
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            activity.startActivity(intent)
-        } catch (_: Exception) {
-            // 安装失败，静默忽略
-        }
-    }
-
-    private fun isEngineInstalled(context: Context, packageName: String): Boolean {
-        return try {
-            context.packageManager.getPackageInfo(packageName, 0)
-            true
-        } catch (_: PackageManager.NameNotFoundException) {
-            false
-        }
-    }
-
-    private fun isEngineAvailable(context: Context, packageName: String): Boolean {
-        return try {
-            val tts = TextToSpeech(context, null)
-            val engines = tts.getEngines()
-            tts.shutdown()
-            engines.any { it.name == packageName }
-        } catch (_: Exception) {
-            false
-        }
-    }
-
-    private fun getAvailableEngines(tts: TextToSpeech): List<TextToSpeech.EngineInfo> {
-        return try {
-            tts.getEngines()
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-
     private fun speakOnMainThread(context: Context, speechText: String, locale: Locale) {
         shutdownEngine()
         engine = TextToSpeech(context) { status ->
-            mainHandler.post { speakWhenReady(status, speechText, locale) }
+            mainHandler.post {
+                if (status == TextToSpeech.SUCCESS) {
+                    speakWhenReady(speechText, locale)
+                } else {
+                    shutdownEngine()
+                }
+            }
         }
     }
 
-    private fun speakWhenReady(status: Int, speechText: String, locale: Locale) {
+    private fun speakWhenReady(speechText: String, locale: Locale) {
         val current = engine ?: return
-        if (status != TextToSpeech.SUCCESS) {
-            shutdownEngine()
-            return
-        }
-
-        // 优先 eSpeak NG（离线），其次 Google TTS（质量更好），最后系统默认
-        val engines = getAvailableEngines(current)
-        val preferredEngine = when {
-            engines.any { it.name == ENGINE_ESPEAK } -> ENGINE_ESPEAK
-            engines.any { it.name == ENGINE_GOOGLE } -> ENGINE_GOOGLE
-            else -> null
-        }
-        if (preferredEngine != null) {
-            current.setEngineByPackageName(preferredEngine)
-        }
 
         val langResult = try {
             current.setLanguage(locale)
@@ -139,6 +64,15 @@ object A4SpeechBridge {
         if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
             shutdownEngine()
             return
+        }
+
+        try {
+            val engines = current.getEngines()
+            if (engines.any { it.name == ENGINE_ESPEAK }) {
+                current.setEngineByPackageName(ENGINE_ESPEAK)
+            }
+        } catch (_: Exception) {
+            // 静默忽略，fallback 到系统默认引擎
         }
 
         current.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
