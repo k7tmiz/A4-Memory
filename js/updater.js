@@ -96,7 +96,7 @@
     const target = String(url || "").trim()
     if (!target) return Promise.resolve(false)
 
-    const tauriInvoke = window.__TAURI_INTERNALS__?.invoke
+    const tauriInvoke = getTauriInvoke()
     if (isTauri() && typeof tauriInvoke === "function") {
       return tauriInvoke("a4_open_external", { url: target }).then(function () {
         return true
@@ -339,6 +339,10 @@
 
   function isTauri() {
     return !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
+  }
+
+  function getTauriInvoke() {
+    return window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke || window.__TAURI_INTERNALS__?.invoke || null
   }
 
   // ── Exports ──────────────────────────────────────────────────────────────────

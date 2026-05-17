@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.content.FileProvider
@@ -65,6 +66,14 @@ object A4SpeechBridge {
 
     private fun triggerEspeakInstall(context: Context, activity: Activity) {
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
+                val settingsIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+                activity.startActivity(settingsIntent)
+                return
+            }
+
             val resId = context.resources.getIdentifier("espeak", "raw", context.packageName)
             if (resId == 0) return
 
@@ -83,10 +92,13 @@ object A4SpeechBridge {
             val authority = "${context.packageName}$AUTHORITY_SUFFIX"
             val uri: Uri = FileProvider.getUriForFile(context, authority, destFile)
 
-            val intent = Intent(Intent.ACTION_VIEW).apply {
+            val intent = Intent(Intent.ACTION_INSTALL_PACKAGE).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra(Intent.EXTRA_RETURN_RESULT, false)
+            }
+            context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY).forEach { info ->
+                context.grantUriPermission(info.activityInfo.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             activity.startActivity(intent)
         } catch (_: Exception) {
