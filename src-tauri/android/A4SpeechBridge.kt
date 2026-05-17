@@ -86,6 +86,14 @@ object A4SpeechBridge {
 
     @JvmStatic
     fun speak(activity: Activity, text: String, langTag: String, enginePackage: String): String? {
+        return try {
+            speakSafe(activity, text, langTag, enginePackage)
+        } catch (e: Throwable) {
+            "error:${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
+        }
+    }
+
+    private fun speakSafe(activity: Activity, text: String, langTag: String, enginePackage: String): String? {
         val speechText = text.trim()
         if (speechText.isEmpty()) return "empty"
 
@@ -178,6 +186,8 @@ object A4SpeechBridge {
             context.packageManager.getPackageInfo(packageName, 0)
             true
         } catch (_: PackageManager.NameNotFoundException) {
+            false
+        } catch (_: Exception) {
             false
         }
     }
