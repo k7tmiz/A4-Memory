@@ -11,6 +11,9 @@ import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 import java.util.Locale
 
 object A4SpeechBridge {
@@ -19,6 +22,7 @@ object A4SpeechBridge {
 
     private const val ENGINE_ESPEAK = "com.googlecode.eyesfree.espeak"
     private const val ENGINE_GOOGLE = "com.google.android.tts"
+    private const val AUTHORITY_SUFFIX = ".fileprovider"
 
     @JvmStatic
     fun speak(activity: Activity, text: String, langTag: String): String? {
@@ -37,7 +41,7 @@ object A4SpeechBridge {
                 val ctx = activity.applicationContext
                 if (!isEngineAvailable(ctx, ENGINE_ESPEAK) && !isEngineInstalled(ctx, ENGINE_ESPEAK)) {
                     if (hasBuiltinEspeak(ctx)) {
-                        triggerEspeakInstall(activity)
+                        triggerEspeakInstall(ctx, activity)
                         return@post
                     }
                 }
@@ -59,15 +63,29 @@ object A4SpeechBridge {
         }
     }
 
-    private fun triggerEspeakInstall(activity: Activity) {
+    private fun triggerEspeakInstall(context: Context, activity: Activity) {
         try {
-            val ctx = activity.applicationContext
-            val resId = ctx.resources.getIdentifier("espeak", "raw", ctx.packageName)
+            val resId = context.resources.getIdentifier("espeak", "raw", context.packageName)
             if (resId == 0) return
 
-            val uri = Uri.parse("android.resource://${ctx.packageName}/$resId")
+            val destDir = File(context.filesDir, "tts")
+            if (!destDir.exists()) destDir.mkdirs()
+            val destFile = File(destDir, "espeak.apk")
+
+            if (!destFile.exists()) {
+                context.resources.openRawResource(resId).use { input ->
+                    FileOutputStream(destFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }
+
+            val authority = "${context.packageName}$AUTHORITY_SUFFIX"
+            val uri: Uri = FileProvider.getUriForFile(context, authority, destFile)
+
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             activity.startActivity(intent)
