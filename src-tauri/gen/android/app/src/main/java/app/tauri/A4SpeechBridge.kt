@@ -39,7 +39,7 @@ object A4SpeechBridge {
         mainHandler.post {
             try {
                 val ctx = activity.applicationContext
-                if (!isEngineAvailable(ctx, ENGINE_ESPEAK) && !isEngineInstalled(ctx, ENGINE_ESPEAK)) {
+                if (!isEngineInstalled(ctx, ENGINE_ESPEAK)) {
                     if (hasBuiltinEspeak(ctx)) {
                         triggerEspeakInstall(ctx, activity)
                         return@post
@@ -103,8 +103,12 @@ object A4SpeechBridge {
         }
     }
 
-    private fun isEngineAvailable(context: Context, packageName: String): Boolean {
-        return TextToSpeech.getEngines(context).any { it.name == packageName }
+    private fun isEngineAvailable(tts: TextToSpeech, packageName: String): Boolean {
+        return try {
+            tts.engines.any { it.name == packageName }
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun speakOnMainThread(context: Context, speechText: String, locale: Locale) {

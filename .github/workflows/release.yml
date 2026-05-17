@@ -283,36 +283,40 @@ jobs:
           CI=true npx tauri android init --ci 2>&1 | tee /tmp/android-init.log
           echo "Init exit: $?"
 
-      - name: Inject lifecycle-process dependency
+      - name: Inject Android dependencies
         run: |
           GRADLE_FILE="src-tauri/gen/android/app/build.gradle.kts"
           if [ -f "$GRADLE_FILE" ]; then
-            if ! grep -q "lifecycle-process" "$GRADLE_FILE"; then
-              python3 -c "
-              import re
-              with open('$GRADLE_FILE', 'r', encoding='utf-8') as f:
-                  content = f.read()
-              # Find the dependencies block and add lifecycle-process before the closing brace
-              # Match the dependencies { ... } block (last occurrence)
-              deps_match = re.search(r'(dependencies\s*\{[^}]+)(\})', content, re.DOTALL)
+          python3 - "$GRADLE_FILE" << 'PYEOF'
+          import re, sys
+
+          gradle_file = sys.argv[1]
+          with open(gradle_file, 'r', encoding='utf-8') as f:
+              content = f.read()
+
+          dependencies = [
+              'androidx.lifecycle:lifecycle-process:2.10.0',
+              'androidx.core:core:1.17.0',
+          ]
+          missing = [dep for dep in dependencies if dep not in content]
+
+          if missing:
+              deps_match = re.search(r'(dependencies\s*\{)(.*?)(\n\})', content, re.DOTALL)
               if deps_match:
-                  inner = deps_match.group(1)
-                  last_impl = list(re.finditer(r'implementation\(\"[^\"]+\"\)', inner))
-                  if last_impl:
-                      last_pos = last_impl[-1].end()
-                      new_line = '\n    implementation(\"androidx.lifecycle:lifecycle-process:2.10.0\")'
-                      content = content[:last_pos] + new_line + content[last_pos:]
-                      with open('$GRADLE_FILE', 'w', encoding='utf-8') as f:
-                          f.write(content)
-                      print('lifecycle-process injected')
-                  else:
-                      print('WARNING: no implementation() found in dependencies block')
+                  insertion = ''.join(f'\n    implementation("{dep}")' for dep in missing)
+                  content = (
+                      content[:deps_match.start(3)]
+                      + insertion
+                      + content[deps_match.start(3):]
+                  )
+                  with open(gradle_file, 'w', encoding='utf-8') as f:
+                      f.write(content)
+                  print('Injected Android dependencies: ' + ', '.join(missing))
               else:
                   print('WARNING: dependencies block not found')
-              "
-            else
-              echo "lifecycle-process already present"
-            fi
+          else:
+              print('Android dependencies already present')
+          PYEOF
           else
             echo "WARNING: $GRADLE_FILE not found"
           fi
