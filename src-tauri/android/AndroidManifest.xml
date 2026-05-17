@@ -7,4 +7,12 @@
     <!-- 让 TTS 引擎自动完成安装 -->
     <uses-permission android:name="android.permission.INSTALL_TTS_ENGINE" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <package android:name="com.googlecode.eyesfree.espeak" />
+        <package android:name="com.google.android.tts" />
+    </queries>
+
 </manifest>

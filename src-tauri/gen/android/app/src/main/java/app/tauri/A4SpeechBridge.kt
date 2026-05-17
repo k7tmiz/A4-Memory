@@ -23,8 +23,10 @@ object A4SpeechBridge {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var engine: TextToSpeech? = null
 
+    private const val ACTION_TTS_SERVICE = "android.intent.action.TTS_SERVICE"
     private const val ENGINE_ESPEAK = "com.googlecode.eyesfree.espeak"
     private const val ENGINE_GOOGLE = "com.google.android.tts"
+    private const val SETTING_DEFAULT_TTS_ENGINE = "tts_default_synth"
     private const val AUTHORITY_SUFFIX = ".fileprovider"
 
     @JvmStatic
@@ -32,11 +34,11 @@ object A4SpeechBridge {
         return try {
             val context = activity.applicationContext
             val pm = context.packageManager
-            val defaultEngine = Settings.Secure.getString(context.contentResolver, TextToSpeech.Engine.DEFAULT_ENGINE) ?: ""
+            val defaultEngine = Settings.Secure.getString(context.contentResolver, SETTING_DEFAULT_TTS_ENGINE) ?: ""
             val engines = JSONArray()
             val seen = mutableSetOf<String>()
             val services = pm.queryIntentServices(
-                Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE),
+                Intent(ACTION_TTS_SERVICE),
                 PackageManager.MATCH_DEFAULT_ONLY
             )
 
@@ -183,7 +185,7 @@ object A4SpeechBridge {
     private fun hasAnyTtsEngine(context: Context): Boolean {
         return try {
             context.packageManager
-                .queryIntentServices(Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE), PackageManager.MATCH_DEFAULT_ONLY)
+                .queryIntentServices(Intent(ACTION_TTS_SERVICE), PackageManager.MATCH_DEFAULT_ONLY)
                 .isNotEmpty()
         } catch (_: Exception) {
             false

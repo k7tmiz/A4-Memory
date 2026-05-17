@@ -367,6 +367,19 @@ jobs:
               if short not in existing_perms:
                   content = content.replace('</manifest>', p + '\n</manifest>')
 
+          # Allow Android 11+ package visibility for installed TTS engines
+          queries = (
+              '    <queries>\n'
+              '        <intent>\n'
+              '            <action android:name="android.intent.action.TTS_SERVICE" />\n'
+              '        </intent>\n'
+              '        <package android:name="com.googlecode.eyesfree.espeak" />\n'
+              '        <package android:name="com.google.android.tts" />\n'
+              '    </queries>'
+          )
+          if 'android.intent.action.TTS_SERVICE' not in content:
+              content = content.replace('</manifest>', queries + '\n</manifest>')
+
           # Inject FileProvider inside <application>
           provider = (
               '    <provider\n'
@@ -425,6 +438,8 @@ jobs:
           echo "BUILD_EXIT_CODE=$BUILD_EXIT" >> "$GITHUB_OUTPUT"
           echo "=== First 100 lines of Gradle log (Kotlin errors appear here) ==="
           head -100 /tmp/gradle-build.log
+          echo "=== Kotlin compile errors ==="
+          grep -nE '(^e:|A4SpeechBridge|Unresolved reference|Type mismatch|Compilation error)' /tmp/gradle-build.log | head -200 || true
           echo "=== Last 20 lines of log ==="
           tail -20 /tmp/gradle-build.log
           echo "=== Verify APK exists ==="
