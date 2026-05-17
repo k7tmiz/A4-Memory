@@ -16,6 +16,8 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
+import org.json.JSONArray
+import org.json.JSONObject
 
 object A4SpeechBridge {
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -26,9 +28,64 @@ object A4SpeechBridge {
     private const val AUTHORITY_SUFFIX = ".fileprovider"
 
     @JvmStatic
-    fun speak(activity: Activity, text: String, langTag: String): String? {
+    fun listEngines(activity: Activity): String {
+        return try {
+            val context = activity.applicationContext
+            val pm = context.packageManager
+            val defaultEngine = Settings.Secure.getString(context.contentResolver, TextToSpeech.Engine.DEFAULT_ENGINE) ?: ""
+            val engines = JSONArray()
+            val seen = mutableSetOf<String>()
+            val services = pm.queryIntentServices(
+                Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE),
+                PackageManager.MATCH_DEFAULT_ONLY
+            )
+
+            for (service in services) {
+                val packageName = service.serviceInfo?.packageName ?: continue
+                if (!seen.add(packageName)) continue
+                val label = try {
+                    service.loadLabel(pm)?.toString()
+                } catch (_: Exception) {
+                    null
+                }
+                engines.put(
+                    JSONObject()
+                        .put("packageName", packageName)
+                        .put("name", label?.takeIf { it.isNotBlank() } ?: packageName)
+                        .put("default", packageName == defaultEngine)
+                        .put("installed", true)
+                        .put("bundled", false)
+                )
+            }
+
+            if (hasBuiltinEspeak(context) && !seen.contains(ENGINE_ESPEAK)) {
+                engines.put(
+                    JSONObject()
+                        .put("packageName", ENGINE_ESPEAK)
+                        .put("name", "eSpeak NG")
+                        .put("default", false)
+                        .put("installed", false)
+                        .put("bundled", true)
+                )
+            }
+
+            JSONObject()
+                .put("ok", true)
+                .put("defaultEngine", defaultEngine)
+                .put("engines", engines)
+                .toString()
+        } catch (e: Exception) {
+            JSONObject()
+                .put("ok", false)
+                .put("error", e.message ?: "unknown")
+                .toString()
+        }
+    }
+
+    @JvmStatic
+    fun speak(activity: Activity, text: String, langTag: String, enginePackage: String): String? {
         val speechText = text.trim()
-        if (speechText.isEmpty()) return null
+        if (speechText.isEmpty()) return "empty"
 
         val targetTag = langTag.trim().ifEmpty { "en-US" }
         val locale = try {
@@ -37,22 +94,28 @@ object A4SpeechBridge {
             return "Android TTS locale error: ${e.message ?: "unknown"}"
         }
 
+        val ctx = activity.applicationContext
+        val requestedEngine = enginePackage.trim()
+        if (requestedEngine.isNotEmpty() && !isEngineInstalled(ctx, requestedEngine)) {
+            return if (requestedEngine == ENGINE_ESPEAK && hasBuiltinEspeak(ctx)) {
+                triggerEspeakInstall(ctx, activity)
+            } else {
+                "error:engine_not_installed"
+            }
+        }
+        if (requestedEngine.isEmpty() && !hasAnyTtsEngine(ctx) && hasBuiltinEspeak(ctx)) {
+            return triggerEspeakInstall(ctx, activity)
+        }
+
         mainHandler.post {
             try {
-                val ctx = activity.applicationContext
-                if (!isEngineInstalled(ctx, ENGINE_ESPEAK)) {
-                    if (hasBuiltinEspeak(ctx)) {
-                        triggerEspeakInstall(ctx, activity)
-                        return@post
-                    }
-                }
-                speakOnMainThread(ctx, speechText, locale)
+                speakOnMainThread(ctx, speechText, locale, requestedEngine.ifEmpty { null })
             } catch (_: Exception) {
                 shutdownEngine()
             }
         }
 
-        return null
+        return "queued"
     }
 
     private fun hasBuiltinEspeak(context: Context): Boolean {
@@ -64,18 +127,18 @@ object A4SpeechBridge {
         }
     }
 
-    private fun triggerEspeakInstall(context: Context, activity: Activity) {
-        try {
+    private fun triggerEspeakInstall(context: Context, activity: Activity): String {
+        return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
                 val settingsIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:${context.packageName}")
                 }
                 activity.startActivity(settingsIntent)
-                return
+                return "install_permission_required"
             }
 
             val resId = context.resources.getIdentifier("espeak", "raw", context.packageName)
-            if (resId == 0) return
+            if (resId == 0) return "error:missing_bundled_espeak"
 
             val destDir = File(context.filesDir, "tts")
             if (!destDir.exists()) destDir.mkdirs()
@@ -101,16 +164,28 @@ object A4SpeechBridge {
                 context.grantUriPermission(info.activityInfo.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             activity.startActivity(intent)
-        } catch (_: Exception) {
-            // 安装失败，静默忽略
+            "install_started"
+        } catch (e: Exception) {
+            "error:${e.message ?: "install_failed"}"
         }
     }
 
     private fun isEngineInstalled(context: Context, packageName: String): Boolean {
+        if (packageName.isBlank()) return false
         return try {
             context.packageManager.getPackageInfo(packageName, 0)
             true
         } catch (_: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    private fun hasAnyTtsEngine(context: Context): Boolean {
+        return try {
+            context.packageManager
+                .queryIntentServices(Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE), PackageManager.MATCH_DEFAULT_ONLY)
+                .isNotEmpty()
+        } catch (_: Exception) {
             false
         }
     }
@@ -123,11 +198,13 @@ object A4SpeechBridge {
         }
     }
 
-    private fun speakOnMainThread(context: Context, speechText: String, locale: Locale) {
+    private fun speakOnMainThread(context: Context, speechText: String, locale: Locale, enginePackage: String?) {
         shutdownEngine()
-        engine = TextToSpeech(context) { status ->
+        engine = if (enginePackage.isNullOrBlank()) TextToSpeech(context) { status ->
             mainHandler.post { speakWhenReady(status, speechText, locale) }
-        }
+        } else TextToSpeech(context, { status ->
+            mainHandler.post { speakWhenReady(status, speechText, locale) }
+        }, enginePackage)
     }
 
     private fun speakWhenReady(status: Int, speechText: String, locale: Locale) {
@@ -135,15 +212,6 @@ object A4SpeechBridge {
         if (status != TextToSpeech.SUCCESS) {
             shutdownEngine()
             return
-        }
-
-        val preferredEngine = when {
-            isEngineAvailable(current, ENGINE_ESPEAK) -> ENGINE_ESPEAK
-            isEngineAvailable(current, ENGINE_GOOGLE) -> ENGINE_GOOGLE
-            else -> null
-        }
-        if (preferredEngine != null) {
-            current.setEngineByPackageName(preferredEngine)
         }
 
         val langResult = try {

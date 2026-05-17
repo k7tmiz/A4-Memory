@@ -1392,6 +1392,7 @@
       if (
         mode === "manual" &&
         state?.voiceURI &&
+        !window.A4Speech?.isAndroidTauriSpeech?.() &&
         !voices.some((v) => String(v?.voiceURI || "") === String(state.voiceURI || ""))
       ) {
         mode = "auto"
@@ -1959,9 +1960,10 @@
       afterChange("pronunciationLang")
     })
 
-    dom.voiceModeSelect?.addEventListener("change", () => {
+    dom.voiceModeSelect?.addEventListener("change", async () => {
       const state = getStateSafe()
       const next = normalizeVoiceMode(dom.voiceModeSelect.value)
+      if (window.A4Speech?.isAndroidTauriSpeech?.()) await window.A4Speech?.refreshNativeVoices?.()
       const voices = window.A4Speech?.getVoicesSorted?.() || []
       if (next === "manual") {
         const resolved =

@@ -127,69 +127,118 @@ fn a4_android_speak(
     webview_window: tauri::WebviewWindow,
     text: String,
     lang: String,
+    engine: Option<String>,
 ) -> Result<(), String> {
     use jni::objects::{JObject, JValue};
+    use std::sync::mpsc;
+    use std::time::Duration;
 
     let text = text.trim().to_string();
     let lang = lang.trim().to_string();
+    let engine = engine.unwrap_or_default().trim().to_string();
 
-    let text2 = text.clone();
-    let lang2 = lang.clone();
+    let (tx, rx) = mpsc::channel::<String>();
 
     webview_window
         .with_webview(move |webview| {
             let jh = webview.jni_handle();
-
-            tauri::async_runtime::spawn(async move {
-                // jh.exec() sends the closure to the Android main thread and returns
-                // immediately without waiting — it is fire-and-forget from our side.
-                // The closure captures text2/lang2 by move. Any Java exceptions from
-                // A4SpeechBridge.speak() are caught by the JNI call_static_method
-                // error arm and discarded (TTS engine errors surface as silent failures).
-                jh.exec(move |env, activity, _webview| {
-                    let speech_text = match env.new_string(&text2) {
-                        Ok(s) => s,
-                        Err(_) => return,
-                    };
+            jh.exec(move |env, activity, _webview| {
+                let status = (|| -> Result<String, String> {
+                    let speech_text = env.new_string(&text).map_err(|e| e.to_string())?;
                     let text_obj = JObject::from(speech_text);
-                    let lang_tag = if lang2.is_empty() { "en-US" } else { &lang2 };
-                    let lang_string = match env.new_string(lang_tag) {
-                        Ok(s) => s,
-                        Err(_) => return,
-                    };
+                    let lang_tag = if lang.is_empty() { "en-US" } else { &lang };
+                    let lang_string = env.new_string(lang_tag).map_err(|e| e.to_string())?;
                     let lang_obj = JObject::from(lang_string);
+                    let engine_string = env.new_string(&engine).map_err(|e| e.to_string())?;
+                    let engine_obj = JObject::from(engine_string);
 
-                    let result = match env.call_static_method(
+                    let result = env.call_static_method(
                         "app/tauri/A4SpeechBridge",
                         "speak",
-                        "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
-                        &[JValue::Object(activity), JValue::Object(&text_obj), JValue::Object(&lang_obj)],
-                    ) {
-                        Ok(val) => match val.l() {
-                            Ok(obj) => obj,
-                            Err(_) => return,
-                        },
-                        Err(_e) => {
-                            if env.exception_check().unwrap_or(false) {
-                                let _ = env.exception_clear();
-                            }
-                            return;
-                        }
-                    };
+                        "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                        &[
+                            JValue::Object(activity),
+                            JValue::Object(&text_obj),
+                            JValue::Object(&lang_obj),
+                            JValue::Object(&engine_obj),
+                        ],
+                    ).map_err(|e| e.to_string())?;
 
-                    if !result.is_null() {
-                        let _ = env.get_string(&jni::objects::JString::from(result));
+                    let result_obj = result.l().map_err(|e| e.to_string())?;
+                    if result_obj.is_null() {
+                        return Ok("queued".into());
                     }
-                });
+                    let result_jstring = jni::objects::JString::from(result_obj);
+                    let result_str = env
+                        .get_string(&result_jstring)
+                        .map_err(|e| e.to_string())?;
+                    Ok(result_str.to_string_lossy().into_owned())
+                })();
+
+                if env.exception_check().unwrap_or(false) {
+                    let _ = env.exception_clear();
+                }
+                let _ = tx.send(status.unwrap_or_else(|e| format!("error:{e}")));
             });
         })
         .map_err(|err| err.to_string())?;
 
-    // Always return Ok — TTS is fire-and-forget on Android.
-    // The previous synchronous Arc+try_unwrap approach crashed because
-    // jh.exec() returns before the JNI closure even runs, so the Arc
-    // still had a live clone when we tried to unwrap it.
-    Ok(())
+    let status = rx
+        .recv_timeout(Duration::from_secs(2))
+        .map_err(|_| "Android TTS bridge timed out.".to_string())?;
+    match status.as_str() {
+        "queued" | "empty" => Ok(()),
+        "install_started" => Err("请在系统安装器中安装 eSpeak NG，安装完成后再点一次发音。".into()),
+        "install_permission_required" => Err("请先允许 A4 Memory 安装未知应用，然后返回再点一次发音。".into()),
+        _ if status.starts_with("error:") => Err(status.trim_start_matches("error:").to_string()),
+        _ => Ok(()),
+    }
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
+fn a4_android_tts_engines(webview_window: tauri::WebviewWindow) -> Result<String, String> {
+    use jni::objects::JValue;
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    let (tx, rx) = mpsc::channel::<String>();
+
+    webview_window
+        .with_webview(move |webview| {
+            let jh = webview.jni_handle();
+            jh.exec(move |env, activity, _webview| {
+                let result = (|| -> Result<String, String> {
+                    let value = env.call_static_method(
+                        "app/tauri/A4SpeechBridge",
+                        "listEngines",
+                        "(Landroid/app/Activity;)Ljava/lang/String;",
+                        &[JValue::Object(activity)],
+                    ).map_err(|e| e.to_string())?;
+                    let obj = value.l().map_err(|e| e.to_string())?;
+                    if obj.is_null() {
+                        return Err("empty engine list response".into());
+                    }
+                    let text_jstring = jni::objects::JString::from(obj);
+                    let text = env
+                        .get_string(&text_jstring)
+                        .map_err(|e| e.to_string())?;
+                    Ok(text.to_string_lossy().into_owned())
+                })();
+
+                if env.exception_check().unwrap_or(false) {
+                    let _ = env.exception_clear();
+                }
+                let _ = tx.send(result.unwrap_or_else(|e| {
+                    let escaped = e.replace('\\', "\\\\").replace('"', "\\\"");
+                    format!(r#"{{"ok":false,"error":"{escaped}"}}"#)
+                }));
+            });
+        })
+        .map_err(|err| err.to_string())?;
+
+    rx.recv_timeout(Duration::from_secs(2))
+        .map_err(|_| "Android TTS engine query timed out.".to_string())
 }
 
 #[cfg(not(target_os = "android"))]
@@ -200,7 +249,18 @@ fn a4_android_print(_webview_window: tauri::WebviewWindow) -> Result<(), String>
 
 #[cfg(not(target_os = "android"))]
 #[tauri::command]
-fn a4_android_speak(_webview_window: tauri::WebviewWindow, _text: String, _lang: String) -> Result<(), String> {
+fn a4_android_speak(
+    _webview_window: tauri::WebviewWindow,
+    _text: String,
+    _lang: String,
+    _engine: Option<String>,
+) -> Result<(), String> {
+    Err("Android TextToSpeech is only available on Android builds.".into())
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
+fn a4_android_tts_engines(_webview_window: tauri::WebviewWindow) -> Result<String, String> {
     Err("Android TextToSpeech is only available on Android builds.".into())
 }
 
@@ -208,7 +268,12 @@ fn a4_android_speak(_webview_window: tauri::WebviewWindow, _text: String, _lang:
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![a4_open_external, a4_android_print, a4_android_speak])
+        .invoke_handler(tauri::generate_handler![
+            a4_open_external,
+            a4_android_print,
+            a4_android_speak,
+            a4_android_tts_engines
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
