@@ -345,45 +345,43 @@ jobs:
       - name: Inject TTS permissions and FileProvider into generated manifest
         run: |
           MANIFEST="src-tauri/gen/android/app/src/main/AndroidManifest.xml"
-          python3 -c "
-          with open('$MANIFEST', 'r', encoding='utf-8') as f:
+          python3 - "$MANIFEST" << 'PYEOF'
+          import re, sys
+          manifest = sys.argv[1]
+          with open(manifest, 'r', encoding='utf-8') as f:
               content = f.read()
-
-          import re
 
           # Inject permissions
           perms = [
-              '    <uses-permission android:name=\"android.permission.REQUEST_DELETE_PACKAGES\" />',
-              '    <uses-permission android:name=\"android.permission.REQUEST_INSTALL_PACKAGES\" />',
-              '    <uses-permission android:name=\"android.permission.INSTALL_TTS_ENGINE\" />',
+              '    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />',
+              '    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
+              '    <uses-permission android:name="android.permission.INSTALL_TTS_ENGINE" />',
           ]
-          existing_perms = set()
-          for m in re.findall(r'android\.permission\.([A-Z_]+)', content):
-              existing_perms.add(m)
+          existing_perms = set(re.findall(r'android\.permission\.([A-Z_]+)', content))
           for p in perms:
               short = re.search(r'android\.permission\.([A-Z_]+)', p).group(1)
               if short not in existing_perms:
                   content = content.replace('</manifest>', p + '\n</manifest>')
 
           # Inject FileProvider inside <application>
-          provider = '''    <provider
-          android:name=\"androidx.core.content.FileProvider\"
-          android:authorities=\"\${applicationId}.fileprovider\"
-          android:exported=\"false\"
-          android:grantUriPermissions=\"true\">
-          <meta-data
-              android:name=\"android.support.FILE_PROVIDER_PATHS\"
-              android:resource=\"@xml/file_paths\" />
-      </provider>
-      '''
-          existing_fp = re.search(r'fileprovider', content)
-          if not existing_fp:
-              content = content.replace('</application>', provider + '</application>')
+          provider = (
+              '    <provider\n'
+              '        android:name="androidx.core.content.FileProvider"\n'
+              '        android:authorities="${applicationId}.fileprovider"\n'
+              '        android:exported="false"\n'
+              '        android:grantUriPermissions="true">\n'
+              '        <meta-data\n'
+              '            android:name="android.support.FILE_PROVIDER_PATHS"\n'
+              '            android:resource="@xml/file_paths" />\n'
+              '    </provider>'
+          )
+          if 'fileprovider' not in content:
+              content = content.replace('</application>', provider + '\n</application>')
 
-          with open('$MANIFEST', 'w', encoding='utf-8') as f:
+          with open(manifest, 'w', encoding='utf-8') as f:
               f.write(content)
           print('Manifest patched: permissions + FileProvider injected.')
-          "
+          PYEOF
 
       - name: Replace Android icons
         run: |
