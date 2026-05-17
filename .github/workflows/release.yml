@@ -451,6 +451,7 @@ jobs:
           retention-days: 5
 
       - name: Sign APK
+        id: sign-apk
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
@@ -482,6 +483,10 @@ jobs:
           TAG="${{ github.event.release && github.event.release.tag_name || github.ref_name }}"
           SIGNED="a4-memory-${TAG#v}-android.apk"
           echo "Output APK: $SIGNED"
+          pwd
+          realpath "$SIGNED" || echo "realpath failed, using PWD/$SIGNED"
+          ABS_SIGNED="${PWD}/${SIGNED}"
+          echo "Signed APK absolute: $ABS_SIGNED"
 
           # Sign with apksigner (auto-detect version)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner -type f | sort -r | head -1)
@@ -492,17 +497,24 @@ jobs:
             --out "$SIGNED" "$UNSIGNED"
 
           echo "✓ APK signed: $SIGNED"
-          echo "SIGNED_APK=$SIGNED" >> "$GITHUB_OUTPUT"
+          echo "SIGNED_APK=$ABS_SIGNED" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK to Release
         run: |
           # Read APK path from previous step output
           APK="${{ steps.sign-apk.outputs.SIGNED_APK }}"
-          if [ -z "$APK" ] || [ ! -f "$APK" ]; then
+          echo "APK path from step output: '$APK'"
+          if [ -z "$APK" ]; then
+            echo "ERROR: Signed APK path is empty (check if sign-apk step set SIGNED_APK output)"
+            exit 1
+          fi
+          if [ ! -f "$APK" ]; then
             echo "ERROR: Signed APK not found at '$APK'"
+            echo "PWD: $(pwd)"
             ls -la *.apk 2>/dev/null || echo "No APK in PWD"
             exit 1
           fi
+          echo "Uploading APK: $APK ($(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK") bytes)"
           gh release upload ${{ github.ref_name }} "$APK" --clobber
           echo "✓ APK uploaded: $APK"
         env:
