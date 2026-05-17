@@ -122,6 +122,30 @@ fn a4_android_print(webview_window: tauri::WebviewWindow) -> Result<(), String> 
 }
 
 #[cfg(target_os = "android")]
+fn take_java_exception(env: &mut jni::JNIEnv<'_>) -> Option<String> {
+    if !env.exception_check().ok()? {
+        return None;
+    }
+
+    let throwable = env.exception_occurred().ok()?;
+    let _ = env.exception_clear();
+    let text_obj = env
+        .call_method(&throwable, "toString", "()Ljava/lang/String;", &[])
+        .ok()?
+        .l()
+        .ok()?;
+    if text_obj.is_null() {
+        return Some("Java exception was thrown".into());
+    }
+
+    let text_jstring = jni::objects::JString::from(text_obj);
+    env.get_string(&text_jstring)
+        .ok()
+        .map(|s| s.to_string_lossy().into_owned())
+        .or_else(|| Some("Java exception was thrown".into()))
+}
+
+#[cfg(target_os = "android")]
 #[tauri::command]
 fn a4_android_speak(
     webview_window: tauri::WebviewWindow,
@@ -142,7 +166,7 @@ fn a4_android_speak(
     webview_window
         .with_webview(move |webview| {
             let jh = webview.jni_handle();
-            jh.exec(move |env, activity, _webview| {
+            jh.exec(move |mut env, activity, _webview| {
                 let status = (|| -> Result<String, String> {
                     let speech_text = env.new_string(&text).map_err(|e| e.to_string())?;
                     let text_obj = JObject::from(speech_text);
@@ -175,10 +199,12 @@ fn a4_android_speak(
                     Ok(result_str.to_string_lossy().into_owned())
                 })();
 
-                if env.exception_check().unwrap_or(false) {
-                    let _ = env.exception_clear();
-                }
-                let _ = tx.send(status.unwrap_or_else(|e| format!("error:{e}")));
+                let exception = take_java_exception(&mut env);
+                let _ = tx.send(
+                    exception
+                        .map(|e| format!("error:{e}"))
+                        .unwrap_or_else(|| status.unwrap_or_else(|e| format!("error:{e}"))),
+                );
             });
         })
         .map_err(|err| err.to_string())?;
@@ -207,7 +233,7 @@ fn a4_android_tts_engines(webview_window: tauri::WebviewWindow) -> Result<String
     webview_window
         .with_webview(move |webview| {
             let jh = webview.jni_handle();
-            jh.exec(move |env, activity, _webview| {
+            jh.exec(move |mut env, activity, _webview| {
                 let result = (|| -> Result<String, String> {
                     let value = env.call_static_method(
                         "app/tauri/A4SpeechBridge",
@@ -226,11 +252,10 @@ fn a4_android_tts_engines(webview_window: tauri::WebviewWindow) -> Result<String
                     Ok(text.to_string_lossy().into_owned())
                 })();
 
-                if env.exception_check().unwrap_or(false) {
-                    let _ = env.exception_clear();
-                }
+                let exception = take_java_exception(&mut env);
                 let _ = tx.send(result.unwrap_or_else(|e| {
-                    let escaped = e.replace('\\', "\\\\").replace('"', "\\\"");
+                    let message = exception.unwrap_or(e);
+                    let escaped = message.replace('\\', "\\\\").replace('"', "\\\"");
                     format!(r#"{{"ok":false,"error":"{escaped}"}}"#)
                 }));
             });

@@ -329,6 +329,16 @@ jobs:
           echo "=== A4SpeechBridge.kt content ==="
           cat src-tauri/gen/android/app/src/main/java/app/tauri/A4SpeechBridge.kt | head -30
 
+      - name: Keep Android native bridge for JNI
+        run: |
+          cat >> src-tauri/gen/android/app/proguard-rules.pro << 'EOF'
+
+          # Rust calls this Kotlin bridge by exact JNI class/method names.
+          -keep class app.tauri.A4SpeechBridge { *; }
+          -keepclassmembers class app.tauri.A4SpeechBridge { *; }
+          EOF
+          echo "✓ A4SpeechBridge keep rules installed"
+
       - name: Install Android raw resources (espeak TTS APK)
         run: |
           mkdir -p src-tauri/gen/android/app/src/main/res/raw
