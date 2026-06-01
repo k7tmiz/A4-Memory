@@ -9,9 +9,6 @@
   const speechState = {
     installed: false,
     voices: [],
-    nativeVoices: [],
-    nativeVoicesLoaded: false,
-    nativeVoicesLoading: false,
     warnedNoSupport: false,
     warnedNoVoice: false,
     warnedFallbackLang: new Set(),
@@ -30,12 +27,6 @@
   function installSpeech({ onVoicesChanged } = {}) {
     if (speechState.installed) return
     speechState.installed = true
-    if (isAndroidTauriSpeech()) {
-      refreshNativeVoices().then(() => {
-        if (typeof onVoicesChanged === "function") onVoicesChanged()
-      })
-      return
-    }
     if (!window.speechSynthesis) return
 
     const handler = () => {
@@ -52,14 +43,6 @@
   }
 
   function getVoicesSorted() {
-    if (isAndroidTauriSpeech()) {
-      if (!speechState.nativeVoicesLoaded) refreshNativeVoices()
-      return [...speechState.nativeVoices].sort((a, b) => {
-        if (!!a.default !== !!b.default) return a.default ? -1 : 1
-        if (!!a.installed !== !!b.installed) return a.installed ? -1 : 1
-        return String(a.name || "").localeCompare(String(b.name || ""))
-      })
-    }
     refreshVoices()
     return [...speechState.voices].sort((a, b) => {
       const la = String(a?.lang || "")
@@ -81,43 +64,6 @@
 
   function isAndroidTauriSpeech() {
     return typeof getTauriInvoke() === "function" && isAndroidRuntime()
-  }
-
-  function normalizeNativeVoice(item) {
-    const packageName = String(item?.packageName || "").trim()
-    if (!packageName) return null
-    const installed = item?.installed !== false
-    const bundled = !!item?.bundled
-    const suffix = installed ? "" : "（需安装）"
-    return {
-      name: `${String(item?.name || packageName).trim()}${suffix}`,
-      lang: "Android",
-      voiceURI: `android-tts:${packageName}`,
-      enginePackage: packageName,
-      default: !!item?.default,
-      localService: true,
-      installed,
-      bundled,
-    }
-  }
-
-  async function refreshNativeVoices() {
-    if (!isAndroidTauriSpeech() || speechState.nativeVoicesLoading) return speechState.nativeVoices
-    const invoke = getTauriInvoke()
-    if (typeof invoke !== "function") return speechState.nativeVoices
-    speechState.nativeVoicesLoading = true
-    try {
-      const raw = await invoke("a4_android_tts_engines")
-      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw
-      const engines = Array.isArray(parsed?.engines) ? parsed.engines : []
-      speechState.nativeVoices = engines.map(normalizeNativeVoice).filter(Boolean)
-      speechState.nativeVoicesLoaded = true
-    } catch {
-      speechState.nativeVoicesLoaded = true
-    } finally {
-      speechState.nativeVoicesLoading = false
-    }
-    return speechState.nativeVoices
   }
 
   function getVoiceLabel(v) {
@@ -183,7 +129,7 @@
     const name = String(v.name || "").toLowerCase()
     if (name.includes("neural") || name.includes("enhanced") || name.includes("premium") || name.includes("natural"))
       score += 8
-    if (name.includes("compact") || name.includes("espeak")) score -= 14
+    if (name.includes("compact")) score -= 14
     if (exactIndex >= 0) score += 3
     return score
   }
@@ -225,28 +171,6 @@
   }) {
     if (!pronunciationEnabled) return { ok: false, reason: "disabled", voice: null, targetBase: "", candidates: [] }
 
-    if (isAndroidTauriSpeech()) {
-      const targetBase = getCurrentLanguageBase({ pronunciationLang, wordbookLanguage })
-      const candidates = getVoiceCandidatesForLanguage({ base: targetBase, accent: normalizeAccent(accent) })
-      const lang = candidates[0] || "en-US"
-      const voices = getVoicesSorted()
-      const mode = normalizeVoiceMode(voiceMode)
-      if (mode === "manual") {
-        const selected = findVoiceByURI(voiceURI, voices)
-        if (selected) return { ok: true, reason: "android_native", voice: { ...selected, lang }, targetBase, candidates, voices }
-        if (voiceURI) return { ok: true, reason: "manual_missing", voice: null, targetBase, candidates, voices }
-      }
-      const chosen = voices.find((v) => v.default && v.installed) || voices.find((v) => v.installed) || voices[0] || null
-      return {
-        ok: true,
-        reason: "android_native",
-        voice: chosen ? { ...chosen, lang } : null,
-        targetBase,
-        candidates,
-        voices,
-      }
-    }
-
     const synth = window.speechSynthesis
     if (!synth || typeof window.SpeechSynthesisUtterance !== "function") {
       return { ok: false, reason: "no_support", voice: null, targetBase: "", candidates: [] }
@@ -282,10 +206,6 @@
     }
 
     const chosen = resolved.voice
-    if (resolved.reason === "android_native") {
-      if (!chosen) return "Android 原生 TTS：未检测到可用引擎。"
-      return `当前语音：${chosen.name}（${chosen.lang || "Android"}）`
-    }
     if (!chosen) {
       if (normalizeVoiceMode(voiceMode) === "manual" && voiceURI) return "手动语音在当前设备不可用，已回退自动模式。"
       return "未找到匹配语音，将使用系统默认语音。"
@@ -362,25 +282,15 @@
     return getVoiceCandidatesForLanguage({ base, accent: normalizeAccent(accent) })[0] || "en-US"
   }
 
-  async function speakWithAndroidTts({ text, pronunciationLang, wordbookLanguage, accent, voiceMode, voiceURI }) {
+  async function speakWithAndroidTts({ text, pronunciationLang, wordbookLanguage, accent }) {
     const invoke = getTauriInvoke()
     if (typeof invoke !== "function") {
       if (isAndroidRuntime()) window.alert("Android 原生发音桥接不可用，请安装最新 Android 版 A4 Memory。")
       return false
     }
     const lang = getNativeSpeechLang({ pronunciationLang, wordbookLanguage, accent })
-    if (!speechState.nativeVoicesLoaded) await refreshNativeVoices()
-    const resolved = resolveVoice({
-      pronunciationEnabled: true,
-      pronunciationLang,
-      wordbookLanguage,
-      accent,
-      voiceMode,
-      voiceURI,
-    })
-    const engine = String(resolved?.voice?.enginePackage || "")
     try {
-      await invoke("a4_android_speak", { text, lang, engine })
+      await invoke("a4_android_speak", { text, lang })
       return true
     } catch (err) {
       const message = String(err || "")
@@ -420,7 +330,7 @@
     if (!pronunciationEnabled) return false
 
     if (isAndroidTauriSpeech()) {
-      return speakWithAndroidTts({ text: t, pronunciationLang, wordbookLanguage, accent, voiceMode, voiceURI })
+      return speakWithAndroidTts({ text: t, pronunciationLang, wordbookLanguage, accent })
     }
 
     const resolved0 = resolveVoice({
@@ -526,7 +436,6 @@
     speak,
     isAndroidTauriSpeech,
     getNativeSpeechLang,
-    refreshNativeVoices,
     findVoiceByURI,
     getSystemDefaultVoice,
     normalizeLangTag,

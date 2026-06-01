@@ -118,7 +118,6 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 新增 Android 端内置 eSpeak NG TTS 引擎，支持离线发音（英/西等 100+ 语言）
             - 修复 Android 端 TTS 在部分设备上崩溃的问题
             - 修复 Android 端 TTS 在 release 构建中无法正常工作的问题
             - 新增前端 XSS 防护模块并同步到所有文档
@@ -128,7 +127,7 @@ jobs:
             - 内置 CET4 / CET6 / 西班牙语词书，支持自定义导入
             - 云同步（登录后可在桌面端 / Android / Web 同步学习进度）
             - AI 词书生成
-            - Android 端内置 eSpeak NG TTS 引擎（离线英/西等 100+ 语言），无 GMS 设备也能发音
+            - Android 端发音优先调用系统文字转语音引擎
 
             ### 下载
             | 平台 | 文件 |
@@ -296,7 +295,6 @@ jobs:
 
           dependencies = [
               'androidx.lifecycle:lifecycle-process:2.10.0',
-              'androidx.core:core:1.17.0',
           ]
           missing = [dep for dep in dependencies if dep not in content]
 
@@ -338,77 +336,6 @@ jobs:
           -keepclassmembers class app.tauri.A4SpeechBridge { *; }
           EOF
           echo "✓ A4SpeechBridge keep rules installed"
-
-      - name: Install Android raw resources (espeak TTS APK)
-        run: |
-          mkdir -p src-tauri/gen/android/app/src/main/res/raw
-          cp src-tauri/android/res/raw/espeak.apk src-tauri/gen/android/app/src/main/res/raw/espeak.apk
-          echo "✓ espeak TTS APK installed"
-
-      - name: Create file_paths.xml for FileProvider
-        run: |
-          mkdir -p src-tauri/gen/android/app/src/main/res/xml
-          cat > src-tauri/gen/android/app/src/main/res/xml/file_paths.xml << 'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <paths>
-              <files-path name="tts" path="tts/" />
-          </paths>
-          EOF
-          echo "✓ file_paths.xml created"
-
-      - name: Inject TTS permissions and FileProvider into generated manifest
-        run: |
-          MANIFEST="src-tauri/gen/android/app/src/main/AndroidManifest.xml"
-          python3 - "$MANIFEST" << 'PYEOF'
-          import re, sys
-          manifest = sys.argv[1]
-          with open(manifest, 'r', encoding='utf-8') as f:
-              content = f.read()
-
-          # Inject permissions
-          perms = [
-              '    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />',
-              '    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />',
-              '    <uses-permission android:name="android.permission.INSTALL_TTS_ENGINE" />',
-          ]
-          existing_perms = set(re.findall(r'android\.permission\.([A-Z_]+)', content))
-          for p in perms:
-              short = re.search(r'android\.permission\.([A-Z_]+)', p).group(1)
-              if short not in existing_perms:
-                  content = content.replace('</manifest>', p + '\n</manifest>')
-
-          # Allow Android 11+ package visibility for installed TTS engines
-          queries = (
-              '    <queries>\n'
-              '        <intent>\n'
-              '            <action android:name="android.intent.action.TTS_SERVICE" />\n'
-              '        </intent>\n'
-              '        <package android:name="com.googlecode.eyesfree.espeak" />\n'
-              '        <package android:name="com.google.android.tts" />\n'
-              '    </queries>'
-          )
-          if 'android.intent.action.TTS_SERVICE' not in content:
-              content = content.replace('</manifest>', queries + '\n</manifest>')
-
-          # Inject FileProvider inside <application>
-          provider = (
-              '    <provider\n'
-              '        android:name="androidx.core.content.FileProvider"\n'
-              '        android:authorities="${applicationId}.fileprovider"\n'
-              '        android:exported="false"\n'
-              '        android:grantUriPermissions="true">\n'
-              '        <meta-data\n'
-              '            android:name="android.support.FILE_PROVIDER_PATHS"\n'
-              '            android:resource="@xml/file_paths" />\n'
-              '    </provider>'
-          )
-          if 'fileprovider' not in content:
-              content = content.replace('</application>', provider + '\n</application>')
-
-          with open(manifest, 'w', encoding='utf-8') as f:
-              f.write(content)
-          print('Manifest patched: permissions + FileProvider injected.')
-          PYEOF
 
       - name: Replace Android icons
         run: |
@@ -525,7 +452,7 @@ jobs:
           fi
 
           # Find APK: search whole outputs tree (arch-specific subdirs like aarch64/release/)
-          UNSIGNED=$(find src-tauri/gen/android/app/build/outputs -type f -name "*.apk" | grep -v espeak | head -1)
+          UNSIGNED=$(find src-tauri/gen/android/app/build/outputs -type f -name "*.apk" | head -1)
           if [ -z "$UNSIGNED" ]; then
             echo "ERROR: No APK found in app/build/outputs"
             find src-tauri/gen/android/app/build/outputs -type f -name "*.apk" 2>/dev/null || echo "No APK files found"
@@ -601,7 +528,6 @@ jobs:
             const fs = require('fs');
             const body = fs.readFileSync('/tmp/release-body.md', 'utf8');
             const translations = new Map([
-              ['add espeak ng builtin tts engine for android offline support', '新增 Android 端内置 eSpeak NG TTS 引擎，支持离线发音（英/西等 100+ 语言）'],
               ['fix android tts crash: spawn jni call in detached async task', '修复 Android 端 TTS 在部分设备上崩溃的问题'],
               ['fix android tts release bridge', '修复 Android 端 TTS 在 release 构建中无法正常工作的问题'],
               ['docs: add js/core/sanitize.js and sync apiKey protection across all docs', '新增前端 XSS 防护模块并同步到所有文档'],
@@ -612,7 +538,6 @@ jobs:
               ['shorten desktop release job names', '简化桌面端 Release 构建任务名称'],
               ['fix macos release dmg packaging', '修复 macOS Release DMG 打包失败的问题'],
               ['fix tauri pdf export and update downloads', '修复桌面端/Android 端 PDF 导出和更新下载跳转问题'],
-              ['docs: sync espeak ng builtin tts description in frontend_context', '同步 eSpeak NG 内置 TTS 描述到前端文档']
             ]);
             const lines = (process.env.COMMITS_RAW || '')
               .split(/\r?\n/)
