@@ -8,7 +8,7 @@
       const backdrop = document.createElement("div")
       backdrop.className = "modal-backdrop"
       const panel = document.createElement("div")
-      panel.className = "modal-panel"
+      panel.className = "modal-panel records-confirm-panel"
       panel.setAttribute("role", "alertdialog")
       panel.setAttribute("aria-modal", "true")
       const header = document.createElement("div")
@@ -20,12 +20,12 @@
       body.className = "modal-body"
       body.textContent = message
       const actions = document.createElement("div")
-      actions.className = "modal-actions"
+      actions.className = "modal-actions records-confirm-actions"
       const cancelBtn = document.createElement("button")
       cancelBtn.className = "ghost"
       cancelBtn.textContent = "取消"
       const okBtn = document.createElement("button")
-      okBtn.className = "primary"
+      okBtn.className = "primary records-confirm-danger"
       okBtn.textContent = "确定"
       actions.appendChild(cancelBtn)
       actions.appendChild(okBtn)
