@@ -142,6 +142,7 @@ Cloud sync depends on the backend API and the `js/cloud.js` private module. When
 - User registration/login (account managed server-side)
 - Learning state upload/download (multi-device sync)
 - Restoring from cloud overwrites the current browser's local learning data and requires confirmation first; export a full backup before restoring if needed
+- Cloud restore preserves A4 page splits, round type, and language; older data without page indexes is automatically re-paginated by the per-page limit
 - Cloud sync stores learning state and non-sensitive settings only; AI API keys are never uploaded
 - Cloud-logged-in users auto-receive system announcements; each announcement pops once per account, latest shown at top
 
