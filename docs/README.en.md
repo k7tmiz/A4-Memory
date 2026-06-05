@@ -154,10 +154,6 @@ To use, contact the author to obtain `cloud.js`, place it in the `js/` directory
 | [FRONTEND_CONTEXT.md](./FRONTEND_CONTEXT.md) | Frontend architecture, modules, settings UI |
 | [API.md](./API.md) | User-facing API reference (public endpoints) |
 
-## Credits
-
-- Special thanks to Google DeepMind's Gemini 3.1 Pro and its powerful agent framework Antigravity for their deep involvement in the development, feature refactoring, and code maintenance of this project.
-
 ## Contact
 
 - GitHub: https://github.com/k7tmiz/A4-Memory

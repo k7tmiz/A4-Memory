@@ -155,10 +155,6 @@ npm run lint
 | [docs/FRONTEND_CONTEXT.md](./docs/FRONTEND_CONTEXT.md) | 前端架构、模块、设置界面详解 |
 | [docs/API.md](./docs/API.md) | 用户侧 API 参考（公开接口） |
 
-## 致谢 (Credits)
-
-- 感谢 Google DeepMind 的 Gemini 3.1 Pro 及其强力工具 Antigravity 深度参与了本项目的开发、功能重构与代码维护。
-
 ## 联系方式
 
 - GitHub：https://github.com/k7tmiz/A4-Memory
