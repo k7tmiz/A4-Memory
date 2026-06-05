@@ -118,13 +118,9 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 修复在线导入词书（GitHub 仓库扫描）失败的问题（CSP 策略未放行 raw.githubusercontent.com）
-            - 修复记录页缺少 CSP 安全策略的问题
-            - 修复 Web 端自定义 AI API 被 CSP 拦截的问题
-            - 优化本地存储写入性能，减少冗余 JSON 序列化
-            - 清理前端重复代码，统一 XSS 防护引用
-            - CI 增加 ESLint 自动检查，补充 SEO meta 标签
-            - 同步前端文档与实际代码（脚本加载顺序、API 列表、localStorage 键表）
+            - 新增：在线发音兜底功能，支持在 Windows / Android 缺乏小语种系统引擎时，自动回退到在线 TTS
+            - 新增：设置页支持切换在线发音源，内置 Microsoft Edge（国内直连）和 Google Translate（需代理）选项
+            - 更新：补充首屏「用法介绍」中的发音说明，并同步项目内部文档
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用

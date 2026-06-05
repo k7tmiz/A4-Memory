@@ -59,6 +59,8 @@ export default [
         performance: "readonly",
         AbortController: "readonly",
         TextDecoder: "readonly",
+        WebSocket: "readonly",
+        Uint8Array: "readonly",
       },
     },
     rules: {
