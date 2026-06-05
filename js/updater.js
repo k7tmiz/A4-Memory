@@ -334,8 +334,8 @@
       })
   }
 
-  // Always schedule auto-check. On web the version matches so no modal appears.
-  setTimeout(checkUpdate, CHECK_DELAY)
+  // Auto-check only in Tauri app (desktop / Android); web users visit the site directly.
+  if (isTauri()) setTimeout(checkUpdate, CHECK_DELAY)
 
   function isTauri() {
     return !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
