@@ -51,7 +51,7 @@ const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
 const updaterDist = `${DIST}/${UPDATER_JS}`;
 if (existsSync(updaterDist)) {
   let content = await readFile(updaterDist, 'utf-8');
-  content = content.replace(/"(\d+\.\d+\.\d+)"/, `"${pkg.version}"`);
+  content = content.replace(/(const\s+APP_VERSION\s*=\s*)"(\d+\.\d+\.\d+)"/, `$1"${pkg.version}"`);
   await writeFile(updaterDist, content);
   console.log(`✅  updater.js → APP_VERSION = ${pkg.version}`);
 }

@@ -118,11 +118,13 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - Android 发音回退为系统 TextToSpeech，不再包含第三方离线 TTS 引擎、安装流程或额外权限
-            - 清理前端、Tauri、Android 与公开文档中的第三方离线 TTS 相关内容
-            - 保留 Web / 桌面 SpeechSynthesis 与 Android 系统 TextToSpeech 发音路径
-            - 补充导入词书、复习、查词、设置、记录导出和恶意 HTML 渲染冒烟测试
-            - 刷新 Tauri、Vite、ESLint 与 Rust 依赖锁文件，发布前完成漏洞扫描
+            - 修复在线导入词书（GitHub 仓库扫描）失败的问题（CSP 策略未放行 raw.githubusercontent.com）
+            - 修复记录页缺少 CSP 安全策略的问题
+            - 修复 Web 端自定义 AI API 被 CSP 拦截的问题
+            - 优化本地存储写入性能，减少冗余 JSON 序列化
+            - 清理前端重复代码，统一 XSS 防护引用
+            - CI 增加 ESLint 自动检查，补充 SEO meta 标签
+            - 同步前端文档与实际代码（脚本加载顺序、API 列表、localStorage 键表）
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用

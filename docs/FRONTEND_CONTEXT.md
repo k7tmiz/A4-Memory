@@ -88,10 +88,12 @@ A4-Memory/
 index.html
   → data/words.js
   → js/core/common.js
+  → js/core/sanitize.js
   → js/utils.js
   → js/storage.js
   → js/cloud.js              ← 私有模块，公开仓库中不存在此文件
   → js/speech.js
+  → js/updater.js
   → js/settings.js
   → js/lookup.js
   → js/app.js
@@ -106,7 +108,9 @@ records.html
   → js/storage.js
   → js/cloud.js              ← 私有模块，公开仓库中不存在此文件
   → js/core/common.js
+  → js/core/sanitize.js
   → js/speech.js
+  → js/updater.js
   → js/settings.js
   → js/lookup.js
   → js/records.js
@@ -157,6 +161,7 @@ window.A4Utils = {
   downloadTextFile({ filename, mime, content }),
   downloadJsonFile({ filename, data }),
   downloadBlob({ filename, blob }),
+  installMobileTapGuard(el),   // 移动端 300ms 延迟兼容
 }
 ```
 
@@ -343,6 +348,11 @@ window.A4Updater = {
 | `a4-memory:v1` | 主状态 JSON |
 | `a4-memory:intro-seen:v1` | 布尔值，用法介绍弹窗是否已看过 |
 | `a4-memory:lookup-cache:v1` | 查词在线补充缓存（TTL 控制） |
+| `a4-memory:update-check:v1` | 版本检查缓存（`{ ts, releaseId }`） |
+| `a4-memory:update-skip:v1` | 用户跳过的版本号 |
+| `a4-memory:register-code-cooldown:v1` | 注册验证码发送冷却截止时间戳 |
+| `a4-memory:reset-code-cooldown:v1` | 重置密码验证码发送冷却截止时间戳 |
+| `a4-memory:cloud-sync-meta:v1` | 云同步元数据（最近同步时间等） |
 
 ---
 
