@@ -8,6 +8,9 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 object A4SpeechBridge {
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -33,39 +36,57 @@ object A4SpeechBridge {
             return "Android TTS locale error: ${e.message ?: "unknown"}"
         }
 
+        val latch = CountDownLatch(1)
+        val result = AtomicReference<String?>()
+
         mainHandler.post {
             try {
-                speakOnMainThread(activity, speechText, locale)
-            } catch (_: Exception) {
+                speakOnMainThread(activity, speechText, locale) { status ->
+                    result.set(status)
+                    latch.countDown()
+                }
+            } catch (e: Exception) {
                 shutdownEngine()
+                result.set("error:${e.javaClass.simpleName}: ${e.message ?: "unknown"}")
+                latch.countDown()
             }
         }
 
-        return "queued"
+        if (!latch.await(1800, TimeUnit.MILLISECONDS)) {
+            return "error:Android TTS bridge timed out"
+        }
+        return result.get()
     }
 
-    private fun speakOnMainThread(activity: Activity, speechText: String, locale: Locale) {
+    private fun speakOnMainThread(activity: Activity, speechText: String, locale: Locale, onReady: (String?) -> Unit) {
         shutdownEngine()
         engine = TextToSpeech(activity.applicationContext) { status ->
-            mainHandler.post { speakWhenReady(status, speechText, locale) }
+            mainHandler.post { speakWhenReady(status, speechText, locale, onReady) }
         }
     }
 
-    private fun speakWhenReady(status: Int, speechText: String, locale: Locale) {
-        val current = engine ?: return
+    private fun speakWhenReady(status: Int, speechText: String, locale: Locale, onReady: (String?) -> Unit) {
+        val current = engine
+        if (current == null) {
+            onReady("error:Android TTS engine unavailable")
+            return
+        }
         if (status != TextToSpeech.SUCCESS) {
             shutdownEngine()
+            onReady("error:Android TTS engine initialization failed")
             return
         }
 
         val langResult = try {
             current.setLanguage(locale)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             shutdownEngine()
+            onReady("error:Android TTS language error: ${e.message ?: "unknown"}")
             return
         }
         if (langResult == TextToSpeech.LANG_MISSING_DATA || langResult == TextToSpeech.LANG_NOT_SUPPORTED) {
             shutdownEngine()
+            onReady("error:Android TTS language is missing or not supported")
             return
         }
 
@@ -93,7 +114,12 @@ object A4SpeechBridge {
             @Suppress("DEPRECATION")
             current.speak(speechText, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
         }
-        if (result == TextToSpeech.ERROR) shutdownEngine()
+        if (result == TextToSpeech.ERROR) {
+            shutdownEngine()
+            onReady("error:Android TTS speak failed")
+            return
+        }
+        onReady("queued")
     }
 
     private fun shutdownEngine() {
