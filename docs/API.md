@@ -1,18 +1,12 @@
 # API 参考文档
 
-> **说明**：本文档为公开 API 参考，仅包含用户侧公开接口。后端管理接口、运维相关内容请参考 `backend/DEVELOPMENT_CONTEXT.md`（私有）。
+> **说明**：本文档为公开 API 参考，仅包含用户侧公开接口；后端管理接口和运维内容不在本文档范围内。
 >
 > 基础 URL：`https://api.k7tmiz.com`
 >
 > 所有接口均返回 JSON。无特殊说明时，`Content-Type: application/json` 请求头可选。
-
----
-
-## 版本说明
-
-- 1.0.16 没有新增或变更公开后端 API 路径；本次调整集中在前端/Tauri 发音路径、公开文档、Release 发布说明和依赖锁文件。
-- Android 发音仅调用系统 TextToSpeech 桥接，不通过公开后端 API，也不引入第三方离线 TTS 引擎安装流程。
-- 公开 API 仍不接收或保存 AI API Key；前端本地备份、云同步状态和恢复流程都必须清空 `aiConfig.apiKey`。
+>
+> 公开 API 不接收或保存 AI API Key；前端本地备份、云同步状态和恢复流程会清空 `aiConfig.apiKey`。
 
 ---
 

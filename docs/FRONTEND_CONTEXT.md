@@ -39,7 +39,7 @@ A4-Memory/
     └── ...                # 文档目录
 ```
 
-**说明**：以上为公开仓库中的文件。`js/cloud.js` 不在公开仓库中，属于私有可选模块（见下方说明）。`js/__cloud_stub.js` 是 cloud.js 的占位替代，仅当 cloud.js 缺失时构建脚本自动使用。
+**说明**：公开仓库不含 `js/cloud.js`；构建脚本会在缺失时使用 `js/__cloud_stub.js`，保证本地功能正常运行。
 
 ---
 
@@ -47,11 +47,10 @@ A4-Memory/
 
 ### `js/cloud.js`
 
-**不在公开仓库中**（已列入 `.gitignore`），属于可选私有模块，需要单独获取。
+可选私有模块（已列入 `.gitignore`），接入后端 API，为前端提供账号和云同步功能。
 
 #### 职责
 
-接入后端 API，为前端提供账号和云同步功能：
 - 用户登录 / 邮箱验证码注册 / 重置密码
 - 学习状态上传 / 下载（多设备同步）
 - 系统公告接收
@@ -91,7 +90,7 @@ index.html
   → js/core/sanitize.js
   → js/utils.js
   → js/storage.js
-  → js/cloud.js              ← 私有模块，公开仓库中不存在此文件
+  → js/cloud.js              ← 可选私有模块
   → js/speech.js
   → js/updater.js
   → js/settings.js
@@ -106,7 +105,7 @@ records.html
   → data/words.js
   → js/utils.js
   → js/storage.js
-  → js/cloud.js              ← 私有模块，公开仓库中不存在此文件
+  → js/cloud.js              ← 可选私有模块
   → js/core/common.js
   → js/core/sanitize.js
   → js/speech.js
@@ -116,7 +115,7 @@ records.html
   → js/records.js
 ```
 
-`cloud.js` 已在 HTML 中固定引用。公开仓库中不含此文件，浏览器会 404 但不影响其他脚本加载。
+`cloud.js` 已在 HTML 中固定引用；缺失时浏览器会 404，但不影响其他脚本加载。
 
 ---
 
@@ -237,7 +236,7 @@ window.A4Updater = {
 - `a4_android_print()`：Android 端调用 WebView 原生打印接口。
 - `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读；不内置离线语音包，不负责安装或切换第三方 TTS 引擎。
 
-### 1.0.16 前端验证基线
+### 基础冒烟检查
 
 - 词书导入：TXT、CSV、JSON 本地导入均应正常创建自定义词书并可选中。
 - 学习流程：新增单词后自动复习弹窗应打开；记录页手动复习应可返回首页并打开复习弹窗。
