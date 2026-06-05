@@ -8,6 +8,14 @@
 
 ---
 
+## 版本说明
+
+- 1.0.16 没有新增或变更公开后端 API 路径；本次调整集中在前端/Tauri 发音路径、公开文档、Release 发布说明和依赖锁文件。
+- Android 发音仅调用系统 TextToSpeech 桥接，不通过公开后端 API，也不引入第三方离线 TTS 引擎安装流程。
+- 公开 API 仍不接收或保存 AI API Key；前端本地备份、云同步状态和恢复流程都必须清空 `aiConfig.apiKey`。
+
+---
+
 ## 一、用户接口
 
 由 `js/cloud.js`（浏览器端桥接层）调用，路径前缀 `/api/auth`、`/api/state` 和 `/api/email`。

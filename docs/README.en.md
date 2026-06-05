@@ -12,6 +12,14 @@ Demo: https://k7tmiz.com/words
 
 A pure front-end vocabulary tool built around randomly placing words on A4 pages, breaking away from list-based memorization. Each new word auto-opens the review modal; in a multi-page normal round, auto review is scoped to the current page, while "Review this round" reviews all pages. Includes learning records, status aggregation, wordbook import, lookup, pronunciation, export, and AI wordbook generation.
 
+## 1.0.16 Release Notes
+
+- Android pronunciation now uses the system TextToSpeech path only, with no bundled third-party offline TTS engine, installer flow, or extra permissions
+- Web and desktop continue to use SpeechSynthesis; Android speaks through the native system TextToSpeech bridge
+- TXT/CSV/JSON wordbook import, auto/manual review, lookup, settings backup entry points, and records export entry points were smoke-tested
+- Malicious HTML word rendering was covered to ensure imported content does not become real DOM tags or execute scripts
+- Tauri, Vite, ESLint, and Rust lockfiles were refreshed, with release-time vulnerability checks completed
+
 ## Features
 
 - A4 random layout with collision avoidance

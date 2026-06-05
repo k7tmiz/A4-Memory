@@ -161,7 +161,7 @@ window.A4Utils = {
 ```
 
 ### `js/speech.js`
-语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`，由系统 TextToSpeech 引擎朗读，不内置离线语音包，系统没有可用 TTS 引擎时提示用户安装或启用。
+语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`，由系统 TextToSpeech 引擎朗读，不内置离线语音包，不包含第三方离线 TTS 引擎安装流程或额外安装权限。系统没有可用 TTS 引擎时，只提示用户在系统层安装或启用。
 ```javascript
 window.A4Speech = {
   installSpeech({ onVoicesChanged }),
@@ -229,7 +229,14 @@ window.A4Updater = {
 `src-tauri/src/lib.rs` 暴露最小平台能力：
 - `a4_open_external(url)`：桌面端 / Android 打开系统默认浏览器或下载处理器。
 - `a4_android_print()`：Android 端调用 WebView 原生打印接口。
-- `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读；不内置离线语音包。
+- `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读；不内置离线语音包，不负责安装或切换第三方 TTS 引擎。
+
+### 1.0.16 前端验证基线
+
+- 词书导入：TXT、CSV、JSON 本地导入均应正常创建自定义词书并可选中。
+- 学习流程：新增单词后自动复习弹窗应打开；记录页手动复习应可返回首页并打开复习弹窗。
+- 安全渲染：导入词条中的 HTML 片段只能作为文本显示，不得生成真实 DOM 标签或触发脚本。
+- 设置与记录：设置弹窗、备份导入导出入口、记录页 CSV/PDF 导出入口应可正常访问。
 
 ---
 
