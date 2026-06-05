@@ -359,8 +359,8 @@ window.A4Updater = {
 
 ## 7. 已知行为与限制
 
-- 旧数据兼容：`item.pageIndex` 缺失时按 `0` 处理；`round.type` 缺失时按 `normal` 处理
+- 旧数据兼容：`item.pageIndex` 缺失时，导入/云恢复按该轮 `roundCap` 自动补分页；`round.type` 缺失时按 `normal` 处理
 - `currentPageIndex` 是运行态，不写入 `localStorage`；刷新后默认回到当前轮第 1 页
-- 备份导入（`settings.js` 的 `normalizeImportedState`）当前实现不会保留：`round.type`、`round.language`、`item.pageIndex`、`aiConfig.apiKey`
+- 备份导入和云恢复（`settings.js` 的 `normalizeImportedState`）会保留轮次类型、语言和页码；`aiConfig.apiKey` 始终清空
 - 记录页监听 `storage` 事件，支持多标签页同步刷新显示
 - 轮次删除确认弹窗使用 `records.js` 自定义的 `showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`；设置页的云端恢复确认也使用自定义弹窗
