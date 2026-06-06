@@ -894,6 +894,7 @@
       continuousStudyModeToggleBtn: modal.querySelector("#continuousStudyModeToggleBtn"),
       reviewCardFlipToggleBtn: modal.querySelector("#reviewCardFlipToggleBtn"),
       pronounceToggleBtn: modal.querySelector("#pronounceToggleBtn"),
+      ttsModeSelect: modal.querySelector("#ttsModeSelect"),
       accentSelect: modal.querySelector("#accentSelect"),
       pronunciationLangSelect: modal.querySelector("#pronunciationLangSelect"),
       voiceModeSelect: modal.querySelector("#voiceModeSelect"),
@@ -1442,6 +1443,7 @@
       if (dom.pronounceToggleBtn)
         dom.pronounceToggleBtn.textContent = `发音：${state?.pronunciationEnabled ? "开" : "关"}`
       const onlineTtsEnabled = typeof state?.onlineTtsEnabled === "boolean" ? state.onlineTtsEnabled : true
+      if (dom.ttsModeSelect) dom.ttsModeSelect.value = onlineTtsEnabled ? "online" : "system"
       if (dom.onlineTtsToggleBtn)
         dom.onlineTtsToggleBtn.textContent = `在线兜底：${onlineTtsEnabled ? "开" : "关"}`
       if (dom.onlineTtsProviderSelect)
@@ -2006,7 +2008,7 @@
       afterChange("voiceURI")
     })
 
-    dom.testVoiceBtn?.addEventListener("click", () => {
+    dom.testVoiceBtn?.addEventListener("click", async () => {
       const state = getStateSafe()
       const base =
         window.A4Speech?.getCurrentLanguageBase?.({
@@ -2031,17 +2033,46 @@
                       : base === "eo"
                         ? "Saluton"
                         : "Hello"
-      window.A4Speech?.speak?.({
-        text: sample,
-        pronunciationEnabled: !!state?.pronunciationEnabled,
-        pronunciationLang: state?.pronunciationLang,
-        wordbookLanguage: getWordbookLang(),
-        accent: state?.pronunciationAccent,
-        voiceMode: state?.voiceMode,
-        voiceURI: state?.voiceURI,
-        onlineTtsEnabled: state?.onlineTtsEnabled !== false,
-        onlineTtsProvider: state?.onlineTtsProvider,
-      })
+      if (dom.testVoiceBtn) {
+        dom.testVoiceBtn.disabled = true
+        dom.testVoiceBtn.textContent = "测试中..."
+      }
+      if (dom.voiceHint) dom.voiceHint.textContent = "正在测试发音..."
+      try {
+        const ok = await window.A4Speech?.speak?.({
+          text: sample,
+          pronunciationEnabled: !!state?.pronunciationEnabled,
+          pronunciationLang: state?.pronunciationLang,
+          wordbookLanguage: getWordbookLang(),
+          accent: state?.pronunciationAccent,
+          voiceMode: state?.voiceMode,
+          voiceURI: state?.voiceURI,
+          onlineTtsEnabled: state?.onlineTtsEnabled !== false,
+          onlineTtsProvider: state?.onlineTtsProvider,
+        })
+        const result = window.A4Speech?.getLastSpeakResult?.()
+        if (dom.voiceHint) {
+          if (!ok) {
+            dom.voiceHint.textContent =
+              result?.requestedMode === "system"
+                ? "测试失败：当前系统语音不可用。"
+                : "测试失败：在线发音和系统语音均不可用。"
+          } else if (result?.usedMode === "system") {
+            dom.voiceHint.textContent =
+              result.requestedMode === "online" ? "测试成功：在线发音不可用，已回退系统语音。" : "测试成功：系统语音可用。"
+          } else {
+            const providerName = result?.usedProvider === "google" ? "Google 翻译" : "Microsoft Edge"
+            const fallbackText =
+              result?.requestedProvider && result.requestedProvider !== result.usedProvider ? "（首选源不可用，已自动切换）" : ""
+            dom.voiceHint.textContent = `测试成功：${providerName} 在线语音可用${fallbackText}。`
+          }
+        }
+      } finally {
+        if (dom.testVoiceBtn) {
+          dom.testVoiceBtn.disabled = false
+          dom.testVoiceBtn.textContent = "测试发音"
+        }
+      }
     })
 
     dom.ttsModeSelect?.addEventListener("change", () => {
