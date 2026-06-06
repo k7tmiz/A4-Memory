@@ -23,7 +23,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Records: round view, status view, CSV/PDF export, generate review rounds; desktop and Android builds invoke the system print / save-as-PDF flow
 - Wordbooks: built-in CET4 / CET6 / Spanish samples, TXT/CSV/JSON import, GitHub online import
 - Lookup: local-first, online supplement (MyMemory + dictionaryapi.dev), Spanish conjugation, AI supplement
-- Pronunciation: SpeechSynthesis on Web; Android Tauri uses the native TextToSpeech bridge for en/es/ja/ko/pt/fr/de/it/eo; online mode supports Microsoft Edge and Google Translate, preferring direct browser playback and falling back to the other online provider, the server-side proxy, and then the system voice, with no bundled offline voice pack
+- Pronunciation: SpeechSynthesis on Web; Android Tauri uses the native TextToSpeech bridge for en/es/ja/ko/pt/fr/de/it/eo; online mode supports Microsoft Edge and Google Translate, preferring direct browser playback and falling back to the same-provider proxy, the other online provider, and then the system voice, with no bundled offline voice pack
 - Appearance: meaning toggle, immersive mode, auto/light/dark theme
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
@@ -129,8 +129,8 @@ Open: http://localhost:8080/ or http://localhost:5173/
 ### Online Pronunciation and Privacy
 
 - System voice mode processes spoken text locally on the device.
-- Online TTS mode sends the current text directly to Microsoft Edge or Google Translate to generate audio; if the browser cannot connect directly, it may use the server-side proxy or try the other provider.
-- If the preferred online provider fails, the same text may be sent to the other provider; the system voice is used if both fail.
+- Online TTS mode sends the current text directly to Microsoft Edge or Google Translate to generate audio; if playback does not start promptly, it may use the server-side proxy or try the other provider.
+- If the preferred online provider fails, the same text may be sent through the server-side proxy or to the other provider; the system voice is used if both fail.
 - Spoken text is not stored in learning state, backup files, or cloud sync data.
 
 ## Cloud Sync (Optional, requires private module)
