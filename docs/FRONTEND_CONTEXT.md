@@ -162,8 +162,11 @@ window.A4Utils = {
   downloadJsonFile({ filename, data }),
   downloadBlob({ filename, blob }),
   installMobileTapGuard(el),   // 移动端 300ms 延迟兼容
+  installAndroidSelectPicker(root, selector),
+  refreshAndroidSelectPickers(root),
 }
 ```
+文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录。设置弹窗中的下拉选择在 Android 环境使用应用内底部面板，原 `<select>` 保留为状态源。
 
 ### `js/speech.js`
 语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `onlineTtsEnabled` / `onlineTtsProvider` 控制；浏览器优先直连首选在线源，未及时开始播放时尝试同源私有桥接层代理，再依次尝试另一在线源和系统语音。朗读文本不写入学习状态、备份或云同步数据。Tauri CSP 需放行 `wss:` 与 `media-src blob: https:`。
@@ -204,7 +207,7 @@ window.A4Lookup = {
 - 当前轮恢复
 - 首页词书选择；Android 环境使用应用内底部面板，iOS/macOS/桌面浏览器保留原生 `<select>`
 - 复习弹窗（swipe/drag 标记）
-- 词书导入与在线词书导入
+- 词书导入、词书 JSON 导出与在线词书导入
 - 轮次推进与状态写回
 
 ### `js/records.js`
@@ -237,6 +240,7 @@ window.A4Updater = {
 `src-tauri/src/lib.rs` 暴露最小平台能力：
 - `a4_open_external(url)`：桌面端 / Android 打开系统默认浏览器或下载处理器。
 - `a4_android_print()`：Android 端调用 WebView 原生打印接口。
+- `a4_android_save_text_file(filename, mime, content)`：Android 端将文本类导出写入下载目录，用于词书、备份和 CSV 导出。
 - `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读；不内置离线语音包，不负责安装或切换第三方 TTS 引擎。
 
 ### 基础冒烟检查

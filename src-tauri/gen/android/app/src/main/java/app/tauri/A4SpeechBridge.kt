@@ -1,12 +1,17 @@
 package app.tauri
 
 import android.app.Activity
+import android.content.ContentValues
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Environment
+import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.widget.Toast
+import java.io.File
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -23,6 +28,60 @@ object A4SpeechBridge {
         } catch (e: Throwable) {
             "error:${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
         }
+    }
+
+    @JvmStatic
+    fun saveTextFile(activity: Activity, filename: String, mime: String, content: String): String? {
+        return try {
+            saveTextFileSafe(activity, filename, mime, content)
+        } catch (e: Throwable) {
+            "error:${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
+        }
+    }
+
+    private fun saveTextFileSafe(activity: Activity, filename: String, mime: String, content: String): String? {
+        val safeName = sanitizeFilename(filename).ifEmpty { "a4-memory-export.txt" }
+        val safeMime = mime.trim().ifEmpty { "text/plain;charset=utf-8" }
+        val bytes = content.toByteArray(Charsets.UTF_8)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val resolver = activity.contentResolver
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, safeName)
+                put(MediaStore.MediaColumns.MIME_TYPE, safeMime)
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                ?: return "error:Cannot create Downloads file"
+            try {
+                resolver.openOutputStream(uri)?.use { it.write(bytes) }
+                    ?: return "error:Cannot open Downloads file"
+                values.clear()
+                values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                return "error:${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
+            }
+        } else {
+            val dir = activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                ?: return "error:Cannot access app Downloads directory"
+            if (!dir.exists() && !dir.mkdirs()) return "error:Cannot create app Downloads directory"
+            File(dir, safeName).writeBytes(bytes)
+        }
+
+        mainHandler.post {
+            Toast.makeText(activity.applicationContext, "已导出到下载目录：$safeName", Toast.LENGTH_LONG).show()
+        }
+        return "saved"
+    }
+
+    private fun sanitizeFilename(value: String): String {
+        return value.trim()
+            .replace(Regex("""[\\/:*?"<>|]"""), "-")
+            .replace(Regex("""\s+"""), " ")
+            .take(120)
     }
 
     private fun speakSafe(activity: Activity, text: String, langTag: String): String? {

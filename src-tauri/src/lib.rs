@@ -147,6 +147,84 @@ fn take_java_exception(env: &mut jni::JNIEnv<'_>) -> Option<String> {
 
 #[cfg(target_os = "android")]
 #[tauri::command]
+fn a4_android_save_text_file(
+    webview_window: tauri::WebviewWindow,
+    filename: String,
+    mime: String,
+    content: String,
+) -> Result<(), String> {
+    use jni::objects::{JObject, JValue};
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    let filename = filename.trim().to_string();
+    let mime = mime.trim().to_string();
+
+    let (tx, rx) = mpsc::channel::<String>();
+
+    webview_window
+        .with_webview(move |webview| {
+            let jh = webview.jni_handle();
+            jh.exec(move |mut env, activity, _webview| {
+                let status = (|| -> Result<String, String> {
+                    let filename_string = env.new_string(&filename).map_err(|e| e.to_string())?;
+                    let filename_obj = JObject::from(filename_string);
+                    let mime_string = env
+                        .new_string(if mime.is_empty() {
+                            "text/plain;charset=utf-8"
+                        } else {
+                            &mime
+                        })
+                        .map_err(|e| e.to_string())?;
+                    let mime_obj = JObject::from(mime_string);
+                    let content_string = env.new_string(&content).map_err(|e| e.to_string())?;
+                    let content_obj = JObject::from(content_string);
+
+                    let result = env.call_static_method(
+                        "app/tauri/A4SpeechBridge",
+                        "saveTextFile",
+                        "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                        &[
+                            JValue::Object(activity),
+                            JValue::Object(&filename_obj),
+                            JValue::Object(&mime_obj),
+                            JValue::Object(&content_obj),
+                        ],
+                    ).map_err(|e| e.to_string())?;
+
+                    let result_obj = result.l().map_err(|e| e.to_string())?;
+                    if result_obj.is_null() {
+                        return Ok("saved".into());
+                    }
+                    let result_jstring = jni::objects::JString::from(result_obj);
+                    let result_str = env
+                        .get_string(&result_jstring)
+                        .map_err(|e| e.to_string())?;
+                    Ok(result_str.to_string_lossy().into_owned())
+                })();
+
+                let exception = take_java_exception(&mut env);
+                let _ = tx.send(
+                    exception
+                        .map(|e| format!("error:{e}"))
+                        .unwrap_or_else(|| status.unwrap_or_else(|e| format!("error:{e}"))),
+                );
+            });
+        })
+        .map_err(|err| err.to_string())?;
+
+    let status = rx
+        .recv_timeout(Duration::from_secs(3))
+        .map_err(|_| "Android file export bridge timed out.".to_string())?;
+    match status.as_str() {
+        "saved" => Ok(()),
+        _ if status.starts_with("error:") => Err(status.trim_start_matches("error:").to_string()),
+        _ => Ok(()),
+    }
+}
+
+#[cfg(target_os = "android")]
+#[tauri::command]
 fn a4_android_speak(
     webview_window: tauri::WebviewWindow,
     text: String,
@@ -222,6 +300,17 @@ fn a4_android_print(_webview_window: tauri::WebviewWindow) -> Result<(), String>
 
 #[cfg(not(target_os = "android"))]
 #[tauri::command]
+fn a4_android_save_text_file(
+    _webview_window: tauri::WebviewWindow,
+    _filename: String,
+    _mime: String,
+    _content: String,
+) -> Result<(), String> {
+    Err("Android file export is only available on Android builds.".into())
+}
+
+#[cfg(not(target_os = "android"))]
+#[tauri::command]
 fn a4_android_speak(
     _webview_window: tauri::WebviewWindow,
     _text: String,
@@ -237,6 +326,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             a4_open_external,
             a4_android_print,
+            a4_android_save_text_file,
             a4_android_speak
         ])
         .run(tauri::generate_context!())
