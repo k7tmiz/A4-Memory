@@ -477,6 +477,9 @@
                 </select>
               </div>
             </div>
+            <div class="form-help" id="onlineTtsPrivacyHint">
+              在线发音会将朗读文本发送给 Microsoft Edge 或 Google 翻译；首选源不可用时可能发送给另一在线源。
+            </div>
             <div class="form-row hidden" style="display:none;">
               <div class="form-label">在线兜底开关</div>
               <div class="form-control"><button class="ghost" id="onlineTtsToggleBtn" type="button">在线兜底：开</button></div>
@@ -906,6 +909,7 @@
       onlineTtsToggleBtn: modal.querySelector("#onlineTtsToggleBtn"),
       onlineTtsProviderSelect: modal.querySelector("#onlineTtsProviderSelect"),
       onlineTtsProviderRow: modal.querySelector("#onlineTtsProviderRow"),
+      onlineTtsPrivacyHint: modal.querySelector("#onlineTtsPrivacyHint"),
       lookupOnlineToggleBtn: modal.querySelector("#lookupOnlineToggleBtn"),
       lookupOnlineSourceSelect: modal.querySelector("#lookupOnlineSourceSelect"),
       lookupSpanishToggleBtn: modal.querySelector("#lookupSpanishToggleBtn"),
@@ -1450,6 +1454,8 @@
         dom.onlineTtsProviderSelect.value = normalizeOnlineTtsProvider(state?.onlineTtsProvider)
       if (dom.onlineTtsProviderRow)
         dom.onlineTtsProviderRow.classList.toggle("hidden", !onlineTtsEnabled)
+      if (dom.onlineTtsPrivacyHint)
+        dom.onlineTtsPrivacyHint.classList.toggle("hidden", !onlineTtsEnabled)
       const lookupOnlineEnabled = typeof state?.lookupOnlineEnabled === "boolean" ? state.lookupOnlineEnabled : true
       const lookupOnlineSource = String(state?.lookupOnlineSource || "").trim().toLowerCase() === "custom" ? "custom" : "builtin"
       const lookupSpanishConjugationEnabled =

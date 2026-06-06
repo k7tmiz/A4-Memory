@@ -127,6 +127,13 @@ npm run lint
 - AI 配置：`aiConfig = { provider, baseUrl, apiKey, model }`（`apiKey` 仅内存保留，不写入 localStorage、备份文件或云端状态）
 - 查词：`lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
 
+### 在线发音与隐私
+
+- 系统语音模式在设备本地处理朗读文本。
+- 在线 TTS 模式会将当前朗读文本发送给 Microsoft Edge 或 Google 翻译语音服务以生成音频。
+- 首选在线源不可用时，同一朗读文本可能发送给另一在线源；两者均不可用时回退系统语音。
+- 应用不会把朗读文本写入学习状态、备份文件或云同步数据。
+
 ## 云同步（可选，需私有模块）
 
 云同步功能依赖后端 API 和 `js/cloud.js` 私有模块。启用后支持：

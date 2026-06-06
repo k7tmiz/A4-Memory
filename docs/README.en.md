@@ -126,6 +126,13 @@ Open: http://localhost:8080/ or http://localhost:5173/
 - AI config: `aiConfig = { provider, baseUrl, apiKey, model }` (`apiKey` stays in memory and is not written to localStorage, backup files, or cloud state)
 - Lookup: `lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
 
+### Online Pronunciation and Privacy
+
+- System voice mode processes spoken text locally on the device.
+- Online TTS mode sends the current text to Microsoft Edge or Google Translate speech services to generate audio.
+- If the preferred online provider fails, the same text may be sent to the other provider; the system voice is used if both fail.
+- Spoken text is not stored in learning state, backup files, or cloud sync data.
+
 ## Cloud Sync (Optional, requires private module)
 
 Cloud sync depends on the backend API and the `js/cloud.js` private module. When enabled:

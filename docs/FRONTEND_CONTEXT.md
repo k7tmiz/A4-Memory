@@ -165,7 +165,7 @@ window.A4Utils = {
 ```
 
 ### `js/speech.js`
-语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `onlineTtsEnabled` / `onlineTtsProvider` 控制；首选在线源失败时依次尝试另一在线源和系统语音。Tauri CSP 需放行 `wss:` 与 `media-src blob: https:`。
+语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `onlineTtsEnabled` / `onlineTtsProvider` 控制；朗读文本会发送给在线服务，首选源失败时依次尝试另一在线源和系统语音，不写入学习状态、备份或云同步数据。Tauri CSP 需放行 `wss:` 与 `media-src blob: https:`。
 ```javascript
 window.A4Speech = {
   installSpeech({ onVoicesChanged }),
