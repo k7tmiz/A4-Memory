@@ -399,6 +399,44 @@ select:hover {
   background-color: var(--surfaceHover);
 }
 
+.wordbook-picker-btn {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.wordbook-picker-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wordbook-picker-icon {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  flex: 0 0 auto;
+}
+
+body.android-wordbook-picker #wordbookSelect {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.android-wordbook-picker .wordbook-picker-btn {
+  display: flex;
+}
+
 .button-link {
   display: inline-flex;
   align-items: center;
@@ -995,6 +1033,75 @@ body.theme-dark .paper {
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+.wordbook-picker-modal {
+  align-items: end;
+  padding: 0;
+}
+
+.wordbook-picker-panel {
+  width: 100%;
+  max-width: 100%;
+  max-height: min(72vh, 620px);
+  border-radius: 22px 22px 0 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+.wordbook-picker-list {
+  padding: 8px 12px calc(14px + env(safe-area-inset-bottom));
+  overflow: auto;
+}
+
+.wordbook-picker-group + .wordbook-picker-group {
+  margin-top: 12px;
+}
+
+.wordbook-picker-group-title {
+  padding: 8px 4px 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.wordbook-picker-option {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  background: var(--card2);
+  color: var(--text);
+  text-align: left;
+}
+
+.wordbook-picker-option + .wordbook-picker-option {
+  margin-top: 8px;
+}
+
+.wordbook-picker-option.active {
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border3));
+  background: color-mix(in srgb, var(--accent) 8%, var(--card2));
+}
+
+.wordbook-picker-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.wordbook-picker-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .records-confirm-panel {
