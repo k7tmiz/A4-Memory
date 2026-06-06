@@ -129,7 +129,7 @@ Open: http://localhost:8080/ or http://localhost:5173/
 ### Online Pronunciation and Privacy
 
 - System voice mode processes spoken text locally on the device.
-- Online TTS mode sends the current text to Microsoft Edge or Google Translate speech services to generate audio.
+- Online TTS mode sends the current text directly to Microsoft Edge or Google Translate to generate audio; if the browser cannot connect directly, it may use the server-side proxy or try the other provider.
 - If the preferred online provider fails, the same text may be sent to the other provider; the system voice is used if both fail.
 - Spoken text is not stored in learning state, backup files, or cloud sync data.
 
