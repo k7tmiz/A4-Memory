@@ -1,17 +1,69 @@
-use tauri_plugin_shell::ShellExt;
+use std::net::IpAddr;
+use tauri_plugin_opener::OpenerExt;
 
 fn is_blocked_host(host: &str) -> bool {
-    let h = host.to_lowercase();
-    h == "localhost"
-        || h == "0.0.0.0"
-        || h == "::1"
-        || h == "[::1]"
-        || h.starts_with("127.")
+    let h = host.trim().trim_start_matches('[').trim_end_matches(']').to_lowercase();
+
+    if h == "localhost" || h == "0.0.0.0" || h == "::1" {
+        return true;
+    }
+
+    if let Ok(ip) = h.parse::<IpAddr>() {
+        return match ip {
+            IpAddr::V4(v4) => {
+                v4.is_loopback()
+                    || v4.is_private()
+                    || v4.is_link_local()
+                    || v4.is_broadcast()
+                    || v4.is_unspecified()
+                    || v4.is_documentation()
+            }
+            IpAddr::V6(v6) => {
+                v6.is_loopback()
+                    || v6.is_unspecified()
+                    || v6.is_multicast()
+                    || {
+                        let segs = v6.segments();
+                        segs[0] & 0xfe00 == 0xfc00
+                    }
+                    || v6.to_ipv4().map(|v4| {
+                        v4.is_loopback()
+                            || v4.is_private()
+                            || v4.is_link_local()
+                            || v4.is_broadcast()
+                            || v4.is_unspecified()
+                            || v4.is_documentation()
+                    }).unwrap_or(false)
+            }
+        };
+    }
+
+    if let Some(decimal) = h
+        .split(':')
+        .next()
+        .unwrap_or(&h)
+        .parse::<u64>()
+        .ok()
+        .filter(|n| *n <= u32::MAX as u64)
+    {
+        let ip = IpAddr::from((decimal as u32).to_be_bytes());
+        return is_blocked_host(&ip.to_string());
+    }
+
+    if h.starts_with("0x") {
+        if let Ok(n) = u128::from_str_radix(&h[2..], 16) {
+            let ip = IpAddr::from(n.to_be_bytes());
+            return is_blocked_host(&ip.to_string());
+        }
+    }
+
+    h.starts_with("127.")
         || h.starts_with("192.168.")
         || h.starts_with("10.")
         || (h.starts_with("172.") && {
             let parts: Vec<&str> = h.trim_start_matches("172.").split('.').collect();
-            parts.get(0)
+            parts
+                .get(0)
                 .and_then(|p| p.parse::<u8>().ok())
                 .map_or(false, |n| n >= 16 && n <= 31)
         })
@@ -43,9 +95,8 @@ fn a4_open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
         return Err("Cannot open private or localhost URLs.".into());
     }
 
-    #[allow(deprecated)]
-    app.shell()
-        .open(target.to_string(), None)
+    app.opener()
+        .open_url(target, None::<&str>)
         .map_err(|err| err.to_string())
 }
 
@@ -53,72 +104,75 @@ fn a4_open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
 #[tauri::command]
 fn a4_android_print(webview_window: tauri::WebviewWindow) -> Result<(), String> {
     use jni::objects::{JObject, JValue};
-    use std::sync::{Arc, Mutex};
+    use std::sync::mpsc;
+    use std::time::Duration;
 
-    let error: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
-    let error_clone = error.clone();
+    let (tx, rx) = mpsc::channel::<String>();
 
     webview_window
         .with_webview(move |webview| {
-            webview.jni_handle().exec(move |env, activity, webview| {
-                let fail = |msg: &str| {
-                    *error_clone.lock().unwrap() = Some(msg.into());
-                };
+            let jh = webview.jni_handle();
+            jh.exec(move |mut env, activity, webview| {
+                let status = (|| -> Result<String, String> {
+                    let print_service = env.new_string("print").map_err(|e| e.to_string())?;
+                    let print_service_obj = JObject::from(print_service);
+                    let print_manager = env
+                        .call_method(
+                            activity,
+                            "getSystemService",
+                            "(Ljava/lang/String;)Ljava/lang/Object;",
+                            &[JValue::Object(&print_service_obj)],
+                        )
+                        .map_err(|e| e.to_string())?
+                        .l()
+                        .map_err(|e| e.to_string())?;
 
-                let print_service = match env.new_string("print") {
-                    Ok(s) => s,
-                    Err(e) => { fail(&format!("failed to allocate string: {}", e)); return; }
-                };
-                let print_service_obj = JObject::from(print_service);
-                let print_manager = match env.call_method(
-                    activity,
-                    "getSystemService",
-                    "(Ljava/lang/String;)Ljava/lang/Object;",
-                    &[JValue::Object(&print_service_obj)],
-                ) {
-                    Ok(val) => match val.l() {
-                        Ok(obj) => obj,
-                        Err(e) => { fail(&format!("print service error: {}", e)); return; }
-                    },
-                    Err(e) => { fail(&format!("getSystemService failed: {}", e)); return; }
-                };
+                    let job_name = env.new_string("A4 Memory").map_err(|e| e.to_string())?;
+                    let job_name_obj = JObject::from(job_name);
+                    let adapter = env
+                        .call_method(
+                            webview,
+                            "createPrintDocumentAdapter",
+                            "(Ljava/lang/String;)Landroid/print/PrintDocumentAdapter;",
+                            &[JValue::Object(&job_name_obj)],
+                        )
+                        .map_err(|e| e.to_string())?
+                        .l()
+                        .map_err(|e| e.to_string())?;
+                    let attrs = JObject::null();
 
-                let job_name = match env.new_string("A4 Memory") {
-                    Ok(s) => s,
-                    Err(e) => { fail(&format!("failed to allocate string: {}", e)); return; }
-                };
-                let job_name_obj = JObject::from(job_name);
-                let adapter = match env.call_method(
-                    webview,
-                    "createPrintDocumentAdapter",
-                    "(Ljava/lang/String;)Landroid/print/PrintDocumentAdapter;",
-                    &[JValue::Object(&job_name_obj)],
-                ) {
-                    Ok(val) => match val.l() {
-                        Ok(obj) => obj,
-                        Err(e) => { fail(&format!("print adapter error: {}", e)); return; }
-                    },
-                    Err(e) => { fail(&format!("createPrintDocumentAdapter failed: {}", e)); return; }
-                };
-                let attrs = JObject::null();
+                    env.call_method(
+                        print_manager,
+                        "print",
+                        "(Ljava/lang/String;Landroid/print/PrintDocumentAdapter;Landroid/print/PrintAttributes;)Landroid/print/PrintJob;",
+                        &[
+                            JValue::Object(&job_name_obj),
+                            JValue::Object(&adapter),
+                            JValue::Object(&attrs),
+                        ],
+                    )
+                    .map_err(|e| e.to_string())?;
 
-                if let Err(e) = env.call_method(
-                    print_manager,
-                    "print",
-                    "(Ljava/lang/String;Landroid/print/PrintDocumentAdapter;Landroid/print/PrintAttributes;)Landroid/print/PrintJob;",
-                    &[JValue::Object(&job_name_obj), JValue::Object(&adapter), JValue::Object(&attrs)],
-                ) {
-                    fail(&format!("print failed: {}", e));
-                }
-            })
+                    Ok("printed".into())
+                })();
+                let exception = take_java_exception(&mut env);
+                let _ = tx.send(
+                    exception
+                        .map(|e| format!("error:{e}"))
+                        .unwrap_or_else(|| status.unwrap_or_else(|e| format!("error:{e}"))),
+                );
+            });
         })
         .map_err(|err| err.to_string())?;
 
-    if let Some(msg) = Arc::try_unwrap(error).unwrap().into_inner().unwrap() {
-        return Err(msg);
+    let status = rx
+        .recv_timeout(Duration::from_secs(3))
+        .map_err(|_| "Android print bridge timed out.".to_string())?;
+    match status.as_str() {
+        "printed" => Ok(()),
+        _ if status.starts_with("error:") => Err(status.trim_start_matches("error:").to_string()),
+        _ => Ok(()),
     }
-
-    Ok(())
 }
 
 #[cfg(target_os = "android")]
@@ -322,7 +376,7 @@ fn a4_android_speak(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             a4_open_external,
             a4_android_print,
@@ -330,5 +384,8 @@ pub fn run() {
             a4_android_speak
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .unwrap_or_else(|err| {
+            eprintln!("[a4-memory] tauri runtime exited: {err}");
+            std::process::exit(1);
+        });
 }

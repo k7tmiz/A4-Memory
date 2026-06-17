@@ -29,6 +29,18 @@ out/
 /CLAUDE.md
 /Codex.md
 
+# Secrets and signing keys
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pfx
+google-services.json
+GoogleService-Info.plist
+secrets/
+
 # Local deploy scripts
 /deploy-hexo.sh
 /deploy-backend.sh

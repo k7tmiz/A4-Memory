@@ -61,6 +61,7 @@ A4-Memory/
 │   └── utils.js           # Download utilities
 ├── src-tauri/             # Tauri desktop app (Rust)
 ├── scripts/               # Build scripts
+├── tests/                 # Node unit tests
 ├── .github/workflows/     # CI / auto-release
 ├── eslint.config.mjs      # ESLint code style config
 ├── package.json           # Node dependencies (Vite + Tauri CLI + ESLint)
@@ -101,6 +102,10 @@ python3 -m http.server 8080
 npm run dev
 # Lint:
 npm run lint
+# Unit tests:
+npm test
+# Production build (copy to dist/):
+npm run build
 ```
 
 Open: http://localhost:8080/ or http://localhost:5173/

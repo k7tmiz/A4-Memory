@@ -18,6 +18,7 @@
     lastOnlineProvider: "",
     lastSpeakResult: null,
     activeAudio: null,
+    speakGen: 0,
   }
 
   function refreshVoices() {
@@ -44,6 +45,14 @@
       window.speechSynthesis.onvoiceschanged = handler
     }
     refreshVoices()
+
+    const cleanup = () => {
+      try { window.speechSynthesis?.cancel?.() } catch { /* ignore */ }
+      try { stopActiveAudio() } catch { /* ignore */ }
+      speechState.speakGen = (speechState.speakGen || 0) + 1
+    }
+    window.addEventListener("beforeunload", cleanup)
+    window.addEventListener("pagehide", cleanup)
   }
 
   function getVoicesSorted() {
@@ -58,16 +67,12 @@
     })
   }
 
-  function getTauriInvoke() {
-    return window.__TAURI__?.core?.invoke || window.__TAURI__?.invoke || window.__TAURI_INTERNALS__?.invoke || null
-  }
-
   function isAndroidRuntime() {
     return /Android/i.test(navigator.userAgent || "")
   }
 
   function isAndroidTauriSpeech() {
-    return typeof getTauriInvoke() === "function" && isAndroidRuntime()
+    return typeof window.A4Utils?.getTauriInvoke?.() === "function" && isAndroidRuntime()
   }
 
   function getVoiceLabel(v) {
@@ -279,7 +284,7 @@
   }
 
   async function speakWithAndroidTts({ text, pronunciationLang, wordbookLanguage, accent }) {
-    const invoke = getTauriInvoke()
+    const invoke = window.A4Utils?.getTauriInvoke?.()
     if (typeof invoke !== "function") {
       if (isAndroidRuntime()) window.alert("Android 原生发音桥接不可用，请安装最新 Android 版 A4 Memory。")
       return false
@@ -296,6 +301,7 @@
 
   // ── Online TTS ──────────────────────────────────────────────────────────────
 
+  // Public Edge TTS constant per reverse-engineering convention — not a secret.
   const EDGE_TTS_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4"
   const EDGE_TTS_WS_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1"
   const EDGE_TTS_VERSION = "1-143.0.3650.75"
@@ -695,11 +701,13 @@
       return await new Promise((resolve) => {
         let idx = 0
         let timer = null
+        const myGen = ++speechState.speakGen
         const finish = (ok) => {
           if (timer) clearTimeout(timer)
           resolve(ok)
         }
         const speakNext = () => {
+          if (myGen !== speechState.speakGen) return finish(false)
           if (idx >= parts.length) return finish(true)
           const u = makeUtterance(parts[idx])
           let finished = false
@@ -713,7 +721,10 @@
             finished = true
             clearTimeout(timer)
             idx += 1
-            setTimeout(speakNext, 140)
+            setTimeout(() => {
+              if (myGen !== speechState.speakGen) return finish(false)
+              speakNext()
+            }, 140)
           }
           u.onerror = () => {
             if (finished) return
@@ -735,6 +746,7 @@
 
     speechState.lastOnlineProvider = ""
     speechState.lastSpeakResult = null
+    speechState.speakGen = (speechState.speakGen || 0) + 1
     stopActiveAudio()
     window.speechSynthesis?.cancel?.()
 

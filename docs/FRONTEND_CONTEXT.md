@@ -123,7 +123,9 @@ records.html
 ## 4. 模块职责
 
 ### `js/core/common.js`
-跨页共享的纯逻辑模块，无 DOM 操作。主要业务规则源。
+跨页共享的纯逻辑模块，以业务规则为主；`setModalVisible` 除外，负责统一处理弹窗显隐、body 滚动锁定、焦点陷阱与焦点恢复。
+- UUID / 随机 ID 生成（`makeUuid`，含 `crypto.randomUUID` 降级）
+- 数值约束（`clamp`）
 - 状态/轮次类型归一化（mastered / learning / unknown）
 - `term + meaning + language` 级别的 key 计算
 - 全局最新状态聚合与首次出现轮次聚合
@@ -161,12 +163,14 @@ window.A4Utils = {
   downloadTextFile({ filename, mime, content }),
   downloadJsonFile({ filename, data }),
   downloadBlob({ filename, blob }),
-  installMobileTapGuard(el),   // 移动端 300ms 延迟兼容
+  showConfirmDialog(messageOrOpts),   // 自定义二次确认弹窗，替代原生 confirm
+  getTauriInvoke(),                   // 统一获取 Tauri invoke 函数
+  installMobileTapGuard(el),          // 移动端 300ms 延迟兼容
   installAndroidSelectPicker(root, selector),
   refreshAndroidSelectPickers(root),
 }
 ```
-文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录。设置弹窗中的下拉选择在 Android 环境使用应用内底部面板，原 `<select>` 保留为状态源。
+文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录。设置弹窗中的下拉选择在 Android 环境使用应用内底部面板，原 `<select>` 保留为状态源。所有删除/清空操作的二次确认统一使用 `A4Utils.showConfirmDialog`。
 
 ### `js/speech.js`
 语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `onlineTtsEnabled` / `onlineTtsProvider` 控制；浏览器优先直连首选在线源，未及时开始播放时尝试同源私有桥接层代理，再依次尝试另一在线源和系统语音。朗读文本不写入学习状态、备份或云同步数据。Tauri CSP 需放行 `wss:` 与 `media-src blob: https:`。
@@ -215,7 +219,7 @@ window.A4Lookup = {
 - 轮次视图与状态视图切换
 - 统计计算
 - CSV/PDF 导出；PDF 会生成隐藏的 A4 打印输出层，桌面端走 Tauri WebView 打印权限，Android 端走原生打印桥接
-- 轮次删除（确认弹窗使用 DOM 自定义 `showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`）
+- 轮次删除与清空记录（确认弹窗使用 `A4Utils.showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`）
 - 跳转首页触发复习轮生成
 
 ### `js/updater.js`
@@ -237,7 +241,7 @@ window.A4Updater = {
 
 ### Tauri 原生命令桥接
 
-`src-tauri/src/lib.rs` 暴露最小平台能力：
+`src-tauri/src/lib.rs` 暴露最小平台能力；外部打开能力使用 `tauri-plugin-opener`：
 - `a4_open_external(url)`：桌面端 / Android 打开系统默认浏览器或下载处理器。
 - `a4_android_print()`：Android 端调用 WebView 原生打印接口。
 - `a4_android_save_text_file(filename, mime, content)`：Android 端将文本类导出写入下载目录，用于词书、备份和 CSV 导出。
@@ -262,7 +266,7 @@ window.A4Updater = {
 
 1. **学习** — 整合外观（主题模式）、学习目标（每日轮次/单词）、学习设置（每轮上限）、以及轻量复习配置（复习间隔、翻面、持续背书）。
 2. **发音** — 朗读开关、发音方式（在线 TTS / 系统语音）和在线发音源。选择在线 TTS 时自动隐藏多余的本地语音选择器。
-3. **AI 制卡** — 服务商选择、API 配置、模型选择、词书生成。
+3. **AI 制卡** — 自定义 API 配置、模型选择、词书生成。
 4. **联网补充** — 联网补充开关、查词来源、西语变位开关、缓存时长。
 5. **账号** — 登录、注册、重置密码、登录状态卡片与云同步（上传/下载数据）。
 6. **数据管理** — 完整本地备份导出/导入（JSON）。
@@ -368,4 +372,5 @@ window.A4Updater = {
 - `currentPageIndex` 是运行态，不写入 `localStorage`；刷新后默认回到当前轮第 1 页
 - 备份导入和云恢复（`settings.js` 的 `normalizeImportedState`）会保留轮次类型、语言和页码；`aiConfig.apiKey` 始终清空
 - 记录页监听 `storage` 事件，支持多标签页同步刷新显示
-- 轮次删除确认弹窗使用 `records.js` 自定义的 `showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`；设置页的云端恢复确认也使用自定义弹窗
+- 所有删除/清空确认弹窗统一使用 `A4Utils.showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`；设置页的云端恢复确认也使用自定义弹窗
+- 弹窗统一由 `common.js` 的 `setModalVisible` 管理，开启时设置焦点陷阱，关闭时恢复触发按钮焦点

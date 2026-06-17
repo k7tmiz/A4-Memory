@@ -1,4 +1,4 @@
-import { cp, rm, mkdir, readFile, writeFile } from 'fs/promises';
+import { cp, rm, mkdir, readFile, writeFile, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
 
 const DIST = 'dist';
@@ -20,33 +20,40 @@ const CLOUD_JS = 'js/cloud.js';
 const CLOUD_STUB = 'js/__cloud_stub.js';
 const UPDATER_JS = 'js/updater.js';
 
-// Clean and recreate dist
 await rm(DIST, { recursive: true, force: true });
 await mkdir(DIST);
 
-// Copy top-level files
 await Promise.all(FILES.map(f => cp(f, `${DIST}/${f}`)));
-
-// Copy directories
 await Promise.all(DIRS.map(d => cp(d, `${DIST}/${d}`, { recursive: true })));
 
-// Copy js/ directory
-await cp(JS_DIR, `${DIST}/${JS_DIR}`, { recursive: true });
+// Copy js/ but exclude both cloud.js (private) and the stub itself.
+// cloud.js is placed explicitly below to avoid leaking when present locally.
+await mkdir(`${DIST}/${JS_DIR}`, { recursive: true });
+async function copyJsTree(src, dest) {
+  await mkdir(dest, { recursive: true });
+  const entries = await readdir(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = `${src}/${entry.name}`;
+    const destPath = `${dest}/${entry.name}`;
+    if (srcPath === CLOUD_JS || srcPath === CLOUD_STUB) continue;
+    if (entry.isDirectory()) {
+      await copyJsTree(srcPath, destPath);
+    } else {
+      await cp(srcPath, destPath);
+    }
+  }
+}
+await copyJsTree(JS_DIR, `${DIST}/${JS_DIR}`);
 
-// cloud.js handling:
-// - If cloud.js exists → already copied above, just remove the stub from dist
-// - If cloud.js does NOT exist → copy the stub as cloud.js in dist
 const hasCloud = existsSync(CLOUD_JS);
-
-// Always remove the stub from dist (not needed at runtime)
-try { await rm(`${DIST}/${CLOUD_STUB}`); } catch { /* not in dist */ }
-
-if (!hasCloud) {
+if (hasCloud) {
+  await cp(CLOUD_JS, `${DIST}/${CLOUD_JS}`);
+  console.log('✅  cloud.js included from local file');
+} else {
   await cp(CLOUD_STUB, `${DIST}/${CLOUD_JS}`);
   console.warn('⚠  cloud.js not found — using stub (cloud features disabled)');
 }
 
-// Inject version from package.json into updater.js
 const pkg = JSON.parse(await readFile('package.json', 'utf-8'));
 const updaterDist = `${DIST}/${UPDATER_JS}`;
 if (existsSync(updaterDist)) {

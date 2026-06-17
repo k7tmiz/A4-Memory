@@ -1,52 +1,7 @@
 ;(function () {
   const clamp = window.A4Common?.clamp
 
-  function showConfirmDialog(message) {
-    return new Promise((resolve) => {
-      const modal = document.createElement("div")
-      modal.className = "modal"
-      const backdrop = document.createElement("div")
-      backdrop.className = "modal-backdrop"
-      const panel = document.createElement("div")
-      panel.className = "modal-panel records-confirm-panel"
-      panel.setAttribute("role", "alertdialog")
-      panel.setAttribute("aria-modal", "true")
-      const header = document.createElement("div")
-      header.className = "modal-header"
-      const title = document.createElement("h2")
-      title.textContent = "确认"
-      header.appendChild(title)
-      const body = document.createElement("div")
-      body.className = "modal-body"
-      body.textContent = message
-      const actions = document.createElement("div")
-      actions.className = "modal-actions records-confirm-actions"
-      const cancelBtn = document.createElement("button")
-      cancelBtn.className = "ghost"
-      cancelBtn.textContent = "取消"
-      const okBtn = document.createElement("button")
-      okBtn.className = "primary records-confirm-danger"
-      okBtn.textContent = "确定"
-      actions.appendChild(cancelBtn)
-      actions.appendChild(okBtn)
-      panel.appendChild(header)
-      panel.appendChild(body)
-      panel.appendChild(actions)
-      modal.appendChild(backdrop)
-      modal.appendChild(panel)
-      document.body.appendChild(modal)
-      let settled = false
-      const finish = (value) => {
-        if (settled) return
-        settled = true
-        document.body.removeChild(modal)
-        resolve(value)
-      }
-      backdrop.addEventListener("click", () => finish(false))
-      cancelBtn.addEventListener("click", () => finish(false))
-      okBtn.addEventListener("click", () => finish(true))
-    })
-  }
+  const { showConfirmDialog } = window.A4Utils || {}
 
   const normalizeThemeMode = window.A4Common?.normalizeThemeMode
   const normalizeRoundCap = window.A4Common?.normalizeRoundCap
@@ -238,7 +193,7 @@
     const roundsRaw = Array.isArray(next.rounds) ? next.rounds : []
     next.rounds = roundsRaw
       .map((r) => {
-        const id = String(r?.id || "").trim() || `${Date.now()}-${crypto.randomUUID()}`
+        const id = String(r?.id || "").trim() || `${Date.now()}-${window.A4Common.makeUuid()}`
         const startedAt = String(r?.startedAt || "").trim() || new Date().toISOString()
         const finishedAt = String(r?.finishedAt || "").trim()
         const roundCap = normalizeRoundCap(r?.roundCap || next.roundCap)
@@ -260,7 +215,7 @@
     const booksRaw = Array.isArray(next.customWordbooks) ? next.customWordbooks : []
     next.customWordbooks = booksRaw
       .map((b) => {
-        const id = String(b?.id || "").trim() || `import-${Date.now()}-${crypto.randomUUID()}`
+        const id = String(b?.id || "").trim() || `import-${Date.now()}-${window.A4Common.makeUuid()}`
         const name = String(b?.name || "").trim()
         if (!name) return null
         const language = String(b?.language || "").trim()
@@ -542,16 +497,6 @@
 
           <section class="panel">
             <div class="section-title">AI 制卡</div>
-            <div class="form-row">
-              <div class="form-label">服务模式</div>
-              <div class="form-control">
-                <select id="aiServiceModeSelect" aria-label="AI 服务模式">
-                  <option value="custom">自定义 API</option>
-                  <option value="official">官方服务</option>
-                </select>
-              </div>
-            </div>
-            <div id="aiOfficialServiceHint" class="form-help hidden">官方服务：使用登录账号的官方额度（暂未开放）</div>
             <div id="aiCustomConfigPanel">
               <div class="form-row">
                 <div class="form-label">API 提供商</div>
@@ -965,8 +910,6 @@
       cloudCurrentRoundText: modal.querySelector("#cloudCurrentRoundText"),
       accountStatus: modal.querySelector("#accountStatus"),
       cloudSyncStatus: modal.querySelector("#cloudSyncStatus"),
-      aiServiceModeSelect: modal.querySelector("#aiServiceModeSelect"),
-      aiOfficialServiceHint: modal.querySelector("#aiOfficialServiceHint"),
       aiCustomConfigPanel: modal.querySelector("#aiCustomConfigPanel"),
       aiProviderSelect: modal.querySelector("#aiProviderSelect"),
       aiBaseUrlInput: modal.querySelector("#aiBaseUrlInput"),
@@ -997,7 +940,6 @@
         "#pronunciationLangSelect",
         "#voiceModeSelect",
         "#voiceSelect",
-        "#aiServiceModeSelect",
         "#aiProviderSelect",
         "#aiTypeSelect",
         "#lookupOnlineSourceSelect",
@@ -1409,28 +1351,30 @@
       }
     }
 
+    function getRowOf(el) {
+      return el?.closest?.(".form-row") || el?.parentElement?.parentElement || null
+    }
+
     function updateVoiceUi() {
       const state = getStateSafe()
       if (state?.onlineTtsEnabled) {
         if (dom.currentVoiceText) dom.currentVoiceText.textContent = state.onlineTtsProvider === "google" ? "在线 TTS (Google)" : "在线 TTS (Microsoft Edge)"
         if (dom.voiceHint) dom.voiceHint.textContent = "当前使用在线发音，无需选择本地系统语音。"
-        
-        // Hide local TTS options when online is used
-        if (dom.accentSelect) dom.accentSelect.parentElement.parentElement.classList.add("hidden")
-        if (dom.pronunciationLangSelect) dom.pronunciationLangSelect.parentElement.parentElement.classList.add("hidden")
-        if (dom.voiceModeSelect) dom.voiceModeSelect.parentElement.parentElement.classList.add("hidden")
+
+        getRowOf(dom.accentSelect)?.classList.add("hidden")
+        getRowOf(dom.pronunciationLangSelect)?.classList.add("hidden")
+        getRowOf(dom.voiceModeSelect)?.classList.add("hidden")
         if (dom.voiceManualRow) dom.voiceManualRow.classList.add("hidden")
-        
+
       } else {
         const resolved = getResolvedVoice()
         if (dom.currentVoiceText) dom.currentVoiceText.textContent = window.A4Speech?.getCurrentVoiceLabel?.(resolved) || "—"
         if (dom.voiceHint) dom.voiceHint.textContent = window.A4Speech?.getVoiceStatusText?.(resolved, state) || "语音状态未知。"
-        
-        // Show local TTS options when system is used
-        if (dom.accentSelect) dom.accentSelect.parentElement.parentElement.classList.remove("hidden")
-        if (dom.pronunciationLangSelect) dom.pronunciationLangSelect.parentElement.parentElement.classList.remove("hidden")
-        if (dom.voiceModeSelect) dom.voiceModeSelect.parentElement.parentElement.classList.remove("hidden")
-        renderVoiceModeUi() // Restores voiceManualRow if needed
+
+        getRowOf(dom.accentSelect)?.classList.remove("hidden")
+        getRowOf(dom.pronunciationLangSelect)?.classList.remove("hidden")
+        getRowOf(dom.voiceModeSelect)?.classList.remove("hidden")
+        renderVoiceModeUi()
       }
     }
 
@@ -1616,12 +1560,11 @@
     }
 
     async function requestAiChatCompletion({ endpoint, apiKey, model, system, user, stream, signal }) {
+      const headers = { "Content-Type": "application/json" }
+      if (String(apiKey || "").trim()) headers.Authorization = `Bearer ${apiKey}`
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
+        headers,
         signal,
         body: JSON.stringify({
           model,
@@ -2356,7 +2299,7 @@
 
     aiDom.confirmBtn?.addEventListener("click", () => {
       if (!pendingAiBook) return
-      const id = `ai-${Date.now()}-${crypto.randomUUID()}`
+      const id = `ai-${Date.now()}-${window.A4Common.makeUuid()}`
       const wordbook = {
         id,
         name: pendingAiBook.name,
@@ -2908,19 +2851,6 @@
       } finally {
         accountBusy.downloadState = false
         renderAccountActionButtons()
-      }
-    })
-
-    // AI 服务模式
-    dom.aiServiceModeSelect?.addEventListener("change", () => {
-      const mode = dom.aiServiceModeSelect?.value || "custom"
-      const isOfficial = mode === "official"
-      if (dom.aiOfficialServiceHint) dom.aiOfficialServiceHint.classList.toggle("hidden", !isOfficial)
-      if (dom.aiCustomConfigPanel) dom.aiCustomConfigPanel.classList.toggle("hidden", isOfficial)
-      if (isOfficial && !window.A4Cloud?.isLoggedIn?.()) {
-        if (dom.aiOfficialServiceHint) dom.aiOfficialServiceHint.textContent = "官方服务：使用登录账号的官方额度（请先登录）"
-      } else if (isOfficial) {
-        if (dom.aiOfficialServiceHint) dom.aiOfficialServiceHint.textContent = "官方服务：使用登录账号的官方额度（暂未开放）"
       }
     })
 

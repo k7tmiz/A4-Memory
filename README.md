@@ -62,6 +62,7 @@ A4-Memory/
 │   └── utils.js           # 下载工具
 ├── src-tauri/             # Tauri 桌面端（Rust）
 ├── scripts/               # 构建脚本
+├── tests/                 # Node 单元测试
 ├── .github/workflows/     # CI / 自动发布
 ├── eslint.config.mjs      # ESLint 代码规范
 ├── package.json           # Node 依赖（Vite + Tauri CLI + ESLint）
@@ -102,6 +103,10 @@ python3 -m http.server 8080
 npm run dev
 # 代码检查：
 npm run lint
+# 单元测试：
+npm test
+# 生产构建（复制到 dist/）：
+npm run build
 ```
 
 打开：http://localhost:8080/ 或 http://localhost:5173/

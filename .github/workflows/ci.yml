@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -17,4 +18,29 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm test
       - run: npm run build
+
+  rust-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Android target
+        run: rustup target add aarch64-linux-android
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ci-rust-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: ci-rust-
+      - name: cargo check
+        working-directory: src-tauri
+        run: cargo check
+      - name: cargo check (Android)
+        working-directory: src-tauri
+        run: cargo check --target aarch64-linux-android

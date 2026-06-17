@@ -60,7 +60,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ runner.os == 'macOS' && matrix.target || '' }}
-          toolchain: "1.95"
 
       - name: Cache Rust
         uses: actions/cache@v4
@@ -118,11 +117,17 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 优化：在线 TTS 以开始播放作为成功条件，未及时播放时快速尝试同源代理，降低点击后的等待时间
-            - 优化：Android 首页词书选择和设置页下拉选择使用应用内底部面板，iOS / macOS / 桌面浏览器保留原生选择器
-            - 修复：Android 端词书、备份和 CSV 文本类导出改为写入下载目录，避免 WebView `<a download>` 失效
-            - 修复：GitHub Release 发布阶段缺少仓库上下文导致 `v1.0.25` finalize 失败的问题
-            - 修复：GitHub Release 手写更新说明被提交记录覆盖的问题
+            - 安全：收窄 Tauri webview CSP `connect-src`，移除多余 opener capability；`a4_open_external` 拒绝十进制 / 十六进制 / IPv6 映射等绕过形式的私网地址
+            - 安全：CI 接入 `npm test`，新增 `js/core/sanitize.js`、`js/storage.js`、`js/utils.js` 单元测试覆盖 XSS 转义、`apiKey` 清理、文件名清洗
+            - 修复：Android `a4_android_print` 改用 mpsc channel，消除 JNI 闭包未释放时的 `Arc::try_unwrap().unwrap()` panic
+            - 修复：`normalizeCloudState` 在归一化器缺失时中止云端恢复，避免绕过 `round.type` / `round.language` / `pageIndex` 保护
+            - 修复：设置 / 查词模态打开时不再触发 Space / R / N / M / D 快捷键
+            - 修复：记录页 PDF 预览的键盘与触摸监听在关闭时正确卸载，避免叠加
+            - 修复：跨页切换时停止残留的 `speechSynthesis` 与在线 TTS `Audio`
+            - 修复：构建脚本不再将本地 `js/cloud.js` 复制进 `dist/`，防止闭源桥接层泄露到公开站点
+            - 体验：`clearPaper` 同步清空 `appState.placed`，避免脱环节点泄漏
+            - 体验：本地语音多段队列加入 generation token，`cancel` 后不再播放过期片段
+            - 工程：CI / Release 统一 Rust stable 工具链，新增 cargo cache 与 job timeout
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
@@ -249,6 +254,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            src-tauri/target
           key: android-rust-${{ hashFiles('src-tauri/Cargo.lock') }}
           restore-keys: android-rust-
 
