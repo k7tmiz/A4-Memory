@@ -42,7 +42,7 @@ jobs:
           - platform: Linux
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            tauri_args: ''
+            tauri_args: '--bundles deb,rpm'
           - platform: Windows
             os: windows-latest
             target: x86_64-pc-windows-msvc
@@ -124,6 +124,7 @@ jobs:
             - 优化：speak() 回退链支持 `online` / `offline` / `system` 三种模式；离线模式失败自动降级在线 → 系统语音
             - 安全：Tauri CSP `connect-src` 加入 `https://tts.k7tmiz.com`（manifest + 模型下载）
             - 数据：localStorage 主状态新增 `ttsMode`、`offlineVoiceByLang`；备份导入/云恢复透传但不假装已安装本地缺失的模型
+            - 修复：Android 构建失败，离线 TTS 相关依赖（sha2/hex/tar/bzip2/flate2/parking_lot）移到 `cfg(not(target_os = "android"))` 目标下，避免 NDK 工具链触发 cc-rs 编译
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用

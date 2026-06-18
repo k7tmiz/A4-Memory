@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 
-const MANIFEST_URL: &str = "https://tts.k7tmiz.com/voices/manifest.json";
+const MANIFEST_URL: &str = "https://raw.githubusercontent.com/k7tmiz/a4-tts-voices/main/manifest.json";
 const VOICES_SUBDIR: &str = "voices";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
