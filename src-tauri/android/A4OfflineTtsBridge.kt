@@ -3,7 +3,8 @@ package app.tauri
 import android.app.Activity
 import com.k2fsa.sherpa.onnx.OfflineTts
 import com.k2fsa.sherpa.onnx.OfflineTtsConfig
-import com.k2fsa.sherpa.onnx.VitsModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -79,19 +80,24 @@ object A4OfflineTtsBridge {
         }
 
         val config = OfflineTtsConfig(
-            model = VitsModelConfig(
-                model = modelPath,
-                lexicon = lexiconPath,
-                tokens = tokensPath,
-                dataDir = dataDirPath,
-                noiseScale = 0.667f,
-                noiseScaleW = 0.8f,
-                lengthScale = 1.0f
+            model = OfflineTtsModelConfig(
+                vits = OfflineTtsVitsModelConfig(
+                    model = modelPath,
+                    lexicon = lexiconPath,
+                    tokens = tokensPath,
+                    dataDir = dataDirPath,
+                    noiseScale = 0.667f,
+                    noiseScaleW = 0.8f,
+                    lengthScale = 1.0f
+                ),
+                numThreads = 2,
+                debug = false,
+                provider = "cpu"
             ),
             maxNumSentences = 1
         )
 
-        return OfflineTts(config)
+        return OfflineTts(assetManager = null, config = config)
     }
 
     private fun floatArrayToWav(samples: FloatArray, sampleRate: Int): ByteArray {
