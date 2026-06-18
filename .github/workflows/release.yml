@@ -100,8 +100,18 @@ jobs:
           echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CMAKE_GENERATOR=Ninja" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CMAKE_DISABLE_FIND_PACKAGE_Fortran=TRUE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "EIGEN_BUILD_BLAS=OFF" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "EIGEN_BUILD_LAPACK=OFF" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           cmake --version
           ninja --version
+
+      - name: Strip mingw from PATH
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $clean = ($env:PATH -split ';' | Where-Object { $_ -notmatch 'mingw' -and $_ -notmatch 'MinGW' -and $_ -notmatch 'Strawberry' -and $_ -notmatch 'msys64' }) -join ';'
+          echo "PATH=$clean" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Setup MSVC dev environment
         if: runner.os == 'Windows'
