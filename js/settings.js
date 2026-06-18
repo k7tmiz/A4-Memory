@@ -419,7 +419,6 @@
               <div class="form-control">
                 <select id="ttsModeSelect" aria-label="发音方式">
                   <option value="online">在线 TTS（推荐）</option>
-                  <option value="offline">离线 TTS（设备本地）</option>
                   <option value="system">系统语音</option>
                 </select>
               </div>

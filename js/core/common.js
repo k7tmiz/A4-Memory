@@ -387,7 +387,6 @@
 
   function normalizeTtsMode(value) {
     const v = String(value || "").trim().toLowerCase()
-    if (v === "offline") return "offline"
     if (v === "system") return "system"
     return "online"
   }

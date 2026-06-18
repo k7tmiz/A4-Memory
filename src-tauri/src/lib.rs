@@ -1,9 +1,6 @@
 use std::net::IpAddr;
 use tauri_plugin_opener::OpenerExt;
 
-#[cfg(not(target_os = "android"))]
-mod offline_tts;
-
 fn is_blocked_host(host: &str) -> bool {
     let h = host.trim().trim_start_matches('[').trim_end_matches(']').to_lowercase();
 
@@ -376,78 +373,16 @@ fn a4_android_speak(
     Err("Android TextToSpeech is only available on Android builds.".into())
 }
 
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_manifest_url() -> String {
-    String::new()
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_manifest_fetch() -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_installed() -> Result<Vec<()>, String> {
-    Ok(Vec::new())
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_delete(_voice_id: String) -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_download(_voice_id: String) -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
-}
-
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_speak(_text: String, _voice_id: String) -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler({
-            #[cfg(not(target_os = "android"))]
-            {
-                tauri::generate_handler![
-                    a4_open_external,
-                    a4_android_print,
-                    a4_android_save_text_file,
-                    a4_android_speak,
-                    offline_tts::a4_offline_voices_manifest_url,
-                    offline_tts::a4_offline_voices_manifest_fetch,
-                    offline_tts::a4_offline_voices_installed,
-                    offline_tts::a4_offline_voices_delete,
-                    offline_tts::a4_offline_voices_download,
-                    offline_tts::a4_offline_speak,
-                ]
-            }
-            #[cfg(target_os = "android")]
-            {
-                tauri::generate_handler![
-                    a4_open_external,
-                    a4_android_print,
-                    a4_android_save_text_file,
-                    a4_android_speak,
-                    a4_offline_voices_manifest_url,
-                    a4_offline_voices_manifest_fetch,
-                    a4_offline_voices_installed,
-                    a4_offline_voices_delete,
-                    a4_offline_voices_download,
-                    a4_offline_speak,
-                ]
-            }
-        })
+        .invoke_handler(tauri::generate_handler![
+            a4_open_external,
+            a4_android_print,
+            a4_android_save_text_file,
+            a4_android_speak,
+        ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|err| {
             eprintln!("[a4-memory] tauri runtime exited: {err}");
