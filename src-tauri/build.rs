@@ -5,6 +5,7 @@ fn main() {
         println!("cargo:rustc-link-lib=ole32");
         println!("cargo:rustc-link-lib=user32");
         println!("cargo:rustc-link-lib=shell32");
+        println!("cargo:rustc-link-lib=tdh");
     }
     tauri_build::build()
 }

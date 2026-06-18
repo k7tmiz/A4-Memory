@@ -104,6 +104,7 @@ jobs:
           echo "CMAKE_DISABLE_FIND_PACKAGE_Fortran=TRUE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "EIGEN_BUILD_BLAS=OFF" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "EIGEN_BUILD_LAPACK=OFF" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "RUSTFLAGS=-C link-arg=advapi32.lib -C link-arg=ole32.lib -C link-arg=user32.lib -C link-arg=shell32.lib -C link-arg=tdh.lib" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           cmake --version
 
       - name: Hide mingw/strawberry from build
