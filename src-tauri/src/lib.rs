@@ -378,38 +378,97 @@ fn a4_android_speak(
 
 #[cfg(target_os = "android")]
 #[tauri::command]
-fn a4_offline_voices_manifest_url() -> String {
-    String::new()
-}
+fn a4_offline_speak(
+    app: tauri::AppHandle,
+    webview_window: tauri::WebviewWindow,
+    text: String,
+    voice_id: String,
+) -> Result<offline_tts::OfflineSpeakResult, String> {
+    use jni::objects::{JObject, JValue};
 
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_manifest_fetch() -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
-}
+    let dir = offline_tts::voice_dir(&app, &voice_id)?;
+    if !offline_tts::read_installed_meta(&dir).is_some() {
+        return Err("voice not installed".to_string());
+    }
+    let voice_dir_str = dir.to_string_lossy().into_owned();
 
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_installed() -> Result<Vec<()>, String> {
-    Ok(Vec::new())
-}
+    let (tx, rx) = std::sync::mpsc::channel::<String>();
 
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_delete(_voice_id: String) -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
-}
+    webview_window
+        .with_webview(move |webview| {
+            let jh = webview.jni_handle();
+            jh.exec(move |mut env, activity, _webview| {
+                let result = (|| -> Result<String, String> {
+                    let jtext = env.new_string(&text).map_err(|e| e.to_string())?;
+                    let jvoice_id = env.new_string(&voice_id).map_err(|e| e.to_string())?;
+                    let jvoice_dir = env.new_string(&voice_dir_str).map_err(|e| e.to_string())?;
 
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_voices_download(_voice_id: String) -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
-}
+                    let result = env.call_static_method(
+                        "app/tauri/A4OfflineTtsBridge",
+                        "speak",
+                        "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                        &[
+                            JValue::Object(activity),
+                            JValue::Object(&JObject::from(jtext)),
+                            JValue::Object(&JObject::from(jvoice_id)),
+                            JValue::Object(&JObject::from(jvoice_dir)),
+                        ],
+                    ).map_err(|e| e.to_string())?;
 
-#[cfg(target_os = "android")]
-#[tauri::command]
-fn a4_offline_speak(_text: String, _voice_id: String) -> Result<(), String> {
-    Err("Offline TTS not available on Android build.".into())
+                    let result_obj = result.l().map_err(|e| e.to_string())?;
+                    if result_obj.is_null() {
+                        return Err("A4OfflineTtsBridge returned null".into());
+                    }
+                    let result_jstring = jni::objects::JString::from(result_obj);
+                    let result_str = env
+                        .get_string(&result_jstring)
+                        .map_err(|e| e.to_string())?;
+                    Ok(result_str.to_string_lossy().into_owned())
+                })();
+
+                let exception = take_java_exception(&mut env);
+                let _ = tx.send(
+                    exception
+                        .map(|e| format!("error:{e}"))
+                        .unwrap_or_else(|| result.unwrap_or_else(|e| format!("error:{e}"))),
+                );
+            });
+        })
+        .map_err(|err| err.to_string())?;
+
+    let status = rx
+        .recv_timeout(std::time::Duration::from_secs(15))
+        .map_err(|_| "Android offline TTS bridge timed out.".to_string())?;
+
+    if status.starts_with("error:") {
+        return Err(status.trim_start_matches("error:").to_string());
+    }
+
+    #[derive(serde::Deserialize)]
+    struct SpeakResult {
+        ok: bool,
+        sample_rate: Option<u32>,
+        wav_path: Option<String>,
+        error: Option<String>,
+    }
+
+    let result: SpeakResult = serde_json::from_str(&status)
+        .map_err(|e| format!("parse bridge result: {e}"))?;
+
+    if !result.ok {
+        return Err(result.error.unwrap_or_else(|| "unknown error".into()));
+    }
+
+    let wav_path = result.wav_path.ok_or("no wav_path in result")?;
+    let wav = std::fs::read(&wav_path).map_err(|e| format!("read wav: {e}"))?;
+    let _ = std::fs::remove_file(&wav_path);
+
+    Ok(offline_tts::OfflineSpeakResult {
+        ok: true,
+        sample_rate: result.sample_rate.unwrap_or(0),
+        wav,
+        error: None,
+    })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -439,11 +498,11 @@ pub fn run() {
                     a4_android_print,
                     a4_android_save_text_file,
                     a4_android_speak,
-                    a4_offline_voices_manifest_url,
-                    a4_offline_voices_manifest_fetch,
-                    a4_offline_voices_installed,
-                    a4_offline_voices_delete,
-                    a4_offline_voices_download,
+                    offline_tts::a4_offline_voices_manifest_url,
+                    offline_tts::a4_offline_voices_manifest_fetch,
+                    offline_tts::a4_offline_voices_installed,
+                    offline_tts::a4_offline_voices_delete,
+                    offline_tts::a4_offline_voices_download,
                     a4_offline_speak,
                 ]
             }

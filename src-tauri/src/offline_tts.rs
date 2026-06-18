@@ -1,9 +1,12 @@
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use tauri::{AppHandle, Manager};
+
+#[cfg(not(target_os = "android"))]
+use std::collections::HashMap;
+#[cfg(not(target_os = "android"))]
+use std::sync::Arc;
 
 const MANIFEST_URL: &str = "https://tts.k7tmiz.com/voices/manifest.json";
 const VOICES_SUBDIR: &str = "voices";
@@ -64,7 +67,7 @@ fn voices_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
-fn voice_dir(app: &AppHandle, voice_id: &str) -> Result<PathBuf, String> {
+pub fn voice_dir(app: &AppHandle, voice_id: &str) -> Result<PathBuf, String> {
     Ok(voices_dir(app)?.join(voice_id))
 }
 
@@ -86,7 +89,7 @@ fn dir_size_bytes(path: &Path) -> u64 {
     total
 }
 
-fn read_installed_meta(dir: &Path) -> Option<OfflineVoiceEntry> {
+pub fn read_installed_meta(dir: &Path) -> Option<OfflineVoiceEntry> {
     let raw = std::fs::read_to_string(dir.join("voice.json")).ok()?;
     serde_json::from_str::<OfflineVoiceEntry>(&raw).ok()
 }
@@ -149,9 +152,12 @@ pub fn a4_offline_voices_delete(app: AppHandle, voice_id: String) -> Result<(), 
     if dir.exists() {
         std::fs::remove_dir_all(&dir).map_err(|e| format!("remove dir: {e}"))?;
     }
-    let cache = offline_engine_cache();
-    let mut guard = cache.lock();
-    guard.remove(&voice_id);
+    #[cfg(not(target_os = "android"))]
+    {
+        let cache = offline_engine_cache();
+        let mut guard = cache.lock();
+        guard.remove(&voice_id);
+    }
     Ok(())
 }
 
@@ -288,8 +294,10 @@ pub async fn a4_offline_voices_download(
     Ok(())
 }
 
+#[cfg(not(target_os = "android"))]
 type EngineMap = HashMap<String, Arc<Mutex<sherpa_rs::tts::VitsTts>>>;
 
+#[cfg(not(target_os = "android"))]
 fn offline_engine_cache() -> &'static Mutex<EngineMap> {
     use std::sync::OnceLock;
     static CACHE: OnceLock<Mutex<EngineMap>> = OnceLock::new();
@@ -304,6 +312,7 @@ pub struct OfflineSpeakResult {
     pub error: Option<String>,
 }
 
+#[cfg(not(target_os = "android"))]
 fn pcm_f32_to_wav_bytes(sample_rate: u32, samples: &[f32]) -> Vec<u8> {
     let mut out = Vec::with_capacity(44 + samples.len() * 2);
     let bytes_per_sample = 2u16;
@@ -333,6 +342,7 @@ fn pcm_f32_to_wav_bytes(sample_rate: u32, samples: &[f32]) -> Vec<u8> {
     out
 }
 
+#[cfg(not(target_os = "android"))]
 #[tauri::command]
 pub async fn a4_offline_speak(
     app: AppHandle,
