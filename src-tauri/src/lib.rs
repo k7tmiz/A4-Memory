@@ -1,7 +1,6 @@
 use std::net::IpAddr;
 use tauri_plugin_opener::OpenerExt;
 
-#[cfg(not(target_os = "android"))]
 mod offline_tts;
 
 fn is_blocked_host(host: &str) -> bool {
