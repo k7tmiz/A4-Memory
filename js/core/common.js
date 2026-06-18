@@ -375,12 +375,32 @@
     dailyGoalWords: 0,
     onlineTtsEnabled: true,
     onlineTtsProvider: "edge",
+    ttsMode: "online",
+    offlineVoiceByLang: {},
   }
 
   function normalizeOnlineTtsProvider(value) {
     const v = String(value || "").trim().toLowerCase()
     if (v === "google") return "google"
     return "edge"
+  }
+
+  function normalizeTtsMode(value) {
+    const v = String(value || "").trim().toLowerCase()
+    if (v === "offline") return "offline"
+    if (v === "system") return "system"
+    return "online"
+  }
+
+  function normalizeOfflineVoiceByLang(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+    const out = {}
+    for (const [k, v] of Object.entries(value)) {
+      const key = String(k || "").trim().toLowerCase()
+      const id = String(v || "").trim()
+      if (key && id) out[key] = id
+    }
+    return out
   }
 
   // ── Modal utility ────────────────────────────────────────────────────────────
@@ -635,6 +655,8 @@
     normalizeLookupRecordMeta,
     DEFAULTS,
     normalizeOnlineTtsProvider,
+    normalizeTtsMode,
+    normalizeOfflineVoiceByLang,
     setModalVisible,
     formatMeaning,
     getRoundLastPageIndex,

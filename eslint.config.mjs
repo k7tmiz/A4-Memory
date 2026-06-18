@@ -61,6 +61,7 @@ export default [
         TextDecoder: "readonly",
         WebSocket: "readonly",
         Uint8Array: "readonly",
+        MediaSource: "readonly",
       },
     },
     rules: {

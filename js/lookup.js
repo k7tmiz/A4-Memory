@@ -1334,6 +1334,16 @@
         const speech = window.A4Speech
         if (!speech) return
         const wordbookLanguage = typeof getWordbookLanguage === "function" ? getWordbookLanguage() : ""
+        const targetBase = String(
+          speech.getCurrentLanguageBase?.({
+            pronunciationLang: state?.pronunciationLang,
+            wordbookLanguage,
+          }) || ""
+        ).toLowerCase()
+        const offlineMap =
+          state?.offlineVoiceByLang && typeof state.offlineVoiceByLang === "object"
+            ? state.offlineVoiceByLang
+            : {}
         speech.speak({
           text: term,
           pronunciationEnabled: !!state?.pronunciationEnabled,
@@ -1344,6 +1354,8 @@
           voiceURI: state?.voiceURI,
           onlineTtsEnabled: state?.onlineTtsEnabled !== false,
           onlineTtsProvider: state?.onlineTtsProvider,
+          ttsMode: state?.ttsMode || "online",
+          offlineVoiceId: String(offlineMap[targetBase] || ""),
         })
       })
     }

@@ -419,6 +419,7 @@
               <div class="form-control">
                 <select id="ttsModeSelect" aria-label="发音方式">
                   <option value="online">在线 TTS（推荐）</option>
+                  <option value="offline">离线 TTS（设备本地）</option>
                   <option value="system">系统语音</option>
                 </select>
               </div>
@@ -438,6 +439,19 @@
             <div class="form-row hidden" style="display:none;">
               <div class="form-label">在线兜底开关</div>
               <div class="form-control"><button class="ghost" id="onlineTtsToggleBtn" type="button">在线兜底：开</button></div>
+            </div>
+
+            <div class="form-row hidden" id="offlineTtsSection">
+              <div class="form-label">离线语音包</div>
+              <div class="form-control">
+                <div id="offlineTtsList" class="form-help" style="display:flex;flex-direction:column;gap:6px;"></div>
+                <div class="stack" style="margin-top:8px;gap:8px;flex-wrap:wrap;">
+                  <button class="ghost" id="offlineTtsRefreshBtn" type="button">刷新可用列表</button>
+                </div>
+                <div class="form-help" id="offlineTtsHint" style="margin-top:6px;">
+                  离线语音包仅在桌面端可用；模型存放于应用数据目录，可随时删除。
+                </div>
+              </div>
             </div>
 
             <!-- Below are shown when System mode is selected -->
@@ -855,6 +869,10 @@
       onlineTtsProviderSelect: modal.querySelector("#onlineTtsProviderSelect"),
       onlineTtsProviderRow: modal.querySelector("#onlineTtsProviderRow"),
       onlineTtsPrivacyHint: modal.querySelector("#onlineTtsPrivacyHint"),
+      offlineTtsSection: modal.querySelector("#offlineTtsSection"),
+      offlineTtsList: modal.querySelector("#offlineTtsList"),
+      offlineTtsRefreshBtn: modal.querySelector("#offlineTtsRefreshBtn"),
+      offlineTtsHint: modal.querySelector("#offlineTtsHint"),
       lookupOnlineToggleBtn: modal.querySelector("#lookupOnlineToggleBtn"),
       lookupOnlineSourceSelect: modal.querySelector("#lookupOnlineSourceSelect"),
       lookupSpanishToggleBtn: modal.querySelector("#lookupSpanishToggleBtn"),
@@ -1357,7 +1375,9 @@
 
     function updateVoiceUi() {
       const state = getStateSafe()
-      if (state?.onlineTtsEnabled) {
+      const normalizeTtsMode = window.A4Common?.normalizeTtsMode
+      const ttsMode = normalizeTtsMode ? normalizeTtsMode(state?.ttsMode) : "online"
+      if (ttsMode === "online") {
         if (dom.currentVoiceText) dom.currentVoiceText.textContent = state.onlineTtsProvider === "google" ? "在线 TTS (Google)" : "在线 TTS (Microsoft Edge)"
         if (dom.voiceHint) dom.voiceHint.textContent = "当前使用在线发音，无需选择本地系统语音。"
 
@@ -1366,6 +1386,13 @@
         getRowOf(dom.voiceModeSelect)?.classList.add("hidden")
         if (dom.voiceManualRow) dom.voiceManualRow.classList.add("hidden")
 
+      } else if (ttsMode === "offline") {
+        if (dom.currentVoiceText) dom.currentVoiceText.textContent = "离线 TTS（设备本地）"
+        if (dom.voiceHint) dom.voiceHint.textContent = "缺失模型或合成失败时会自动回退到在线/系统语音。"
+        getRowOf(dom.accentSelect)?.classList.add("hidden")
+        getRowOf(dom.pronunciationLangSelect)?.classList.add("hidden")
+        getRowOf(dom.voiceModeSelect)?.classList.add("hidden")
+        if (dom.voiceManualRow) dom.voiceManualRow.classList.add("hidden")
       } else {
         const resolved = getResolvedVoice()
         if (dom.currentVoiceText) dom.currentVoiceText.textContent = window.A4Speech?.getCurrentVoiceLabel?.(resolved) || "—"
@@ -1375,6 +1402,165 @@
         getRowOf(dom.pronunciationLangSelect)?.classList.remove("hidden")
         getRowOf(dom.voiceModeSelect)?.classList.remove("hidden")
         renderVoiceModeUi()
+      }
+    }
+
+    const offlineUiState = { manifest: null, manifestErr: "", loading: false, downloading: new Set() }
+
+    function formatBytes(n) {
+      const x = Number(n) || 0
+      if (x >= 1024 * 1024) return `${(x / 1024 / 1024).toFixed(1)} MB`
+      if (x >= 1024) return `${(x / 1024).toFixed(0)} KB`
+      return `${x} B`
+    }
+
+    async function refreshOfflineManifest({ force = false } = {}) {
+      if (!force && offlineUiState.manifest) return offlineUiState.manifest
+      const invoke = window.A4Utils?.getTauriInvoke?.()
+      if (typeof invoke !== "function") {
+        offlineUiState.manifestErr = "桌面端独有功能"
+        offlineUiState.manifest = { voices: [] }
+        return offlineUiState.manifest
+      }
+      offlineUiState.loading = true
+      try {
+        const m = await invoke("a4_offline_voices_manifest_fetch")
+        offlineUiState.manifest = m && Array.isArray(m.voices) ? m : { voices: [] }
+        offlineUiState.manifestErr = ""
+      } catch (e) {
+        offlineUiState.manifest = { voices: [] }
+        offlineUiState.manifestErr = String(e || "manifest 获取失败")
+      } finally {
+        offlineUiState.loading = false
+      }
+      return offlineUiState.manifest
+    }
+
+    async function renderOfflineVoiceList() {
+      const list = dom.offlineTtsList
+      if (!list) return
+      const invoke = window.A4Utils?.getTauriInvoke?.()
+      if (typeof invoke !== "function") {
+        list.innerHTML = '<div class="form-help">离线 TTS 仅在桌面应用可用。</div>'
+        return
+      }
+      list.innerHTML = '<div class="form-help">加载中…</div>'
+      const [manifest, installed] = await Promise.all([
+        refreshOfflineManifest(),
+        (async () => {
+          try { return await invoke("a4_offline_voices_installed") } catch { return [] }
+        })(),
+      ])
+      const installedMap = new Map((installed || []).map((v) => [String(v?.id || ""), v]))
+      const voices = manifest?.voices || []
+      list.innerHTML = ""
+      if (offlineUiState.manifestErr) {
+        const err = document.createElement("div")
+        err.className = "form-help"
+        err.style.color = "#c00"
+        err.textContent = `manifest: ${offlineUiState.manifestErr}`
+        list.appendChild(err)
+      }
+      if (!voices.length && !offlineUiState.manifestErr) {
+        list.innerHTML = '<div class="form-help">暂无可用语音。</div>'
+        return
+      }
+      const state = getStateSafe()
+      const offlineMap = state?.offlineVoiceByLang && typeof state.offlineVoiceByLang === "object" ? state.offlineVoiceByLang : {}
+      for (const v of voices) {
+        const id = String(v?.id || "")
+        const isInstalled = installedMap.has(id)
+        const isDownloading = offlineUiState.downloading.has(id)
+        const langBase = String(v?.lang || "").toLowerCase().split("-")[0]
+        const isDefault = String(offlineMap[langBase] || "") === id
+        const row = document.createElement("div")
+        row.style.cssText = "display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid #ddd;border-radius:6px;"
+        const head = document.createElement("div")
+        head.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"
+        const title = document.createElement("div")
+        title.innerHTML = `<strong>${v?.name || id}</strong> <span class="form-help" style="display:inline">${v?.lang || ""} · ${formatBytes(v?.size)}</span>`
+        head.appendChild(title)
+        const actions = document.createElement("div")
+        actions.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;"
+        if (isInstalled) {
+          const setDefaultBtn = document.createElement("button")
+          setDefaultBtn.type = "button"
+          setDefaultBtn.className = "ghost"
+          setDefaultBtn.textContent = isDefault ? `${langBase} 默认 ✓` : `设为 ${langBase} 默认`
+          setDefaultBtn.disabled = isDefault
+          setDefaultBtn.addEventListener("click", () => {
+            const cur = getStateSafe()
+            const next = { ...(cur?.offlineVoiceByLang || {}) }
+            next[langBase] = id
+            setStateSafe({ offlineVoiceByLang: next })
+            persistSafe()
+            renderOfflineVoiceList()
+            afterChange("offlineVoiceByLang")
+          })
+          actions.appendChild(setDefaultBtn)
+          const delBtn = document.createElement("button")
+          delBtn.type = "button"
+          delBtn.className = "ghost"
+          delBtn.textContent = "删除"
+          delBtn.addEventListener("click", async () => {
+            delBtn.disabled = true
+            try {
+              await invoke("a4_offline_voices_delete", { voiceId: id })
+              if (window.A4Speech?.invalidateOfflineCache) window.A4Speech.invalidateOfflineCache()
+              renderOfflineVoiceList()
+            } catch (e) {
+              alert(`删除失败：${e}`)
+            } finally {
+              delBtn.disabled = false
+            }
+          })
+          actions.appendChild(delBtn)
+        } else {
+          const dlBtn = document.createElement("button")
+          dlBtn.type = "button"
+          dlBtn.className = "primary"
+          dlBtn.textContent = isDownloading ? "下载中…" : "下载"
+          dlBtn.disabled = isDownloading
+          const progLabel = document.createElement("div")
+          progLabel.className = "form-help"
+          progLabel.style.cssText = "min-width:120px;text-align:right;"
+          dlBtn.addEventListener("click", async () => {
+            const ChannelCtor = window.__TAURI__?.core?.Channel || window.__TAURI__?.Channel
+            if (!ChannelCtor) { alert("当前 Tauri 环境不支持下载进度通道。"); return }
+            offlineUiState.downloading.add(id)
+            dlBtn.disabled = true
+            dlBtn.textContent = "下载中…"
+            const channel = new ChannelCtor((evt) => {
+              if (!evt) return
+              const phase = String(evt.phase || "")
+              const total = Number(evt.total) || 0
+              const downloaded = Number(evt.downloaded) || 0
+              const pct = total > 0 ? Math.min(100, Math.round((downloaded / total) * 100)) : 0
+              progLabel.textContent = phase === "downloading" ? `${pct}% (${formatBytes(downloaded)}/${formatBytes(total)})` : phase
+            })
+            try {
+              await invoke("a4_offline_voices_download", { voice: v, onProgress: channel })
+              if (window.A4Speech?.invalidateOfflineCache) window.A4Speech.invalidateOfflineCache()
+              const cur = getStateSafe()
+              const offlineMapCur = cur?.offlineVoiceByLang && typeof cur.offlineVoiceByLang === "object" ? cur.offlineVoiceByLang : {}
+              if (!offlineMapCur[langBase]) {
+                setStateSafe({ offlineVoiceByLang: { ...offlineMapCur, [langBase]: id } })
+                persistSafe()
+                afterChange("offlineVoiceByLang")
+              }
+            } catch (e) {
+              alert(`下载失败：${e}`)
+            } finally {
+              offlineUiState.downloading.delete(id)
+              renderOfflineVoiceList()
+            }
+          })
+          actions.appendChild(progLabel)
+          actions.appendChild(dlBtn)
+        }
+        head.appendChild(actions)
+        row.appendChild(head)
+        list.appendChild(row)
       }
     }
 
@@ -1408,16 +1594,21 @@
       renderVoiceModeUi()
       if (dom.pronounceToggleBtn)
         dom.pronounceToggleBtn.textContent = `发音：${state?.pronunciationEnabled ? "开" : "关"}`
-      const onlineTtsEnabled = typeof state?.onlineTtsEnabled === "boolean" ? state.onlineTtsEnabled : true
-      if (dom.ttsModeSelect) dom.ttsModeSelect.value = onlineTtsEnabled ? "online" : "system"
+      const normalizeTtsMode = window.A4Common?.normalizeTtsMode
+      const ttsMode = normalizeTtsMode ? normalizeTtsMode(state?.ttsMode) : "online"
+      const onlineTtsEnabled = ttsMode === "online"
+      if (dom.ttsModeSelect) dom.ttsModeSelect.value = ttsMode
       if (dom.onlineTtsToggleBtn)
         dom.onlineTtsToggleBtn.textContent = `在线兜底：${onlineTtsEnabled ? "开" : "关"}`
       if (dom.onlineTtsProviderSelect)
         dom.onlineTtsProviderSelect.value = normalizeOnlineTtsProvider(state?.onlineTtsProvider)
       if (dom.onlineTtsProviderRow)
-        dom.onlineTtsProviderRow.classList.toggle("hidden", !onlineTtsEnabled)
+        dom.onlineTtsProviderRow.classList.toggle("hidden", ttsMode !== "online")
       if (dom.onlineTtsPrivacyHint)
-        dom.onlineTtsPrivacyHint.classList.toggle("hidden", !onlineTtsEnabled)
+        dom.onlineTtsPrivacyHint.classList.toggle("hidden", ttsMode !== "online")
+      if (dom.offlineTtsSection)
+        dom.offlineTtsSection.classList.toggle("hidden", ttsMode !== "offline")
+      if (ttsMode === "offline") renderOfflineVoiceList()
       const lookupOnlineEnabled = typeof state?.lookupOnlineEnabled === "boolean" ? state.lookupOnlineEnabled : true
       const lookupOnlineSource = String(state?.lookupOnlineSource || "").trim().toLowerCase() === "custom" ? "custom" : "builtin"
       const lookupSpanishConjugationEnabled =
@@ -2044,11 +2235,23 @@
     })
 
     dom.ttsModeSelect?.addEventListener("change", () => {
-      const isOnline = dom.ttsModeSelect.value === "online"
-      setStateSafe({ onlineTtsEnabled: isOnline })
+      const normalizeTtsMode = window.A4Common?.normalizeTtsMode
+      const ttsMode = normalizeTtsMode ? normalizeTtsMode(dom.ttsModeSelect.value) : "online"
+      const onlineTtsEnabled = ttsMode === "online"
+      setStateSafe({ ttsMode, onlineTtsEnabled })
       persistSafe()
       render()
-      afterChange("onlineTtsEnabled")
+      afterChange("ttsMode")
+    })
+
+    dom.offlineTtsRefreshBtn?.addEventListener("click", async () => {
+      dom.offlineTtsRefreshBtn.disabled = true
+      try {
+        await refreshOfflineManifest({ force: true })
+        await renderOfflineVoiceList()
+      } finally {
+        dom.offlineTtsRefreshBtn.disabled = false
+      }
     })
 
     dom.onlineTtsToggleBtn?.addEventListener("click", () => {

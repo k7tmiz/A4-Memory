@@ -173,7 +173,7 @@ window.A4Utils = {
 文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录。设置弹窗中的下拉选择在 Android 环境使用应用内底部面板，原 `<select>` 保留为状态源。所有删除/清空操作的二次确认统一使用 `A4Utils.showConfirmDialog`。
 
 ### `js/speech.js`
-语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `onlineTtsEnabled` / `onlineTtsProvider` 控制；浏览器优先直连首选在线源，未及时开始播放时尝试同源私有桥接层代理，再依次尝试另一在线源和系统语音。朗读文本不写入学习状态、备份或云同步数据。Tauri CSP 需放行 `wss:` 与 `media-src blob: https:`。
+语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `onlineTtsEnabled` / `onlineTtsProvider` 控制；浏览器优先直连首选在线源，未及时开始播放时尝试同源私有桥接层代理，再依次尝试另一在线源和系统语音。桌面端额外支持「离线 TTS」模式（Sherpa-ONNX，模型按需下载到 `app_data_dir()/voices/<id>/`），通过 `a4_offline_speak` 命令合成 WAV 后用 HTMLAudioElement 播放；Android 平台 offline 命令统一返回未实现错误。朗读文本不写入学习状态、备份或云同步数据。Tauri CSP 需放行 `wss:`、`https://tts.k7tmiz.com` 与 `media-src blob: https:`。
 ```javascript
 window.A4Speech = {
   installSpeech({ onVoicesChanged }),
@@ -245,7 +245,12 @@ window.A4Updater = {
 - `a4_open_external(url)`：桌面端 / Android 打开系统默认浏览器或下载处理器。
 - `a4_android_print()`：Android 端调用 WebView 原生打印接口。
 - `a4_android_save_text_file(filename, mime, content)`：Android 端将文本类导出写入下载目录，用于词书、备份和 CSV 导出。
-- `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读；不内置离线语音包，不负责安装或切换第三方 TTS 引擎。
+- `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读。
+- `a4_offline_voices_manifest_url()` / `a4_offline_voices_manifest_fetch()`：返回桌面端离线 TTS 模型清单源 URL 与 JSON。
+- `a4_offline_voices_installed()`：列出 `app_data_dir()/voices/` 下已安装的语音包。
+- `a4_offline_voices_download(voice, channel)`：从 R2 下载 tar.bz2 模型并校验 sha256，进度通过 Tauri channel 流式推送。
+- `a4_offline_voices_delete(voiceId)`：删除指定语音包并清理推理引擎缓存。
+- `a4_offline_speak(text, voiceId)`：使用 Sherpa-ONNX VITS 引擎合成 WAV 字节，前端转 Blob 后用 HTMLAudioElement 播放；Android 平台返回未实现错误。
 
 ### 基础冒烟检查
 
@@ -265,7 +270,7 @@ window.A4Updater = {
 设置界面分为以下七大功能区：
 
 1. **学习** — 整合外观（主题模式）、学习目标（每日轮次/单词）、学习设置（每轮上限）、以及轻量复习配置（复习间隔、翻面、持续背书）。
-2. **发音** — 朗读开关、发音方式（在线 TTS / 系统语音）和在线发音源。选择在线 TTS 时自动隐藏多余的本地语音选择器。
+2. **发音** — 朗读开关、发音方式（在线 TTS / 离线 TTS / 系统语音）和在线发音源；离线 TTS 仅桌面端可用，Android 自动隐藏。选中离线 TTS 时展开「离线语音包」分区：列出远端清单 + 已安装项，按语言显示下载/删除/试听按钮和默认语音选择。
 3. **AI 制卡** — 自定义 API 配置、模型选择、词书生成。
 4. **联网补充** — 联网补充开关、查词来源、西语变位开关、缓存时长。
 5. **账号** — 登录、注册、重置密码、登录状态卡片与云同步（上传/下载数据）。
@@ -333,6 +338,8 @@ window.A4Updater = {
   pronunciationLang: "auto" | "en" | "es" | "ja" | "ko" | "pt" | "fr" | "de" | "it" | "eo",
   voiceMode: "auto" | "manual",
   voiceURI: string,
+  ttsMode: "online" | "offline" | "system",
+  offlineVoiceByLang: { en: string, es: string, ... },
 
   // AI 配置（apiKey 仅内存保留，不写入 localStorage / 备份文件 / 云端状态）
   aiConfig: { provider, baseUrl, apiKey, model },

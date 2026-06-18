@@ -306,9 +306,12 @@
   const EDGE_TTS_WS_URL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1"
   const EDGE_TTS_VERSION = "1-143.0.3650.75"
   const WINDOWS_EPOCH_SECONDS = 11644473600
-  const ONLINE_TTS_CONNECT_TIMEOUT = 5000
-  const ONLINE_TTS_PLAY_START_TIMEOUT = 3500
+  const ONLINE_TTS_CONNECT_TIMEOUT = 3000
+  const ONLINE_TTS_PLAY_START_TIMEOUT = 2500
   const ONLINE_TTS_PLAYBACK_TIMEOUT = 30000
+
+  // GEC SHA-256 reuse within 5-min window cuts ~150ms per Edge speak.
+  let edgeSecMsGecCache = { windowKey: "", value: "" }
 
   const EDGE_VOICE_MAP = {
     "en-US": "en-US-AriaNeural",
@@ -367,10 +370,80 @@
     if (!window.crypto?.subtle || typeof window.TextEncoder !== "function") return ""
     const seconds = Math.floor(Date.now() / 1000) + WINDOWS_EPOCH_SECONDS
     const roundedSeconds = seconds - (seconds % 300)
+    const windowKey = String(roundedSeconds)
+    if (edgeSecMsGecCache.windowKey === windowKey && edgeSecMsGecCache.value) {
+      return edgeSecMsGecCache.value
+    }
     const ticks = String(BigInt(roundedSeconds) * 10000000n)
     const bytes = new window.TextEncoder().encode(`${ticks}${EDGE_TTS_TOKEN}`)
     const digest = await window.crypto.subtle.digest("SHA-256", bytes)
-    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase()
+    const value = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase()
+    edgeSecMsGecCache = { windowKey, value }
+    return value
+  }
+
+  function isMediaSourceSupported() {
+    return (
+      typeof window.MediaSource === "function" &&
+      typeof window.MediaSource.isTypeSupported === "function" &&
+      window.MediaSource.isTypeSupported("audio/mpeg")
+    )
+  }
+
+  function createMseAudioSink() {
+    if (!isMediaSourceSupported()) return null
+    const ms = new MediaSource()
+    const audio = new Audio()
+    const url = URL.createObjectURL(ms)
+    audio.src = url
+    let sb = null
+    const queue = []
+    let closed = false
+    let appending = false
+    let endedSignaled = false
+    const drain = () => {
+      if (!sb || appending || closed) return
+      if (!queue.length) {
+        if (endedSignaled) {
+          try { if (ms.readyState === "open") ms.endOfStream() } catch { /* ignore */ }
+        }
+        return
+      }
+      appending = true
+      try {
+        sb.appendBuffer(queue.shift())
+      } catch {
+        appending = false
+      }
+    }
+    ms.addEventListener("sourceopen", () => {
+      try {
+        sb = ms.addSourceBuffer("audio/mpeg")
+        sb.addEventListener("updateend", () => {
+          appending = false
+          drain()
+        })
+        drain()
+      } catch {
+        closed = true
+      }
+    }, { once: true })
+    return {
+      audio,
+      cleanup: () => {
+        closed = true
+        try { URL.revokeObjectURL(url) } catch { /* ignore */ }
+      },
+      append: (chunk) => {
+        if (closed) return
+        queue.push(chunk)
+        drain()
+      },
+      signalEnd: () => {
+        endedSignaled = true
+        drain()
+      },
+    }
   }
 
   async function speakWithEdgeTts(text, langTag) {
@@ -387,6 +460,10 @@
       let settled = false
       let receivedTurnEnd = false
       let timer = null
+      const audioChunks = []
+      const sink = createMseAudioSink()
+      let sinkPlayPromise = null
+
       const finish = (ok) => {
         if (settled) return
         settled = true
@@ -394,6 +471,10 @@
         try {
           ws?.close()
         } catch { /* ignore */ }
+        if (!ok && sink) {
+          try { sink.audio.pause() } catch { /* ignore */ }
+          sink.cleanup()
+        }
         if (ok) speechState.lastOnlineProvider = "edge"
         resolve(ok)
       }
@@ -408,13 +489,11 @@
       }
 
       ws.binaryType = "arraybuffer"
-      const audioChunks = []
 
       ws.onopen = () => {
         if (timer) clearTimeout(timer)
         timer = setTimeout(() => finish(false), ONLINE_TTS_CONNECT_TIMEOUT)
         const timestamp = getEdgeTimestamp()
-        // Send speech config
         ws.send(
           `X-Timestamp:${timestamp}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n` +
           JSON.stringify({
@@ -429,7 +508,6 @@
           })
         )
 
-        // Send SSML request
         const ssml =
           `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${escapeXml(langTag)}'>` +
           `<voice name='${escapeXml(voice)}'><prosody pitch='+0Hz' rate='+0%' volume='+0%'>` +
@@ -442,15 +520,31 @@
 
       ws.onmessage = (e) => {
         if (e.data instanceof ArrayBuffer) {
-          // Binary frame: header (text) + separator + audio data
           const view = new Uint8Array(e.data)
-          // Find the separator "Path:audio\r\n" in the binary header
           const headerEnd = findAudioHeaderEnd(view)
           if (headerEnd > 0 && headerEnd < view.length) {
-            audioChunks.push(view.slice(headerEnd))
+            const chunk = view.slice(headerEnd)
+            audioChunks.push(chunk)
+            if (sink && !sinkPlayPromise) {
+              sink.append(chunk)
+              if (timer) clearTimeout(timer)
+              timer = setTimeout(() => finish(false), ONLINE_TTS_PLAYBACK_TIMEOUT)
+              sinkPlayPromise = playAudioElement(sink.audio, { cleanup: sink.cleanup })
+                .then(() => finish(true))
+                .catch(() => {
+                  // MSE start failed — fall back to buffered playback after turn.end.
+                  sinkPlayPromise = false
+                })
+            } else if (sink) {
+              sink.append(chunk)
+            }
           }
         } else if (typeof e.data === "string" && e.data.includes("Path:turn.end")) {
           receivedTurnEnd = true
+          if (sink && sinkPlayPromise) {
+            sink.signalEnd()
+            return
+          }
           if (audioChunks.length) {
             if (timer) clearTimeout(timer)
             timer = setTimeout(() => finish(false), ONLINE_TTS_PLAYBACK_TIMEOUT)
@@ -576,6 +670,79 @@
       }
     }
     return false
+  }
+
+  // ── Offline TTS ─────────────────────────────────────────────────────────────
+
+  const offlineTtsState = {
+    installedCache: null,
+    cacheExpiry: 0,
+  }
+
+  async function refreshOfflineInstalled({ force = false } = {}) {
+    const now = Date.now()
+    if (!force && offlineTtsState.installedCache && now < offlineTtsState.cacheExpiry) {
+      return offlineTtsState.installedCache
+    }
+    const invoke = window.A4Utils?.getTauriInvoke?.()
+    if (typeof invoke !== "function") {
+      offlineTtsState.installedCache = []
+      offlineTtsState.cacheExpiry = now + 30000
+      return offlineTtsState.installedCache
+    }
+    try {
+      const list = await invoke("a4_offline_voices_installed")
+      offlineTtsState.installedCache = Array.isArray(list) ? list : []
+    } catch {
+      offlineTtsState.installedCache = []
+    }
+    offlineTtsState.cacheExpiry = now + 30000
+    return offlineTtsState.installedCache
+  }
+
+  function pickOfflineVoiceForLang(installed, base, preferredId) {
+    const list = Array.isArray(installed) ? installed : []
+    if (!list.length) return null
+    const want = String(base || "").toLowerCase()
+    if (preferredId) {
+      const hit = list.find((v) => String(v?.id || "") === preferredId)
+      if (hit) return hit
+    }
+    const exact = list.find((v) => normalizeLangTag(v?.lang).base.toLowerCase() === want)
+    if (exact) return exact
+    return null
+  }
+
+  async function speakWithOfflineTts({ text, voiceId }) {
+    const invoke = window.A4Utils?.getTauriInvoke?.()
+    if (typeof invoke !== "function") return false
+    if (!voiceId) return false
+    let result
+    try {
+      result = await invoke("a4_offline_speak", { text, voiceId })
+    } catch {
+      return false
+    }
+    if (!result?.ok || !result.wav?.length) return false
+    try {
+      const wavBytes = result.wav instanceof Uint8Array ? result.wav : new Uint8Array(result.wav)
+      await playAudioChunks([wavBytes], "audio/wav")
+      speechState.lastOnlineProvider = "offline"
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function isOfflineAvailableForLang(base, preferredId) {
+    if (isAndroidTauriSpeech()) return false
+    const installed = await refreshOfflineInstalled()
+    return !!pickOfflineVoiceForLang(installed, base, preferredId)
+  }
+
+  function invalidateOfflineCache() {
+    offlineTtsState.installedCache = null
+    offlineTtsState.cacheExpiry = 0
   }
 
   // ── Main speak ──────────────────────────────────────────────────────────────
@@ -740,7 +907,7 @@
     }
   }
 
-  async function speak({ text, pronunciationEnabled, pronunciationLang, wordbookLanguage, accent, voiceMode, voiceURI, onlineTtsEnabled, onlineTtsProvider }) {
+  async function speak({ text, pronunciationEnabled, pronunciationLang, wordbookLanguage, accent, voiceMode, voiceURI, onlineTtsEnabled, onlineTtsProvider, ttsMode, offlineVoiceId }) {
     const t = String(text || "").trim()
     if (!t || !pronunciationEnabled) return false
 
@@ -750,45 +917,76 @@
     stopActiveAudio()
     window.speechSynthesis?.cancel?.()
 
-    if (!onlineTtsEnabled) {
-      const ok = await speakWithSystemTts({ text: t, pronunciationLang, wordbookLanguage, accent, voiceMode, voiceURI })
-      speechState.lastSpeakResult = { ok, requestedMode: "system", usedMode: ok ? "system" : "" }
-      return ok
-    }
-
     const targetBase = getCurrentLanguageBase({ pronunciationLang, wordbookLanguage })
     const targetLangTag = getVoiceCandidatesForLanguage({ base: targetBase, accent: normalizeAccent(accent) })[0] || "en-US"
     const requestedProvider = String(onlineTtsProvider || "edge").toLowerCase() === "google" ? "google" : "edge"
-    if (await speakOnline(t, targetLangTag, requestedProvider)) {
-      speechState.lastSpeakResult = {
-        ok: true,
-        requestedMode: "online",
-        requestedProvider,
-        usedMode: "online",
-        usedProvider: speechState.lastOnlineProvider,
-      }
-      return true
+    const mode = String(ttsMode || "").toLowerCase()
+
+    const tryOffline = async () => {
+      if (isAndroidTauriSpeech()) return false
+      const installed = await refreshOfflineInstalled()
+      const voice = pickOfflineVoiceForLang(installed, targetBase, offlineVoiceId)
+      if (!voice) return false
+      return speakWithOfflineTts({ text: t, voiceId: voice.id })
     }
 
-    const systemOk = await speakWithSystemTts({
-      text: t,
-      pronunciationLang,
-      wordbookLanguage,
-      accent,
-      voiceMode,
-      voiceURI,
-    })
-    if (!systemOk && !speechState.warnedOnlineFailure) {
+    const tryOnline = async () => {
+      if (!onlineTtsEnabled) return false
+      return speakOnline(t, targetLangTag, requestedProvider)
+    }
+
+    const trySystem = async () =>
+      speakWithSystemTts({ text: t, pronunciationLang, wordbookLanguage, accent, voiceMode, voiceURI })
+
+    let usedMode
+    let ok
+
+    if (mode === "system") {
+      ok = await trySystem()
+      usedMode = ok ? "system" : ""
+    } else if (mode === "offline") {
+      if (await tryOffline()) {
+        ok = true
+        usedMode = "offline"
+      } else if (await tryOnline()) {
+        ok = true
+        usedMode = "online"
+      } else {
+        ok = await trySystem()
+        usedMode = ok ? "system" : ""
+      }
+    } else {
+      // mode === "online" or unset (default)
+      if (onlineTtsEnabled) {
+        if (await tryOnline()) {
+          ok = true
+          usedMode = "online"
+        } else if (await tryOffline()) {
+          ok = true
+          usedMode = "offline"
+        } else {
+          ok = await trySystem()
+          usedMode = ok ? "system" : ""
+        }
+      } else {
+        ok = await trySystem()
+        usedMode = ok ? "system" : ""
+      }
+    }
+
+    if (!ok && !speechState.warnedOnlineFailure) {
       speechState.warnedOnlineFailure = true
-      window.alert("在线发音和系统语音均不可用。请检查网络连接，或在系统设置中安装对应语言的语音。")
+      window.alert("发音不可用。请检查网络、安装系统语音，或在设置页下载离线语音包。")
     }
+
     speechState.lastSpeakResult = {
-      ok: systemOk,
-      requestedMode: "online",
+      ok,
+      requestedMode: mode || (onlineTtsEnabled ? "online" : "system"),
       requestedProvider,
-      usedMode: systemOk ? "system" : "",
+      usedMode,
+      usedProvider: speechState.lastOnlineProvider,
     }
-    return systemOk
+    return ok
   }
 
   function getLastSpeakResult() {
@@ -811,5 +1009,8 @@
     normalizeLangTag,
     speakOnline,
     getLastSpeakResult,
+    refreshOfflineInstalled,
+    isOfflineAvailableForLang,
+    invalidateOfflineCache,
   }
 })()

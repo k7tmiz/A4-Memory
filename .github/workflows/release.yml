@@ -117,17 +117,13 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 安全：收窄 Tauri webview CSP `connect-src`，移除多余 opener capability；`a4_open_external` 拒绝十进制 / 十六进制 / IPv6 映射等绕过形式的私网地址
-            - 安全：CI 接入 `npm test`，新增 `js/core/sanitize.js`、`js/storage.js`、`js/utils.js` 单元测试覆盖 XSS 转义、`apiKey` 清理、文件名清洗
-            - 修复：Android `a4_android_print` 改用 mpsc channel，消除 JNI 闭包未释放时的 `Arc::try_unwrap().unwrap()` panic
-            - 修复：`normalizeCloudState` 在归一化器缺失时中止云端恢复，避免绕过 `round.type` / `round.language` / `pageIndex` 保护
-            - 修复：设置 / 查词模态打开时不再触发 Space / R / N / M / D 快捷键
-            - 修复：记录页 PDF 预览的键盘与触摸监听在关闭时正确卸载，避免叠加
-            - 修复：跨页切换时停止残留的 `speechSynthesis` 与在线 TTS `Audio`
-            - 修复：构建脚本不再将本地 `js/cloud.js` 复制进 `dist/`，防止闭源桥接层泄露到公开站点
-            - 体验：`clearPaper` 同步清空 `appState.placed`，避免脱环节点泄漏
-            - 体验：本地语音多段队列加入 generation token，`cancel` 后不再播放过期片段
-            - 工程：CI / Release 统一 Rust stable 工具链，新增 cargo cache 与 job timeout
+            - 新增：桌面端离线 TTS（Sherpa-ONNX，VITS / MMS-TTS），英语默认推荐 `vits-piper-en_US-amy-low`，西语主推 `vits-mms-spa`，模型在设置页按需下载到 `app_data_dir()/voices/<id>/`，完全本地推理；Android 平台返回未实现错误
+            - 新增：Tauri 命令 `a4_offline_voices_manifest_url` / `a4_offline_voices_manifest_fetch` / `a4_offline_voices_installed` / `a4_offline_voices_download` / `a4_offline_voices_delete` / `a4_offline_speak`；下载流支持 sha256 校验、tar.bz2 解压、原子 rename
+            - 新增：设置页「发音方式」加入离线 TTS 选项，离线分组列出远端清单与已安装项，按语言显示下载/删除/试听按钮和默认语音选择
+            - 优化：Edge TTS 启动延迟，Sec-MS-GEC token 5 分钟缓存，连接超时 5000ms→3000ms，首音超时 3500ms→2500ms
+            - 优化：speak() 回退链支持 `online` / `offline` / `system` 三种模式；离线模式失败自动降级在线 → 系统语音
+            - 安全：Tauri CSP `connect-src` 加入 `https://tts.k7tmiz.com`（manifest + 模型下载）
+            - 数据：localStorage 主状态新增 `ttsMode`、`offlineVoiceByLang`；备份导入/云恢复透传但不假装已安装本地缺失的模型
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用

@@ -427,6 +427,8 @@ const appState = {
   voiceURI: "",
   onlineTtsEnabled: true,
   onlineTtsProvider: "edge",
+  ttsMode: "online",
+  offlineVoiceByLang: {},
   aiConfig: { provider: "custom", baseUrl: "", apiKey: "", model: "" },
   lookupOnlineEnabled: true,
   lookupOnlineSource: "builtin",
@@ -1670,6 +1672,11 @@ function speakTerm(term) {
       ""
   ).toLowerCase()
   const speakText = targetBase === "es" ? expandSpanishGenderShortForm(text) : text
+  const offlineMap =
+    appState.offlineVoiceByLang && typeof appState.offlineVoiceByLang === "object"
+      ? appState.offlineVoiceByLang
+      : {}
+  const offlineVoiceId = String(offlineMap[targetBase] || "")
 
   speech.speak({
     text: speakText,
@@ -1681,6 +1688,8 @@ function speakTerm(term) {
     voiceURI: appState.voiceURI,
     onlineTtsEnabled: appState.onlineTtsEnabled !== false,
     onlineTtsProvider: appState.onlineTtsProvider,
+    ttsMode: appState.ttsMode || "online",
+    offlineVoiceId,
   })
 
   if (settingsController) settingsController.updateVoiceUi()
