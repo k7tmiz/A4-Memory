@@ -79,9 +79,26 @@ jobs:
           sudo apt-get update
           echo "::notice::apt-get update done at $(date +%H:%M:%S)"
           date +%s > /tmp/apt_install_start.txt
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2 cmake clang libclang-dev
           echo "::notice::apt-get install done at $(date +%H:%M:%S)"
           echo "Install duration: $(($(date +%s) - $(cat /tmp/apt_start.txt)))s total, $(($(date +%s) - $(cat /tmp/apt_install_start.txt)))s install-only"
+
+      - name: Install macOS build tools
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake || brew upgrade cmake || true
+          cmake --version
+          clang --version
+
+      - name: Install Windows build tools
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install -y llvm
+          echo "C:\Program Files\CMake\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Check Rust versions
         run: |
@@ -117,11 +134,13 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 修复：1.0.27 引入的离线 TTS（Sherpa-ONNX）在 macOS / Windows CI 链接阶段失败（sherpa-rs-sys 预编译二进制下载不稳定），回退相关代码以保证桌面端构建可用；离线 TTS 计划在后续版本以更稳定方案重新接入
+            - 新增：内置离线 TTS（Sherpa-ONNX / VITS-piper / MMS-TTS），桌面端在设置 → 离线语音包按需下载，模型缓存于 `app_data_dir()/voices/<id>/`，CSP `connect-src` 已放行 `https://tts.k7tmiz.com`
+            - 修复：sherpa-rs 改为 `static` 特性本地编译 sherpa-onnx C++（CI 安装 cmake/clang/llvm），不再依赖不稳定的预编译二进制下载
             - 修复：Linux AppImage 打包恢复，CI 安装 `libfuse2`，`tauri_args` 改为 `--bundles deb,rpm,appimage`
+            - 修复：恢复 `index.html` / `records.html` 视口元标签 `maximum-scale=1, user-scalable=no`，禁用双指捏合缩放
             - 优化：Edge TTS 启动延迟，Sec-MS-GEC token 5 分钟缓存，连接超时 5000ms→3000ms，首音超时 3500ms→2500ms
             - 保留：在线 TTS 优先浏览器直连 Microsoft Edge / Google 翻译，失败依次回退同源私有桥接、另一在线源、系统语音
-            - 保留：Android 发音仅系统 TextToSpeech 桥接 `a4_android_speak(text, lang)`
+            - 保留：Android 发音仅系统 TextToSpeech 桥接 `a4_android_speak(text, lang)`；Android 端暂不内置离线 TTS
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用

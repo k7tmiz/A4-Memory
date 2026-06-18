@@ -419,6 +419,7 @@
               <div class="form-control">
                 <select id="ttsModeSelect" aria-label="发音方式">
                   <option value="online">在线 TTS（推荐）</option>
+                  <option value="offline">离线 TTS（设备本地）</option>
                   <option value="system">系统语音</option>
                 </select>
               </div>
@@ -442,9 +443,12 @@
 
             <div class="form-row hidden" id="offlineTtsSection">
               <div class="form-label">离线语音包</div>
-              <div class="form-control form-control-stack">
-                <div id="offlineTtsList" style="display:flex;flex-direction:column;gap:8px;"></div>
-                <div class="form-help" id="offlineTtsHint">
+              <div class="form-control">
+                <div id="offlineTtsList" class="form-help" style="display:flex;flex-direction:column;gap:6px;"></div>
+                <div class="stack" style="margin-top:8px;gap:8px;flex-wrap:wrap;">
+                  <button class="ghost" id="offlineTtsRefreshBtn" type="button">刷新可用列表</button>
+                </div>
+                <div class="form-help" id="offlineTtsHint" style="margin-top:6px;">
                   离线语音包仅在桌面端可用；模型存放于应用数据目录，可随时删除。
                 </div>
               </div>
@@ -867,6 +871,7 @@
       onlineTtsPrivacyHint: modal.querySelector("#onlineTtsPrivacyHint"),
       offlineTtsSection: modal.querySelector("#offlineTtsSection"),
       offlineTtsList: modal.querySelector("#offlineTtsList"),
+      offlineTtsRefreshBtn: modal.querySelector("#offlineTtsRefreshBtn"),
       offlineTtsHint: modal.querySelector("#offlineTtsHint"),
       lookupOnlineToggleBtn: modal.querySelector("#lookupOnlineToggleBtn"),
       lookupOnlineSourceSelect: modal.querySelector("#lookupOnlineSourceSelect"),
@@ -1469,15 +1474,14 @@
         const langBase = String(v?.lang || "").toLowerCase().split("-")[0]
         const isDefault = String(offlineMap[langBase] || "") === id
         const row = document.createElement("div")
-        row.className = "offline-voice-row"
+        row.style.cssText = "display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid #ddd;border-radius:6px;"
         const head = document.createElement("div")
-        head.className = "offline-voice-head"
+        head.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"
         const title = document.createElement("div")
-        title.className = "offline-voice-title"
         title.innerHTML = `<strong>${v?.name || id}</strong> <span class="form-help" style="display:inline">${v?.lang || ""} · ${formatBytes(v?.size)}</span>`
         head.appendChild(title)
         const actions = document.createElement("div")
-        actions.className = "offline-voice-actions"
+        actions.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;"
         if (isInstalled) {
           const setDefaultBtn = document.createElement("button")
           setDefaultBtn.type = "button"
@@ -1518,7 +1522,8 @@
           dlBtn.textContent = isDownloading ? "下载中…" : "下载"
           dlBtn.disabled = isDownloading
           const progLabel = document.createElement("div")
-          progLabel.className = "form-help offline-voice-progress"
+          progLabel.className = "form-help"
+          progLabel.style.cssText = "min-width:120px;text-align:right;"
           dlBtn.addEventListener("click", async () => {
             const ChannelCtor = window.__TAURI__?.core?.Channel || window.__TAURI__?.Channel
             if (!ChannelCtor) { alert("当前 Tauri 环境不支持下载进度通道。"); return }
@@ -2237,6 +2242,16 @@
       persistSafe()
       render()
       afterChange("ttsMode")
+    })
+
+    dom.offlineTtsRefreshBtn?.addEventListener("click", async () => {
+      dom.offlineTtsRefreshBtn.disabled = true
+      try {
+        await refreshOfflineManifest({ force: true })
+        await renderOfflineVoiceList()
+      } finally {
+        dom.offlineTtsRefreshBtn.disabled = false
+      }
     })
 
     dom.onlineTtsToggleBtn?.addEventListener("click", () => {
