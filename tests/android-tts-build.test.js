@@ -197,4 +197,15 @@ describe("Android offline TTS build integration", () => {
     assert.match(workflow, /android-actions\/setup-android@v3/)
     assert.match(workflow, /CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER/)
   })
+
+  it("configures the NDK archiver for Android native dependencies", () => {
+    for (const name of ["ci.yml", "release.yml"]) {
+      const workflow = fs.readFileSync(
+        path.join(ROOT, ".github", "workflows", name),
+        "utf8"
+      )
+      assert.match(workflow, /NDK_AR=.*llvm-ar/)
+      assert.match(workflow, /AR_aarch64_linux_android=.*NDK_AR/)
+    }
+  })
 })

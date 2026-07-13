@@ -265,15 +265,22 @@ jobs:
           find "$NDK_TOOLCHAIN" -name "*aarch64*" -type f 2>/dev/null | head -10
           # Find clang for aarch64 target (API level 21)
           NDK_CLANG=$(find "$NDK_TOOLCHAIN" -name "aarch64-linux-android21-clang*" -type f 2>/dev/null | grep -v ++ | head -1)
+          NDK_AR=$(find "$NDK_TOOLCHAIN" -name "llvm-ar" -type f 2>/dev/null | head -1)
           if [ -z "$NDK_CLANG" ]; then
             echo "::error::aarch64-linux-android21-clang not found"
             find "$NDK_TOOLCHAIN" -name "aarch64*" -type f 2>/dev/null | head -10
             exit 1
           fi
+          if [ -z "$NDK_AR" ]; then
+            echo "::error::NDK llvm-ar not found"
+            exit 1
+          fi
           echo "Found NDK clang: $NDK_CLANG"
+          echo "Found NDK archiver: $NDK_AR"
           echo "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=${NDK_CLANG}" >> "$GITHUB_ENV"
           echo "CC_aarch64_linux_android=${NDK_CLANG}" >> "$GITHUB_ENV"
           echo "CXX_aarch64_linux_android=${NDK_CLANG}++" >> "$GITHUB_ENV"
+          echo "AR_aarch64_linux_android=${NDK_AR}" >> "$GITHUB_ENV"
           echo "✓ NDK linker configured"
 
       - name: Setup Java
