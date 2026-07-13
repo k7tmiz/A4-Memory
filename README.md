@@ -24,7 +24,7 @@ Demo：https://k7tmiz.com/words
 - 学习记录：轮次视图、状态视图、导出 CSV/PDF、生成复习轮；桌面端和 Android 端会调用系统打印/保存为 PDF，Android JSON/CSV 导出会保存到下载目录
 - 词书：内置 CET4 / CET6 / 西班牙语示例，支持 TXT/CSV/JSON 导入、JSON 导出和 GitHub 在线导入
 - 查词：本地优先、联网补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充
-- 发音：Web 端使用 SpeechSynthesis；Android Tauri 端通过原生 TextToSpeech 桥接发音，支持 en/es/ja/ko/pt/fr/de/it/eo；在线模式支持 Microsoft Edge / Google 翻译，浏览器直连优先，未及时开始播放时尝试同源代理、另一在线源和系统语音；桌面端可在设置页按需下载离线语音包（Sherpa-ONNX，英语/西语等），完全本地推理
+- 发音：Web 端使用 SpeechSynthesis；Android Tauri 端通过原生 TextToSpeech 桥接发音，支持 en/es/ja/ko/pt/fr/de/it/eo；在线模式支持 Microsoft Edge / Google 翻译，浏览器直连优先，未及时开始播放时尝试同源代理、另一在线源、已安装离线语音和系统语音；桌面端和 Android 应用可在设置页按需下载英语/西语离线语音包（Sherpa-ONNX），完全本地推理
 - 外观：释义显示/隐藏、沉浸模式、auto/light/dark 主题
 - 备份：完整 JSON 导入/导出
 - AI 生成词书：OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
@@ -86,6 +86,12 @@ npm run tauri dev
 
 # 本地打包（不含 cloud.js，需自行放入 js/ 目录）
 npm run tauri build
+
+# Android 首次初始化
+npm run tauri android init
+
+# Android APK（离线 TTS 当前限定 arm64；自动校验 AAR 并安装原生桥接）
+npm run tauri android build -- --apk --target aarch64
 ```
 
 ## 使用方式
@@ -127,7 +133,7 @@ npm run build
 - UI：`showMeaning`, `immersiveMode`, `themeMode`, `darkMode`
 - 学习设置：`roundCap`, `dailyGoalRounds`, `dailyGoalWords`
 - 复习设置：`reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
-- 发音设置：`pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`, `onlineTtsEnabled`, `onlineTtsProvider`
+- 发音设置：`pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`, `onlineTtsEnabled`, `onlineTtsProvider`, `ttsMode`, `offlineVoiceByLang`
 - 词书：`selectedWordbookId`, `customWordbooks`
 - AI 配置：`aiConfig = { provider, baseUrl, apiKey, model }`（`apiKey` 仅内存保留，不写入 localStorage、备份文件或云端状态）
 - 查词：`lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
@@ -135,8 +141,9 @@ npm run build
 ### 在线发音与隐私
 
 - 系统语音模式在设备本地处理朗读文本。
+- 离线 TTS 模式从 GitHub Release 按需下载经过 SHA256 校验的语音包，朗读文本仅在设备本地合成；模型缺失或合成失败时只回退系统语音，不会切换到在线服务。
 - 在线 TTS 模式会将当前朗读文本直接发送给 Microsoft Edge 或 Google 翻译语音服务以生成音频；浏览器直连未及时开始播放时可能通过服务端代理或切换至另一在线源。
-- 首选在线源不可用时，同一朗读文本可能通过服务端代理或发送给另一在线源；两者均不可用时回退系统语音。
+- 首选在线源不可用时，同一朗读文本可能通过服务端代理或发送给另一在线源；在线源均不可用时依次尝试已安装离线语音和系统语音。
 - 应用不会把朗读文本写入学习状态、备份文件或云同步数据。
 
 ## 云同步（可选，需私有模块）

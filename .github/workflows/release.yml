@@ -155,14 +155,14 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 新增：Android 离线 TTS（Sherpa-ONNX AAR + Kotlin 桥接），与桌面端共用模型下载/管理链路，离线发音在设置 → 离线语音包按需下载后可用
-            - 新增：内置离线 TTS（Sherpa-ONNX / VITS-piper / MMS-TTS），桌面端在设置 → 离线语音包按需下载，模型缓存于 `app_data_dir()/voices/<id>/`，CSP `connect-src` 已放行 `https://tts.k7tmiz.com`
+            - 新增：Android 离线 TTS（Sherpa-ONNX AAR + Kotlin 后台桥接），与桌面端共用 GitHub 模型下载/管理链路，离线发音在设置 → 离线语音包按需下载后可用
+            - 新增：内置离线 TTS（Sherpa-ONNX / VITS-piper / MMS-TTS），桌面端与 Android 应用按需下载，模型缓存于 `app_data_dir()/voices/<id>/`
             - 修复：sherpa-rs 改为 `static` 特性本地编译 sherpa-onnx C++（CI 安装 cmake/clang/llvm），不再依赖不稳定的预编译二进制下载
             - 修复：Linux AppImage 打包恢复，CI 安装 `libfuse2`，`tauri_args` 改为 `--bundles deb,rpm,appimage`
             - 修复：恢复 `index.html` / `records.html` 视口元标签 `maximum-scale=1, user-scalable=no`，禁用双指捏合缩放
             - 优化：Edge TTS 启动延迟，Sec-MS-GEC token 5 分钟缓存，连接超时 5000ms→3000ms，首音超时 3500ms→2500ms
-            - 保留：在线 TTS 优先浏览器直连 Microsoft Edge / Google 翻译，失败依次回退同源私有桥接、另一在线源、系统语音
-            - 保留：Android 系统 TextToSpeech 桥接 `a4_android_speak(text, lang)` 作为在线/离线回退
+            - 保留：在线 TTS 优先浏览器直连 Microsoft Edge / Google 翻译，失败依次回退同源私有桥接、另一在线源、已安装离线语音、系统语音
+            - 保留：Android 系统 TextToSpeech 桥接 `a4_android_speak(text, lang)` 作为最终回退
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
@@ -298,6 +298,7 @@ jobs:
         with:
           path: |
             ~/.gradle
+            ~/.cache/a4-memory
             src-tauri/gen/android/.gradle
           key: android-gradle-${{ hashFiles('src-tauri/Cargo.lock', '.github/workflows/release.yml') }}
           restore-keys: android-gradle-
@@ -318,116 +319,14 @@ jobs:
 
       - run: npm run build
 
-      - name: Download sherpa-onnx AAR
-        run: |
-          AAR_URL="https://github.com/k2-fsa/sherpa-onnx/releases/download/v1.13.3/sherpa-onnx-static-link-onnxruntime-1.13.3.aar"
-          AAR_DEST="/tmp/sherpa-aar/sherpa-onnx-1.13.3.aar"
-          mkdir -p "$(dirname "$AAR_DEST")"
-          if [ -f "$AAR_DEST" ]; then
-            echo "✓ AAR already cached at $AAR_DEST ($(du -h "$AAR_DEST" | cut -f1))"
-          else
-            echo "Downloading AAR from $AAR_URL ..."
-            curl -L --retry 3 --retry-delay 5 -o "$AAR_DEST" "$AAR_URL"
-            echo "✓ AAR downloaded ($(du -h "$AAR_DEST" | cut -f1))"
-          fi
-
       - name: Init Android project
         run: |
           rm -rf src-tauri/gen/android
           CI=true npx tauri android init --ci 2>&1 | tee /tmp/android-init.log
           echo "Init exit: $?"
 
-      - name: Inject Android dependencies
-        run: |
-          GRADLE_FILE="src-tauri/gen/android/app/build.gradle.kts"
-          if [ -f "$GRADLE_FILE" ]; then
-            # Copy AAR into module libs/
-            mkdir -p src-tauri/gen/android/app/libs
-            cp /tmp/sherpa-aar/sherpa-onnx-1.13.3.aar src-tauri/gen/android/app/libs/
-            echo "✓ AAR copied to gen/android/app/libs/"
-
-            python3 - "$GRADLE_FILE" << 'PYEOF'
-          import re, sys
-
-          gradle_file = sys.argv[1]
-          with open(gradle_file, 'r', encoding='utf-8') as f:
-              content = f.read()
-
-          changed = False
-
-          # 1. Add ndk abiFilters inside defaultConfig
-          if 'abiFilters' not in content:
-              default_config_match = re.search(r'(defaultConfig\s*\{)(.*?)(\n\s+\})', content, re.DOTALL)
-              if default_config_match:
-                  ndk_block = '\n        ndk {\n            abiFilters += listOf("arm64-v8a")\n        }'
-                  content = (
-                      content[:default_config_match.end(2)]
-                      + ndk_block
-                      + content[default_config_match.end(2):]
-                  )
-                  print('Injected ndk abiFilters (arm64-v8a)')
-                  changed = True
-          else:
-              print('ndk abiFilters already present')
-
-          # 2. Add dependencies
-          dependencies = [
-              'androidx.lifecycle:lifecycle-process:2.10.0',
-          ]
-          aar_file = 'sherpa-onnx-1.13.3.aar'
-          missing = [dep for dep in dependencies if dep not in content]
-          aar_present = aar_file in content
-
-          if missing or not aar_present:
-              deps_match = re.search(r'(dependencies\s*\{)(.*?)(\n\})', content, re.DOTALL)
-              if deps_match:
-                  insertion = ''
-                  for dep in missing:
-                      insertion += f'\n    implementation("{dep}")'
-                  if not aar_present:
-                      insertion += f'\n    implementation(files("libs/{aar_file}"))'
-                  content = (
-                      content[:deps_match.start(3)]
-                      + insertion
-                      + content[deps_match.start(3):]
-                  )
-                  print('Injected Android dependencies: ' + ', '.join(missing + ([aar_file] if not aar_present else [])))
-                  changed = True
-          else:
-              print('Android dependencies already present')
-
-          if changed:
-              with open(gradle_file, 'w', encoding='utf-8') as f:
-                  f.write(content)
-              print('build.gradle.kts updated')
-          PYEOF
-          else
-            echo "WARNING: $GRADLE_FILE not found"
-          fi
-
-      - name: Install Android native bridge
-        run: |
-          mkdir -p src-tauri/gen/android/app/src/main/java/app/tauri
-          cp src-tauri/android/A4SpeechBridge.kt src-tauri/gen/android/app/src/main/java/app/tauri/A4SpeechBridge.kt
-          cp src-tauri/android/A4OfflineTtsBridge.kt src-tauri/gen/android/app/src/main/java/app/tauri/A4OfflineTtsBridge.kt
-          echo "✓ Android native bridges installed"
-          echo "=== A4OfflineTtsBridge.kt content ==="
-          head -10 src-tauri/gen/android/app/src/main/java/app/tauri/A4OfflineTtsBridge.kt
-
-      - name: Keep Android native bridge for JNI
-        run: |
-          cat >> src-tauri/gen/android/app/proguard-rules.pro << 'EOF'
-
-          # Rust calls these Kotlin bridges by exact JNI class/method names.
-          -keep class app.tauri.A4SpeechBridge { *; }
-          -keepclassmembers class app.tauri.A4SpeechBridge { *; }
-          -keep class app.tauri.A4OfflineTtsBridge { *; }
-          -keepclassmembers class app.tauri.A4OfflineTtsBridge { *; }
-
-          # Keep sherpa-onnx classes accessed by the bridge.
-          -keep class com.k2fsa.sherpa.onnx.** { *; }
-          EOF
-          echo "✓ JNI keep rules installed"
+      - name: Prepare Android offline TTS
+        run: node scripts/prepare-android-tts.mjs
 
       - name: Replace Android icons
         run: |

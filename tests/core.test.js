@@ -30,6 +30,11 @@ function loadCommon() {
 
 const A4Common = loadCommon()
 
+function normalizeTtsPreferences(state) {
+  assert.equal(typeof A4Common.normalizeTtsPreferences, "function")
+  return A4Common.normalizeTtsPreferences(state)
+}
+
 describe("A4Common core utilities", () => {
   it("clamp returns a value within bounds", () => {
     assert.equal(A4Common.clamp(5, 0, 10), 5)
@@ -127,6 +132,41 @@ describe("A4Common core utilities", () => {
     assert.equal(A4Common.normalizeThemeMode("light"), "light")
     assert.equal(A4Common.normalizeThemeMode("auto"), "auto")
     assert.equal(A4Common.normalizeThemeMode("invalid"), "auto")
+  })
+
+  it("round-trips offline TTS preferences through serialized state", () => {
+    const preferences = normalizeTtsPreferences({
+      ttsMode: " OFFLINE ",
+      onlineTtsEnabled: true,
+      offlineVoiceByLang: {
+        " EN ": " voice-en ",
+        es: "voice-es",
+        ja: "",
+      },
+    })
+    const serializedState = JSON.parse(JSON.stringify({ version: 2, ...preferences }))
+    const restored = normalizeTtsPreferences(serializedState)
+
+    assert.equal(restored.ttsMode, "offline")
+    assert.equal(restored.onlineTtsEnabled, false)
+    assert.deepEqual(JSON.parse(JSON.stringify(restored.offlineVoiceByLang)), {
+      en: "voice-en",
+      es: "voice-es",
+    })
+  })
+
+  it("restores legacy onlineTtsEnabled state when ttsMode is absent", () => {
+    const legacySystem = normalizeTtsPreferences({
+      onlineTtsEnabled: false,
+      offlineVoiceByLang: null,
+    })
+    const legacyOnline = normalizeTtsPreferences({ onlineTtsEnabled: true })
+
+    assert.equal(legacySystem.ttsMode, "system")
+    assert.equal(legacySystem.onlineTtsEnabled, false)
+    assert.deepEqual(JSON.parse(JSON.stringify(legacySystem.offlineVoiceByLang)), {})
+    assert.equal(legacyOnline.ttsMode, "online")
+    assert.equal(legacyOnline.onlineTtsEnabled, true)
   })
 
   it("toLocalDateKey formats date as local YYYY-MM-DD", () => {

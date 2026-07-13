@@ -1,5 +1,6 @@
 import { cp, rm, mkdir, readFile, writeFile, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
+import { prepareAndroidTtsForBuild } from './prepare-android-tts.mjs';
 
 const DIST = 'dist';
 
@@ -19,6 +20,8 @@ const JS_DIR = 'js';
 const CLOUD_JS = 'js/cloud.js';
 const CLOUD_STUB = 'js/__cloud_stub.js';
 const UPDATER_JS = 'js/updater.js';
+
+await prepareAndroidTtsForBuild();
 
 await rm(DIST, { recursive: true, force: true });
 await mkdir(DIST);

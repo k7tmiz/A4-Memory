@@ -10,6 +10,7 @@
   const normalizePronunciationLang = window.A4Common?.normalizePronunciationLang
   const normalizeAiProvider = window.A4Common?.normalizeAiProvider
   const normalizeOnlineTtsProvider = window.A4Common?.normalizeOnlineTtsProvider
+  const normalizeTtsPreferences = window.A4Common?.normalizeTtsPreferences
   const normalizeStatus = window.A4Common?.normalizeStatus
   const normalizeRoundType = window.A4Common?.normalizeRoundType
   const ROUND_TYPE_NORMAL = window.A4Common?.ROUND_TYPE_NORMAL || "normal"
@@ -17,6 +18,88 @@
   const ACCOUNT_REGISTER_CODE_COOLDOWN_KEY = "a4-memory:register-code-cooldown:v1"
   const ACCOUNT_RESET_CODE_COOLDOWN_KEY = "a4-memory:reset-code-cooldown:v1"
   const ACCOUNT_SYNC_META_KEY = "a4-memory:cloud-sync-meta:v1"
+
+  function buildTestSpeechOptions({ text, state, wordbookLanguage, languageBase }) {
+    const source = state && typeof state === "object" ? state : {}
+    const preferences = normalizeTtsPreferences(source)
+    const base = String(languageBase || "").trim().toLowerCase()
+    return {
+      text,
+      pronunciationEnabled: !!source.pronunciationEnabled,
+      pronunciationLang: source.pronunciationLang,
+      wordbookLanguage,
+      accent: source.pronunciationAccent,
+      voiceMode: source.voiceMode,
+      voiceURI: source.voiceURI,
+      onlineTtsEnabled: preferences.onlineTtsEnabled,
+      onlineTtsProvider: source.onlineTtsProvider,
+      ttsMode: preferences.ttsMode,
+      offlineVoiceId: String(preferences.offlineVoiceByLang[base] || ""),
+    }
+  }
+
+  function formatTestSpeakResult(ok, result) {
+    const detail = String(result?.error || "").trim()
+    if (!ok) {
+      if (detail) return `测试失败：${detail}`
+      if (result?.requestedMode === "offline") return "测试失败：离线发音和系统语音均不可用。"
+      if (result?.requestedMode === "system") return "测试失败：当前系统语音不可用。"
+      return "测试失败：在线、离线和系统语音均不可用。"
+    }
+
+    if (result?.usedMode === "offline") {
+      return result?.requestedMode === "online"
+        ? "测试成功：在线发音不可用，已回退离线语音。"
+        : "测试成功：离线语音可用。"
+    }
+    if (result?.usedMode === "system") {
+      if (result?.requestedMode === "offline") {
+        return `测试成功：离线发音失败，已回退系统语音。${detail ? `（${detail}）` : ""}`
+      }
+      return result?.requestedMode === "online"
+        ? "测试成功：在线与离线发音不可用，已回退系统语音。"
+        : "测试成功：系统语音可用。"
+    }
+
+    const providerName = result?.usedProvider === "google" ? "Google 翻译" : "Microsoft Edge"
+    const fallbackText =
+      result?.requestedProvider && result.requestedProvider !== result.usedProvider
+        ? "（首选源不可用，已自动切换）"
+        : ""
+    return `测试成功：${providerName} 在线语音可用${fallbackText}。`
+  }
+
+  function buildOfflineVoiceDownloadArgs(voiceId, onProgress) {
+    return { voiceId: String(voiceId || ""), onProgress }
+  }
+
+  function normalizeOfflineVoiceLabel(value, maxLength) {
+    return String(value ?? "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, maxLength)
+  }
+
+  function createOfflineVoiceTitle({ voice, id, sizeText, documentRef = document } = {}) {
+    const title = documentRef.createElement("div")
+    const name = documentRef.createElement("strong")
+    name.textContent =
+      normalizeOfflineVoiceLabel(voice?.name, 120) ||
+      normalizeOfflineVoiceLabel(id, 120) ||
+      "Voice"
+
+    const meta = documentRef.createElement("span")
+    meta.className = "form-help"
+    meta.style.display = "inline"
+    meta.style.marginLeft = "4px"
+    const lang = normalizeOfflineVoiceLabel(voice?.lang, 40)
+    const size = normalizeOfflineVoiceLabel(sizeText, 32)
+    meta.textContent = [lang, size].filter(Boolean).join(" · ")
+
+    title.appendChild(name)
+    title.appendChild(meta)
+    return title
+  }
 
   function normalizeReviewIntervals(raw) {
     const base = raw && typeof raw === "object" ? raw : {}
@@ -143,7 +226,7 @@
     next.pronunciationLang = normalizePronunciationLang(next.pronunciationLang)
     next.voiceMode = normalizeVoiceMode(next.voiceMode)
     next.voiceURI = typeof next.voiceURI === "string" ? next.voiceURI : ""
-    next.onlineTtsEnabled = typeof next.onlineTtsEnabled === "boolean" ? next.onlineTtsEnabled : true
+    Object.assign(next, normalizeTtsPreferences(next))
     next.onlineTtsProvider = normalizeOnlineTtsProvider(next.onlineTtsProvider)
 
     next.aiConfig =
@@ -449,7 +532,7 @@
                   <button class="ghost" id="offlineTtsRefreshBtn" type="button">刷新可用列表</button>
                 </div>
                 <div class="form-help" id="offlineTtsHint" style="margin-top:6px;">
-                  离线语音包仅在桌面端可用；模型存放于应用数据目录，可随时删除。
+                  离线语音包在桌面端和 Android 应用可用；模型存放于应用数据目录，可随时删除。离线模式失败时仅回退系统语音，不会联网。
                 </div>
               </div>
             </div>
@@ -1388,7 +1471,7 @@
 
       } else if (ttsMode === "offline") {
         if (dom.currentVoiceText) dom.currentVoiceText.textContent = "离线 TTS（设备本地）"
-        if (dom.voiceHint) dom.voiceHint.textContent = "缺失模型或合成失败时会自动回退到在线/系统语音。"
+        if (dom.voiceHint) dom.voiceHint.textContent = "缺失模型或合成失败时仅回退系统语音，不会联网。"
         getRowOf(dom.accentSelect)?.classList.add("hidden")
         getRowOf(dom.pronunciationLangSelect)?.classList.add("hidden")
         getRowOf(dom.voiceModeSelect)?.classList.add("hidden")
@@ -1418,7 +1501,7 @@
       if (!force && offlineUiState.manifest) return offlineUiState.manifest
       const invoke = window.A4Utils?.getTauriInvoke?.()
       if (typeof invoke !== "function") {
-        offlineUiState.manifestErr = "桌面端独有功能"
+        offlineUiState.manifestErr = "仅桌面端和 Android 应用可用"
         offlineUiState.manifest = { voices: [] }
         return offlineUiState.manifest
       }
@@ -1441,7 +1524,7 @@
       if (!list) return
       const invoke = window.A4Utils?.getTauriInvoke?.()
       if (typeof invoke !== "function") {
-        list.innerHTML = '<div class="form-help">离线 TTS 仅在桌面应用可用。</div>'
+        list.innerHTML = '<div class="form-help">离线 TTS 仅在桌面端和 Android 应用可用。</div>'
         return
       }
       list.innerHTML = '<div class="form-help">加载中…</div>'
@@ -1477,8 +1560,7 @@
         row.style.cssText = "display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid #ddd;border-radius:6px;"
         const head = document.createElement("div")
         head.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"
-        const title = document.createElement("div")
-        title.innerHTML = `<strong>${v?.name || id}</strong> <span class="form-help" style="display:inline">${v?.lang || ""} · ${formatBytes(v?.size)}</span>`
+        const title = createOfflineVoiceTitle({ voice: v, id, sizeText: formatBytes(v?.size) })
         head.appendChild(title)
         const actions = document.createElement("div")
         actions.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;"
@@ -1539,7 +1621,7 @@
               progLabel.textContent = phase === "downloading" ? `${pct}% (${formatBytes(downloaded)}/${formatBytes(total)})` : phase
             })
             try {
-              await invoke("a4_offline_voices_download", { voice: v, onProgress: channel })
+              await invoke("a4_offline_voices_download", buildOfflineVoiceDownloadArgs(id, channel))
               if (window.A4Speech?.invalidateOfflineCache) window.A4Speech.invalidateOfflineCache()
               const cur = getStateSafe()
               const offlineMapCur = cur?.offlineVoiceByLang && typeof cur.offlineVoiceByLang === "object" ? cur.offlineVoiceByLang : {}
@@ -2169,10 +2251,11 @@
 
     dom.testVoiceBtn?.addEventListener("click", async () => {
       const state = getStateSafe()
+      const wordbookLanguage = getWordbookLang()
       const base =
         window.A4Speech?.getCurrentLanguageBase?.({
           pronunciationLang: state?.pronunciationLang,
-          wordbookLanguage: getWordbookLang(),
+          wordbookLanguage,
         }) || "en"
       const sample =
         base === "es"
@@ -2198,34 +2281,14 @@
       }
       if (dom.voiceHint) dom.voiceHint.textContent = "正在测试发音..."
       try {
-        const ok = await window.A4Speech?.speak?.({
+        const ok = await window.A4Speech?.speak?.(buildTestSpeechOptions({
           text: sample,
-          pronunciationEnabled: !!state?.pronunciationEnabled,
-          pronunciationLang: state?.pronunciationLang,
-          wordbookLanguage: getWordbookLang(),
-          accent: state?.pronunciationAccent,
-          voiceMode: state?.voiceMode,
-          voiceURI: state?.voiceURI,
-          onlineTtsEnabled: state?.onlineTtsEnabled !== false,
-          onlineTtsProvider: state?.onlineTtsProvider,
-        })
+          state,
+          wordbookLanguage,
+          languageBase: base,
+        }))
         const result = window.A4Speech?.getLastSpeakResult?.()
-        if (dom.voiceHint) {
-          if (!ok) {
-            dom.voiceHint.textContent =
-              result?.requestedMode === "system"
-                ? "测试失败：当前系统语音不可用。"
-                : "测试失败：在线发音和系统语音均不可用。"
-          } else if (result?.usedMode === "system") {
-            dom.voiceHint.textContent =
-              result.requestedMode === "online" ? "测试成功：在线发音不可用，已回退系统语音。" : "测试成功：系统语音可用。"
-          } else {
-            const providerName = result?.usedProvider === "google" ? "Google 翻译" : "Microsoft Edge"
-            const fallbackText =
-              result?.requestedProvider && result.requestedProvider !== result.usedProvider ? "（首选源不可用，已自动切换）" : ""
-            dom.voiceHint.textContent = `测试成功：${providerName} 在线语音可用${fallbackText}。`
-          }
-        }
+        if (dom.voiceHint) dom.voiceHint.textContent = formatTestSpeakResult(ok, result)
       } finally {
         if (dom.testVoiceBtn) {
           dom.testVoiceBtn.disabled = false
@@ -3078,6 +3141,10 @@
     normalizePronunciationLang,
     normalizeVoiceMode,
     normalizeImportedState,
+    buildTestSpeechOptions,
+    formatTestSpeakResult,
+    buildOfflineVoiceDownloadArgs,
+    createOfflineVoiceTitle,
     normalizeAiWordbook,
     buildChatCompletionsUrl,
     stripJsonFromText,

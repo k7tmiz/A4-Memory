@@ -23,7 +23,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Records: round view, status view, CSV/PDF export, generate review rounds; desktop and Android builds invoke the system print / save-as-PDF flow, and Android JSON/CSV exports are saved to Downloads
 - Wordbooks: built-in CET4 / CET6 / Spanish samples, TXT/CSV/JSON import, JSON export, GitHub online import
 - Lookup: local-first, online supplement (MyMemory + dictionaryapi.dev), Spanish conjugation, AI supplement
-- Pronunciation: SpeechSynthesis on Web; Android Tauri uses the native TextToSpeech bridge for en/es/ja/ko/pt/fr/de/it/eo; online mode supports Microsoft Edge and Google Translate, preferring direct browser playback and falling back to the same-provider proxy, the other online provider, and then the system voice; desktop builds can optionally download offline voice packs (Sherpa-ONNX, English/Spanish and more) from the Settings panel for fully local synthesis
+- Pronunciation: SpeechSynthesis on Web; Android Tauri uses the native TextToSpeech bridge for en/es/ja/ko/pt/fr/de/it/eo; online mode supports Microsoft Edge and Google Translate, preferring direct browser playback and falling back to the same-provider proxy, the other online provider, an installed offline voice, and then the system voice; desktop and Android builds can download English/Spanish offline voice packs (Sherpa-ONNX) from Settings for fully local synthesis
 - Appearance: meaning toggle, immersive mode, auto/light/dark theme
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
@@ -85,6 +85,12 @@ npm run tauri dev
 
 # Local build (no cloud.js — add it to js/ if needed)
 npm run tauri build
+
+# First-time Android initialization
+npm run tauri android init
+
+# Android APK (offline TTS is currently arm64-only; verifies the official AAR and installs the native bridge)
+npm run tauri android build -- --apk --target aarch64
 ```
 
 ## Usage
@@ -126,7 +132,7 @@ Open: http://localhost:8080/ or http://localhost:5173/
 - UI: `showMeaning`, `immersiveMode`, `themeMode`, `darkMode`
 - Learning: `roundCap`, `dailyGoalRounds`, `dailyGoalWords`
 - Review: `reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
-- Pronunciation: `pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`, `onlineTtsEnabled`, `onlineTtsProvider`
+- Pronunciation: `pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`, `onlineTtsEnabled`, `onlineTtsProvider`, `ttsMode`, `offlineVoiceByLang`
 - Wordbooks: `selectedWordbookId`, `customWordbooks`
 - AI config: `aiConfig = { provider, baseUrl, apiKey, model }` (`apiKey` stays in memory and is not written to localStorage, backup files, or cloud state)
 - Lookup: `lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
@@ -134,8 +140,9 @@ Open: http://localhost:8080/ or http://localhost:5173/
 ### Online Pronunciation and Privacy
 
 - System voice mode processes spoken text locally on the device.
+- Offline TTS mode downloads SHA256-verified voice packs on demand from GitHub Releases and synthesizes text entirely on the device; if the model is missing or synthesis fails, it falls back only to the system voice and never switches to an online service.
 - Online TTS mode sends the current text directly to Microsoft Edge or Google Translate to generate audio; if playback does not start promptly, it may use the server-side proxy or try the other provider.
-- If the preferred online provider fails, the same text may be sent through the server-side proxy or to the other provider; the system voice is used if both fail.
+- If the preferred online provider fails, the same text may be sent through the server-side proxy or to the other provider; if all online providers fail, an installed offline voice and then the system voice are tried.
 - Spoken text is not stored in learning state, backup files, or cloud sync data.
 
 ## Cloud Sync (Optional, requires private module)
