@@ -7,6 +7,7 @@ const assert = require("node:assert/strict")
 const commonCode = fs.readFileSync(path.join(__dirname, "..", "js", "core", "common.js"), "utf8")
 const speechCode = fs.readFileSync(path.join(__dirname, "..", "js", "speech.js"), "utf8")
 const settingsCode = fs.readFileSync(path.join(__dirname, "..", "js", "settings.js"), "utf8")
+const styleCode = fs.readFileSync(path.join(__dirname, "..", "css", "style.css"), "utf8")
 
 function createBaseSandbox() {
   const document = {
@@ -481,12 +482,39 @@ describe("A4Settings TTS helpers", () => {
     })
 
     assert.equal(title.children.length, 2)
+    assert.equal(title.className, "offline-voice-title")
+    assert.equal(title.children[1].className, "form-help offline-voice-meta")
     assert.match(title.children[0].textContent, /^<img src=x onerror=alert\(1\)>/)
     assert.equal(title.children[0].textContent.length <= 120, true)
     assert.match(title.children[1].textContent, /^<script>alert\(1\)<\/script>/)
     assert.equal(title.children[1].textContent.split(" · ")[0].length <= 40, true)
     assert.equal(title.children[1].textContent.endsWith(" · 12.0 MB"), true)
     assert.equal(created.length, 3)
+  })
+
+  it("uses a compact full-width offline voice list with inline errors", () => {
+    assert.match(settingsCode, /class="form-row offline-tts-section hidden" id="offlineTtsSection"/)
+    assert.match(settingsCode, /id="offlineTtsStatus"[^>]*role="status"[^>]*aria-live="polite"/)
+    assert.match(settingsCode, /row\.className = "offline-voice-row"/)
+    assert.match(settingsCode, /head\.className = "offline-voice-head"/)
+    assert.match(settingsCode, /actions\.className = "offline-voice-actions"/)
+    assert.match(settingsCode, /progLabel\.className = "form-help offline-voice-progress"/)
+    assert.match(settingsCode, /try\s*\{\s*const channel = new ChannelCtor/)
+    assert.doesNotMatch(settingsCode, /row\.style\.cssText/)
+    assert.doesNotMatch(settingsCode, /alert\(`(?:下载|删除)失败：/)
+    assert.doesNotMatch(settingsCode, /alert\("当前 Tauri 环境不支持下载进度通道。"\)/)
+    assert.match(
+      styleCode,
+      /\.offline-tts-section\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s
+    )
+    assert.match(
+      styleCode,
+      /\.offline-voice-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto/s
+    )
+    assert.match(
+      styleCode,
+      /@media \(max-width:\s*360px\)\s*\{\s*\.offline-voice-head\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s
+    )
   })
 
   it("builds system test options for a legacy records-page state", () => {

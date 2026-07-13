@@ -133,6 +133,15 @@ describe("Android offline TTS native bridge contract", () => {
     assert.doesNotMatch(source, /recv_timeout\(std::time::Duration::from_secs\(15\)\)/)
   })
 
+  it("loads the app bridge class through the Android activity class loader", () => {
+    const source = fs.readFileSync(path.join(ROOT, "src-tauri", "src", "lib.rs"), "utf8")
+    assert.match(source, /fn load_android_app_class(?:<[^>]+>)?\s*\(/)
+    assert.match(source, /"getAppClass"/)
+    assert.match(source, /name\.replace\('\/', "\."\)/)
+    assert.equal((source.match(/\.call_static_method\(\s*&bridge_class,/g) || []).length, 7)
+    assert.doesNotMatch(source, /env\.call_static_method\(\s*"app\/tauri\//)
+  })
+
   it("exports the shared download command only outside Android", () => {
     const sharedSource = fs.readFileSync(
       path.join(ROOT, "src-tauri", "src", "offline_tts.rs"),

@@ -241,6 +241,8 @@ fn a4_android_save_text_file(
             let jh = webview.jni_handle();
             jh.exec(move |mut env, activity, _webview| {
                 let status = (|| -> Result<String, String> {
+                    let bridge_class =
+                        load_android_app_class(&mut env, activity, "app/tauri/A4SpeechBridge")?;
                     let filename_string = env.new_string(&filename).map_err(|e| e.to_string())?;
                     let filename_obj = JObject::from(filename_string);
                     let mime_string = env
@@ -254,17 +256,19 @@ fn a4_android_save_text_file(
                     let content_string = env.new_string(&content).map_err(|e| e.to_string())?;
                     let content_obj = JObject::from(content_string);
 
-                    let result = env.call_static_method(
-                        "app/tauri/A4SpeechBridge",
-                        "saveTextFile",
-                        "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
-                        &[
-                            JValue::Object(activity),
-                            JValue::Object(&filename_obj),
-                            JValue::Object(&mime_obj),
-                            JValue::Object(&content_obj),
-                        ],
-                    ).map_err(|e| e.to_string())?;
+                    let result = env
+                        .call_static_method(
+                            &bridge_class,
+                            "saveTextFile",
+                            "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                            &[
+                                JValue::Object(activity),
+                                JValue::Object(&filename_obj),
+                                JValue::Object(&mime_obj),
+                                JValue::Object(&content_obj),
+                            ],
+                        )
+                        .map_err(|e| e.to_string())?;
 
                     let result_obj = result.l().map_err(|e| e.to_string())?;
                     if result_obj.is_null() {
@@ -318,22 +322,26 @@ fn a4_android_speak(
             let jh = webview.jni_handle();
             jh.exec(move |mut env, activity, _webview| {
                 let status = (|| -> Result<String, String> {
+                    let bridge_class =
+                        load_android_app_class(&mut env, activity, "app/tauri/A4SpeechBridge")?;
                     let speech_text = env.new_string(&text).map_err(|e| e.to_string())?;
                     let text_obj = JObject::from(speech_text);
                     let lang_tag = if lang.is_empty() { "en-US" } else { &lang };
                     let lang_string = env.new_string(lang_tag).map_err(|e| e.to_string())?;
                     let lang_obj = JObject::from(lang_string);
 
-                    let result = env.call_static_method(
-                        "app/tauri/A4SpeechBridge",
-                        "speak",
-                        "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
-                        &[
-                            JValue::Object(activity),
-                            JValue::Object(&text_obj),
-                            JValue::Object(&lang_obj),
-                        ],
-                    ).map_err(|e| e.to_string())?;
+                    let result = env
+                        .call_static_method(
+                            &bridge_class,
+                            "speak",
+                            "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+                            &[
+                                JValue::Object(activity),
+                                JValue::Object(&text_obj),
+                                JValue::Object(&lang_obj),
+                            ],
+                        )
+                        .map_err(|e| e.to_string())?;
 
                     let result_obj = result.l().map_err(|e| e.to_string())?;
                     if result_obj.is_null() {
@@ -394,6 +402,34 @@ fn a4_android_speak(
 }
 
 #[cfg(target_os = "android")]
+fn load_android_app_class<'local>(
+    env: &mut jni::JNIEnv<'local>,
+    activity: &jni::objects::JObject<'_>,
+    name: &str,
+) -> Result<jni::objects::JClass<'local>, String> {
+    use jni::objects::{JClass, JObject, JValue};
+
+    let class_name = JObject::from(
+        env.new_string(name.replace('/', "."))
+            .map_err(|e| e.to_string())?,
+    );
+    let class = env
+        .call_method(
+            activity,
+            "getAppClass",
+            "(Ljava/lang/String;)Ljava/lang/Class;",
+            &[JValue::Object(&class_name)],
+        )
+        .map_err(|e| e.to_string())?
+        .l()
+        .map_err(|e| e.to_string())?;
+    if class.is_null() {
+        return Err(format!("Android app class not found: {name}"));
+    }
+    Ok(JClass::from(class))
+}
+
+#[cfg(target_os = "android")]
 enum AndroidOfflineBridgeCall {
     Start {
         text: String,
@@ -429,6 +465,11 @@ fn call_android_offline_bridge(
             let jh = webview.jni_handle();
             jh.exec(move |mut env, activity, _webview| {
                 let result = (|| -> Result<String, String> {
+                    let bridge_class = load_android_app_class(
+                        &mut env,
+                        activity,
+                        "app/tauri/A4OfflineTtsBridge",
+                    )?;
                     let result = match call {
                         AndroidOfflineBridgeCall::Start {
                             text,
@@ -449,7 +490,7 @@ fn call_android_offline_bridge(
                                 env.new_string(&request_id).map_err(|e| e.to_string())?,
                             );
                             env.call_static_method(
-                                "app/tauri/A4OfflineTtsBridge",
+                                &bridge_class,
                                 "startSpeak",
                                 "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
                                 &[
@@ -467,7 +508,7 @@ fn call_android_offline_bridge(
                                 env.new_string(&request_id).map_err(|e| e.to_string())?,
                             );
                             env.call_static_method(
-                                "app/tauri/A4OfflineTtsBridge",
+                                &bridge_class,
                                 "takeResult",
                                 "(Ljava/lang/String;)Ljava/lang/String;",
                                 &[JValue::Object(&jrequest_id)],
@@ -479,7 +520,7 @@ fn call_android_offline_bridge(
                                 env.new_string(&request_id).map_err(|e| e.to_string())?,
                             );
                             env.call_static_method(
-                                "app/tauri/A4OfflineTtsBridge",
+                                &bridge_class,
                                 "cancelRequest",
                                 "(Ljava/lang/String;)Ljava/lang/String;",
                                 &[JValue::Object(&jrequest_id)],
@@ -491,7 +532,7 @@ fn call_android_offline_bridge(
                                 env.new_string(&request_id).map_err(|e| e.to_string())?,
                             );
                             env.call_static_method(
-                                "app/tauri/A4OfflineTtsBridge",
+                                &bridge_class,
                                 "completeRequest",
                                 "(Ljava/lang/String;)Ljava/lang/String;",
                                 &[JValue::Object(&jrequest_id)],
@@ -509,7 +550,7 @@ fn call_android_offline_bridge(
                                 env.new_string(&request_id).map_err(|e| e.to_string())?,
                             );
                             env.call_static_method(
-                                "app/tauri/A4OfflineTtsBridge",
+                                &bridge_class,
                                 "clearVoice",
                                 "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
                                 &[

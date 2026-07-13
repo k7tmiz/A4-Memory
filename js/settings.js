@@ -82,6 +82,7 @@
 
   function createOfflineVoiceTitle({ voice, id, sizeText, documentRef = document } = {}) {
     const title = documentRef.createElement("div")
+    title.className = "offline-voice-title"
     const name = documentRef.createElement("strong")
     name.textContent =
       normalizeOfflineVoiceLabel(voice?.name, 120) ||
@@ -89,9 +90,7 @@
       "Voice"
 
     const meta = documentRef.createElement("span")
-    meta.className = "form-help"
-    meta.style.display = "inline"
-    meta.style.marginLeft = "4px"
+    meta.className = "form-help offline-voice-meta"
     const lang = normalizeOfflineVoiceLabel(voice?.lang, 40)
     const size = normalizeOfflineVoiceLabel(sizeText, 32)
     meta.textContent = [lang, size].filter(Boolean).join(" · ")
@@ -524,14 +523,21 @@
               <div class="form-control"><button class="ghost" id="onlineTtsToggleBtn" type="button">在线兜底：开</button></div>
             </div>
 
-            <div class="form-row hidden" id="offlineTtsSection">
-              <div class="form-label">离线语音包</div>
-              <div class="form-control">
-                <div id="offlineTtsList" class="form-help" style="display:flex;flex-direction:column;gap:6px;"></div>
-                <div class="stack" style="margin-top:8px;gap:8px;flex-wrap:wrap;">
-                  <button class="ghost" id="offlineTtsRefreshBtn" type="button">刷新可用列表</button>
+            <div class="form-row offline-tts-section hidden" id="offlineTtsSection">
+              <div class="offline-tts-header">
+                <div class="form-label">离线语音包</div>
+                <button class="ghost" id="offlineTtsRefreshBtn" type="button">刷新</button>
+              </div>
+              <div class="form-control form-control-stack offline-tts-control">
+                <div id="offlineTtsList" class="offline-voice-list"></div>
+                <div id="offlineTtsStatus" class="toast offline-tts-status hidden" role="status" aria-live="polite">
+                  <div id="offlineTtsStatusMessage"></div>
+                  <details id="offlineTtsStatusDetails" class="hidden">
+                    <summary>查看技术详情</summary>
+                    <div id="offlineTtsStatusDetail" class="form-help"></div>
+                  </details>
                 </div>
-                <div class="form-help" id="offlineTtsHint" style="margin-top:6px;">
+                <div class="form-help offline-tts-hint" id="offlineTtsHint">
                   离线语音包在桌面端和 Android 应用可用；模型存放于应用数据目录，可随时删除。离线模式失败时仅回退系统语音，不会联网。
                 </div>
               </div>
@@ -956,6 +962,10 @@
       offlineTtsList: modal.querySelector("#offlineTtsList"),
       offlineTtsRefreshBtn: modal.querySelector("#offlineTtsRefreshBtn"),
       offlineTtsHint: modal.querySelector("#offlineTtsHint"),
+      offlineTtsStatus: modal.querySelector("#offlineTtsStatus"),
+      offlineTtsStatusMessage: modal.querySelector("#offlineTtsStatusMessage"),
+      offlineTtsStatusDetails: modal.querySelector("#offlineTtsStatusDetails"),
+      offlineTtsStatusDetail: modal.querySelector("#offlineTtsStatusDetail"),
       lookupOnlineToggleBtn: modal.querySelector("#lookupOnlineToggleBtn"),
       lookupOnlineSourceSelect: modal.querySelector("#lookupOnlineSourceSelect"),
       lookupSpanishToggleBtn: modal.querySelector("#lookupSpanishToggleBtn"),
@@ -1490,6 +1500,28 @@
 
     const offlineUiState = { manifest: null, manifestErr: "", loading: false, downloading: new Set() }
 
+    function setOfflineTtsStatus(message, { detail = "", kind = "info" } = {}) {
+      if (!dom.offlineTtsStatus || !dom.offlineTtsStatusMessage) return
+      const text = String(message || "").trim()
+      const technicalDetail = String(detail || "").trim()
+      dom.offlineTtsStatusMessage.textContent = text
+      dom.offlineTtsStatus.classList.toggle("hidden", !text)
+      dom.offlineTtsStatus.classList.toggle("is-error", !!text && kind === "error")
+      dom.offlineTtsStatus.classList.toggle("is-success", !!text && kind === "success")
+      if (dom.offlineTtsStatusDetail) dom.offlineTtsStatusDetail.textContent = technicalDetail
+      if (dom.offlineTtsStatusDetails) {
+        dom.offlineTtsStatusDetails.classList.toggle("hidden", !technicalDetail)
+        if (!technicalDetail) dom.offlineTtsStatusDetails.open = false
+      }
+    }
+
+    function setOfflineTtsError(action, error) {
+      setOfflineTtsStatus(`${action}失败，请重试。`, {
+        detail: String(error || "未知错误"),
+        kind: "error",
+      })
+    }
+
     function formatBytes(n) {
       const x = Number(n) || 0
       if (x >= 1024 * 1024) return `${(x / 1024 / 1024).toFixed(1)} MB`
@@ -1538,11 +1570,7 @@
       const voices = manifest?.voices || []
       list.innerHTML = ""
       if (offlineUiState.manifestErr) {
-        const err = document.createElement("div")
-        err.className = "form-help"
-        err.style.color = "#c00"
-        err.textContent = `manifest: ${offlineUiState.manifestErr}`
-        list.appendChild(err)
+        setOfflineTtsError("加载语音列表", offlineUiState.manifestErr)
       }
       if (!voices.length && !offlineUiState.manifestErr) {
         list.innerHTML = '<div class="form-help">暂无可用语音。</div>'
@@ -1557,13 +1585,14 @@
         const langBase = String(v?.lang || "").toLowerCase().split("-")[0]
         const isDefault = String(offlineMap[langBase] || "") === id
         const row = document.createElement("div")
-        row.style.cssText = "display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid #ddd;border-radius:6px;"
+        row.className = "offline-voice-row"
         const head = document.createElement("div")
-        head.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;"
+        head.className = "offline-voice-head"
         const title = createOfflineVoiceTitle({ voice: v, id, sizeText: formatBytes(v?.size) })
         head.appendChild(title)
         const actions = document.createElement("div")
-        actions.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;"
+        actions.className = "offline-voice-actions"
+        let progLabel = null
         if (isInstalled) {
           const setDefaultBtn = document.createElement("button")
           setDefaultBtn.type = "button"
@@ -1585,13 +1614,15 @@
           delBtn.className = "ghost"
           delBtn.textContent = "删除"
           delBtn.addEventListener("click", async () => {
+            setOfflineTtsStatus("")
             delBtn.disabled = true
             try {
               await invoke("a4_offline_voices_delete", { voiceId: id })
               if (window.A4Speech?.invalidateOfflineCache) window.A4Speech.invalidateOfflineCache()
+              setOfflineTtsStatus("语音包已删除。", { kind: "success" })
               renderOfflineVoiceList()
             } catch (e) {
-              alert(`删除失败：${e}`)
+              setOfflineTtsError("删除语音包", e)
             } finally {
               delBtn.disabled = false
             }
@@ -1603,24 +1634,30 @@
           dlBtn.className = "primary"
           dlBtn.textContent = isDownloading ? "下载中…" : "下载"
           dlBtn.disabled = isDownloading
-          const progLabel = document.createElement("div")
-          progLabel.className = "form-help"
-          progLabel.style.cssText = "min-width:120px;text-align:right;"
+          progLabel = document.createElement("div")
+          progLabel.className = "form-help offline-voice-progress"
           dlBtn.addEventListener("click", async () => {
             const ChannelCtor = window.__TAURI__?.core?.Channel || window.__TAURI__?.Channel
-            if (!ChannelCtor) { alert("当前 Tauri 环境不支持下载进度通道。"); return }
+            if (!ChannelCtor) {
+              setOfflineTtsStatus("当前版本无法下载语音包，请更新应用后重试。", {
+                detail: "当前 Tauri 环境不支持下载进度通道。",
+                kind: "error",
+              })
+              return
+            }
+            setOfflineTtsStatus("")
             offlineUiState.downloading.add(id)
             dlBtn.disabled = true
             dlBtn.textContent = "下载中…"
-            const channel = new ChannelCtor((evt) => {
-              if (!evt) return
-              const phase = String(evt.phase || "")
-              const total = Number(evt.total) || 0
-              const downloaded = Number(evt.downloaded) || 0
-              const pct = total > 0 ? Math.min(100, Math.round((downloaded / total) * 100)) : 0
-              progLabel.textContent = phase === "downloading" ? `${pct}% (${formatBytes(downloaded)}/${formatBytes(total)})` : phase
-            })
             try {
+              const channel = new ChannelCtor((evt) => {
+                if (!evt) return
+                const phase = String(evt.phase || "")
+                const total = Number(evt.total) || 0
+                const downloaded = Number(evt.downloaded) || 0
+                const pct = total > 0 ? Math.min(100, Math.round((downloaded / total) * 100)) : 0
+                progLabel.textContent = phase === "downloading" ? `${pct}% (${formatBytes(downloaded)}/${formatBytes(total)})` : phase
+              })
               await invoke("a4_offline_voices_download", buildOfflineVoiceDownloadArgs(id, channel))
               if (window.A4Speech?.invalidateOfflineCache) window.A4Speech.invalidateOfflineCache()
               const cur = getStateSafe()
@@ -1630,18 +1667,19 @@
                 persistSafe()
                 afterChange("offlineVoiceByLang")
               }
+              setOfflineTtsStatus("语音包下载完成。", { kind: "success" })
             } catch (e) {
-              alert(`下载失败：${e}`)
+              setOfflineTtsError("下载语音包", e)
             } finally {
               offlineUiState.downloading.delete(id)
               renderOfflineVoiceList()
             }
           })
-          actions.appendChild(progLabel)
           actions.appendChild(dlBtn)
         }
         head.appendChild(actions)
         row.appendChild(head)
+        if (progLabel) row.appendChild(progLabel)
         list.appendChild(row)
       }
     }
@@ -2308,6 +2346,7 @@
     })
 
     dom.offlineTtsRefreshBtn?.addEventListener("click", async () => {
+      setOfflineTtsStatus("")
       dom.offlineTtsRefreshBtn.disabled = true
       try {
         await refreshOfflineManifest({ force: true })
