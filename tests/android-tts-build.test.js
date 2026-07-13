@@ -132,6 +132,38 @@ describe("Android offline TTS native bridge contract", () => {
     assert.doesNotMatch(source, /let _ = call_android_offline_bridge\([\s\S]{0,160}ClearVoice/)
     assert.doesNotMatch(source, /recv_timeout\(std::time::Duration::from_secs\(15\)\)/)
   })
+
+  it("exports the shared download command only outside Android", () => {
+    const sharedSource = fs.readFileSync(
+      path.join(ROOT, "src-tauri", "src", "offline_tts.rs"),
+      "utf8"
+    )
+    const androidSource = fs.readFileSync(
+      path.join(ROOT, "src-tauri", "src", "lib.rs"),
+      "utf8"
+    )
+
+    assert.match(
+      sharedSource,
+      /#\[cfg_attr\(not\(target_os = "android"\), tauri::command\)\]\s*pub async fn a4_offline_voices_download\s*\(/
+    )
+    assert.match(
+      androidSource,
+      /#\[cfg\(target_os = "android"\)\]\s*#\[tauri::command\]\s*async fn a4_offline_voices_download\s*\(/
+    )
+  })
+
+  it("imports the desktop engine mutex only outside Android", () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, "src-tauri", "src", "offline_tts.rs"),
+      "utf8"
+    )
+
+    assert.match(
+      source,
+      /^#\[cfg\(not\(target_os = "android"\)\)\]\nuse parking_lot::Mutex;/
+    )
+  })
 })
 
 describe("Android offline TTS build integration", () => {

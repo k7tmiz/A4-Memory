@@ -1,3 +1,4 @@
+#[cfg(not(target_os = "android"))]
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -1023,7 +1024,7 @@ fn extract_validate_and_write_metadata(
     Ok(())
 }
 
-#[tauri::command]
+#[cfg_attr(not(target_os = "android"), tauri::command)]
 pub async fn a4_offline_voices_download(
     app: AppHandle,
     voice_id: String,
