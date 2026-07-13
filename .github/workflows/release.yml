@@ -155,14 +155,13 @@ jobs:
             A4 纸随机排版背单词，打破列表式背书模式。
 
             ### 本次更新
-            - 新增：Android 离线 TTS（Sherpa-ONNX AAR + Kotlin 后台桥接），与桌面端共用 GitHub 模型下载/管理链路，离线发音在设置 → 离线语音包按需下载后可用
-            - 新增：内置离线 TTS（Sherpa-ONNX / VITS-piper / MMS-TTS），桌面端与 Android 应用按需下载，模型缓存于 `app_data_dir()/voices/<id>/`
-            - 修复：sherpa-rs 改为 `static` 特性本地编译 sherpa-onnx C++（CI 安装 cmake/clang/llvm），不再依赖不稳定的预编译二进制下载
-            - 修复：Linux AppImage 打包恢复，CI 安装 `libfuse2`，`tauri_args` 改为 `--bundles deb,rpm,appimage`
-            - 修复：恢复 `index.html` / `records.html` 视口元标签 `maximum-scale=1, user-scalable=no`，禁用双指捏合缩放
-            - 优化：Edge TTS 启动延迟，Sec-MS-GEC token 5 分钟缓存，连接超时 5000ms→3000ms，首音超时 3500ms→2500ms
-            - 保留：在线 TTS 优先浏览器直连 Microsoft Edge / Google 翻译，失败依次回退同源私有桥接、另一在线源、已安装离线语音、系统语音
-            - 保留：Android 系统 TextToSpeech 桥接 `a4_android_speak(text, lang)` 作为最终回退
+            - 修复：离线语音清单与模型统一从 `k7tmiz/a4-tts-voices` GitHub 仓库获取，并内置可信 v1 清单作为网络失败兜底，不再依赖独立 TTS 域名
+            - 修复：Android 离线 TTS 使用 Sherpa-ONNX AAR 在后台完成模型加载、合成和 WAV 保存，避免阻塞 WebView；构建过程自动校验并安装固定版本 AAR
+            - 修复：离线模型下载校验文件大小、SHA256、资源路径与压缩包内容，使用 staging/backup 事务安装；同一语音的合成、更新和删除串行执行
+            - 修复：离线 TTS 设置、默认语音和旧数据迁移可稳定保存，设置页显示准确的下载、试听和错误状态
+            - 修复：连续朗读时忽略过期的在线或离线异步结果，避免旧请求覆盖新请求或触发错误回退
+            - 调整：离线模式仅尝试客户端内置离线语音与系统语音，不会调用在线服务；网页端不提供客户端内置离线 TTS
+            - 保留：在线模式依次尝试首选在线源、同源私有桥接、另一在线源、已安装离线语音、系统语音
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
