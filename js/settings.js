@@ -788,42 +788,47 @@
                   </div>
                   <div class="account-badge">在线</div>
                 </div>
-                <div class="account-summary-meta-row account-summary-meta-row-tight">
-                  <div class="account-summary-meta-item">
+                <div class="account-summary-sync">
+                  <div class="account-summary-sync-state">
                     <span>云备份</span>
                     <strong id="cloudBackupStateText">已启用</strong>
                   </div>
-                  <div class="account-summary-meta-item">
+                  <div class="account-summary-sync-latest">
                     <span>最近同步</span>
                     <strong id="cloudLastSyncText">尚未同步</strong>
                   </div>
                 </div>
-                <div class="account-summary-grid account-summary-grid-dense">
-                  <div class="account-summary-item">
+                <div class="account-summary-key-stats">
+                  <div class="account-summary-stat">
                     <span>单词</span>
                     <strong id="cloudWordsText">0</strong>
                   </div>
-                  <div class="account-summary-item">
-                    <span>轮次</span>
-                    <strong id="cloudRoundsText">0</strong>
-                  </div>
-                  <div class="account-summary-item">
-                    <span>今日新增</span>
-                    <strong id="cloudTodayWordsText">0</strong>
-                  </div>
-                  <div class="account-summary-item">
+                  <div class="account-summary-stat">
                     <span>连续</span>
                     <strong id="cloudStreakText">0 天</strong>
                   </div>
-                  <div class="account-summary-item">
-                    <span>今日完成</span>
-                    <strong id="cloudTodayRoundsText">0 轮</strong>
-                  </div>
-                  <div class="account-summary-item">
+                  <div class="account-summary-stat">
                     <span>当前轮</span>
                     <strong id="cloudCurrentRoundText">未开始</strong>
                   </div>
-                  <div class="account-summary-item account-summary-item-wide">
+                </div>
+                <button class="account-summary-details-toggle" id="accountStatsToggleBtn" type="button" aria-expanded="false" aria-controls="accountStatsDetails">更多学习统计</button>
+                <div id="accountStatsDetails" class="account-summary-details hidden">
+                  <div class="account-summary-secondary-stats">
+                    <div class="account-summary-stat">
+                      <span>轮次</span>
+                      <strong id="cloudRoundsText">0</strong>
+                    </div>
+                    <div class="account-summary-stat">
+                      <span>今日新增</span>
+                      <strong id="cloudTodayWordsText">0</strong>
+                    </div>
+                    <div class="account-summary-stat">
+                      <span>今日完成</span>
+                      <strong id="cloudTodayRoundsText">0 轮</strong>
+                    </div>
+                  </div>
+                  <div class="account-summary-session">
                     <span>会话</span>
                     <strong id="cloudSessionText">刚刚开始</strong>
                   </div>
@@ -863,6 +868,21 @@
       </div>
     `
     return modal
+  }
+
+  function listenForAccountStatsBreakpoint(mediaQuery, onChange) {
+    if (!mediaQuery || typeof onChange !== "function") return () => {}
+    const listener = (event) => onChange(!!event?.matches)
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", listener)
+      return () => mediaQuery.removeEventListener?.("change", listener)
+    }
+    if (typeof mediaQuery.addListener === "function") {
+      mediaQuery.addListener(listener)
+      return () => mediaQuery.removeListener?.(listener)
+    }
+    return () => {}
   }
 
   function buildAiPreviewModalDom() {
@@ -1008,6 +1028,8 @@
       cloudDownloadBtn: modal.querySelector("#cloudDownloadBtn"),
       accountLoggedOut: modal.querySelector("#accountLoggedOut"),
       accountLoggedIn: modal.querySelector("#accountLoggedIn"),
+      accountStatsToggleBtn: modal.querySelector("#accountStatsToggleBtn"),
+      accountStatsDetails: modal.querySelector("#accountStatsDetails"),
       cloudAccountTitle: modal.querySelector("#cloudAccountTitle"),
       cloudAccountSubtitle: modal.querySelector("#cloudAccountSubtitle"),
       cloudBackupStateText: modal.querySelector("#cloudBackupStateText"),
@@ -1097,6 +1119,24 @@
       uploadState: false,
       downloadState: false,
     }
+    const accountStatsWideQuery =
+      typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 431px)") : null
+
+    function shouldExpandAccountStatsByDefault() {
+      return !!accountStatsWideQuery?.matches
+    }
+
+    function setAccountStatsExpanded(expanded) {
+      const isExpanded = !!expanded
+      if (dom.accountStatsToggleBtn) {
+        dom.accountStatsToggleBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false")
+        dom.accountStatsToggleBtn.classList.toggle("is-expanded", isExpanded)
+        dom.accountStatsToggleBtn.textContent = isExpanded ? "收起学习统计" : "更多学习统计"
+      }
+      dom.accountStatsDetails?.classList.toggle("hidden", !isExpanded)
+    }
+
+    listenForAccountStatsBreakpoint(accountStatsWideQuery, setAccountStatsExpanded)
 
     function getStateSafe() {
       return typeof getState === "function" ? getState() : {}
@@ -2050,6 +2090,7 @@
         const isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
         dom.versionPanel.classList.toggle("hidden", !isTauri)
       }
+      setAccountStatsExpanded(shouldExpandAccountStatsByDefault())
       render()
       renderAiProviderUi()
       setModalVisible(dom.modal, true)
@@ -2061,6 +2102,10 @@
 
     dom.backdrop?.addEventListener("click", () => close())
     dom.closeBtn?.addEventListener("click", () => close())
+    dom.accountStatsToggleBtn?.addEventListener("click", () => {
+      const expanded = dom.accountStatsToggleBtn.getAttribute("aria-expanded") === "true"
+      setAccountStatsExpanded(!expanded)
+    })
 
     dom.themeModeSelect?.addEventListener("change", () => {
       const themeMode = normalizeThemeMode(dom.themeModeSelect.value)
@@ -3184,6 +3229,7 @@
     formatTestSpeakResult,
     buildOfflineVoiceDownloadArgs,
     createOfflineVoiceTitle,
+    listenForAccountStatsBreakpoint,
     normalizeAiWordbook,
     buildChatCompletionsUrl,
     stripJsonFromText,

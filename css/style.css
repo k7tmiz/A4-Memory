@@ -1890,13 +1890,13 @@ body.theme-dark .offline-tts-status.is-error {
 }
 
 .account-summary {
-  margin-top: 12px;
-  padding: 12px;
+  margin-top: 10px;
+  padding: 10px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: linear-gradient(180deg, var(--card2), var(--card));
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .account-summary-head {
@@ -1935,102 +1935,141 @@ body.theme-dark .offline-tts-status.is-error {
   white-space: nowrap;
 }
 
-.account-summary-meta-row {
+.account-summary-sync {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
   gap: 8px;
-}
-
-.account-summary-meta-row-tight {
-  gap: 6px;
-}
-
-.account-summary-meta-item {
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: var(--card2);
+  min-width: 0;
+  padding: 7px 9px;
   border: 1px solid var(--border2);
-  display: grid;
-  gap: 2px;
+  border-radius: 11px;
+  background: var(--card2);
 }
 
-.account-summary-meta-item span {
+.account-summary-sync-state,
+.account-summary-sync-latest {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.account-summary-sync-latest {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.account-summary-sync span {
   font-size: 11px;
   color: var(--muted);
+  white-space: nowrap;
 }
 
-.account-summary-meta-item strong {
-  font-size: 13px;
-  color: var(--text);
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-.account-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.account-summary-grid.compact {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.account-summary-grid.account-summary-grid-dense {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.account-summary-item {
-  padding: 9px 10px;
-  border-radius: 12px;
-  background: var(--card2);
-  border: 1px solid var(--border2);
-  display: grid;
-  gap: 3px;
-}
-
-.account-summary-item span {
+.account-summary-sync strong {
+  min-width: 0;
   font-size: 12px;
-  color: var(--muted);
-}
-
-.account-summary-item strong {
-  font-size: 14px;
   color: var(--text);
-  word-break: break-word;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
-.account-summary-item-wide {
-  grid-column: span 2;
-}
-
-.account-summary-quicklist {
+.account-summary-key-stats,
+.account-summary-secondary-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  border-radius: 11px;
+  background: var(--card2);
 }
 
-.account-summary-quickitem {
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px dashed var(--border3);
-  background: color-mix(in srgb, var(--card2) 88%, transparent);
+.account-summary-stat {
+  min-width: 0;
+  padding: 7px 5px;
   display: grid;
-  gap: 3px;
+  gap: 2px;
+  text-align: center;
+  border-right: 1px solid var(--border2);
 }
 
-.account-summary-quickitem span {
+.account-summary-stat:last-child {
+  border-right: 0;
+}
+
+.account-summary-stat span {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.account-summary-stat strong {
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.account-summary-details-toggle {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-radius: 10px;
+  border-color: var(--border2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: left;
+}
+
+.account-summary-details-toggle::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.18s ease;
+}
+
+.account-summary-details-toggle.is-expanded::after {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.account-summary-details {
+  display: grid;
+  gap: 7px;
+}
+
+.account-summary-session {
+  min-width: 0;
+  padding: 7px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--border2);
+  border-radius: 11px;
+  background: var(--card2);
+}
+
+.account-summary-session span {
   font-size: 11px;
   color: var(--muted);
 }
 
-.account-summary-quickitem strong {
-  font-size: 13px;
+.account-summary-session strong {
+  min-width: 0;
+  font-size: 12px;
   color: var(--text);
-  line-height: 1.35;
-  word-break: break-word;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .account-summary-actions {
@@ -2102,6 +2141,16 @@ body.theme-dark .account-badge {
   color: #7ee2b8;
 }
 
+@media (min-width: 431px) {
+  .account-summary-details-toggle {
+    display: none;
+  }
+
+  .account-summary-details {
+    grid-template-columns: minmax(0, 3fr) minmax(140px, 1fr);
+  }
+}
+
 .records-stats {
   font-size: 13px;
   color: var(--muted);
@@ -2122,10 +2171,6 @@ body.theme-dark .account-badge {
 
   .view-tabs.account-tabs button {
     flex: 1 1 0;
-  }
-
-  .account-summary-grid.account-summary-grid-dense {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .account-summary-actions {
@@ -2168,9 +2213,9 @@ body.theme-dark .account-badge {
   }
 
   .account-summary {
-    margin-top: 10px;
-    padding: 10px;
-    gap: 8px;
+    margin-top: 8px;
+    padding: 8px;
+    gap: 7px;
   }
 
   .account-summary-head {
@@ -2192,19 +2237,20 @@ body.theme-dark .account-badge {
     font-size: 11px;
   }
 
-  .account-summary-meta-row,
-  .account-summary-grid.account-summary-grid-dense {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .account-summary-sync {
     gap: 6px;
+    padding: 6px 8px;
   }
 
-  .account-summary-meta-item,
-  .account-summary-item {
-    padding: 8px;
+  .account-summary-sync-latest {
+    gap: 4px;
   }
 
-  .account-summary-meta-item strong,
-  .account-summary-item strong {
+  .account-summary-stat {
+    padding: 6px 4px;
+  }
+
+  .account-summary-stat strong {
     font-size: 13px;
   }
 
@@ -2215,6 +2261,10 @@ body.theme-dark .account-badge {
 
   .account-summary-actions #cloudLogoutBtn {
     grid-column: 1 / -1;
+    min-height: 32px;
+    padding: 6px 8px;
+    border-color: transparent;
+    color: var(--muted);
   }
 
   .account-summary-actions button {
