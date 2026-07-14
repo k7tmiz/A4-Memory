@@ -59,8 +59,8 @@ fn is_blocked_host(host: &str) -> bool {
         return is_blocked_host(&ip.to_string());
     }
 
-    if h.starts_with("0x") {
-        if let Ok(n) = u128::from_str_radix(&h[2..], 16) {
+    if let Some(hex) = h.strip_prefix("0x") {
+        if let Ok(n) = u128::from_str_radix(hex, 16) {
             let ip = IpAddr::from(n.to_be_bytes());
             return is_blocked_host(&ip.to_string());
         }
@@ -72,41 +72,72 @@ fn is_blocked_host(host: &str) -> bool {
         || (h.starts_with("172.") && {
             let parts: Vec<&str> = h.trim_start_matches("172.").split('.').collect();
             parts
-                .get(0)
+                .first()
                 .and_then(|p| p.parse::<u8>().ok())
-                .map_or(false, |n| n >= 16 && n <= 31)
+                .is_some_and(|n| (16..=31).contains(&n))
         })
         || h.starts_with("169.254.")
 }
 
-#[tauri::command]
-fn a4_open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
-    let target = url.trim();
-
-    if !(target.starts_with("https://") || target.starts_with("http://")) {
+fn validate_external_url(value: &str) -> Result<reqwest::Url, String> {
+    let parsed =
+        reqwest::Url::parse(value.trim()).map_err(|_| "Invalid external URL.".to_string())?;
+    if !matches!(parsed.scheme(), "http" | "https") {
         return Err("Only http(s) URLs can be opened externally.".into());
     }
-
-    let after_scheme = target
-        .strip_prefix("https://")
-        .or_else(|| target.strip_prefix("http://"))
-        .unwrap_or(target);
-
-    let host = after_scheme
-        .split(|c: char| c == '/' || c == ':')
-        .next()
-        .unwrap_or(after_scheme)
-        .split('@')
-        .last()
-        .unwrap_or(after_scheme);
-
+    if !parsed.username().is_empty() || parsed.password().is_some() {
+        return Err("External URLs cannot contain credentials.".into());
+    }
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| "External URL must include a host.".to_string())?;
     if is_blocked_host(host) {
         return Err("Cannot open private or localhost URLs.".into());
     }
+    Ok(parsed)
+}
+
+#[tauri::command]
+fn a4_open_external(app: tauri::AppHandle, url: String) -> Result<(), String> {
+    let target = validate_external_url(&url)?;
 
     app.opener()
-        .open_url(target, None::<&str>)
+        .open_url(target.as_str(), None::<&str>)
         .map_err(|err| err.to_string())
+}
+
+#[cfg(test)]
+mod external_url_tests {
+    use super::validate_external_url;
+
+    #[test]
+    fn rejects_private_hosts_hidden_by_url_syntax() {
+        for url in [
+            "http://user:pass@127.0.0.1/",
+            "http://[::1]/",
+            "http://0177.0.0.1/",
+            "http://0x7f000001/",
+            "http://169.254.169.254/",
+        ] {
+            assert!(validate_external_url(url).is_err(), "must reject {url}");
+        }
+    }
+
+    #[test]
+    fn rejects_credentials_and_non_http_schemes() {
+        assert!(validate_external_url("https://user@example.com/").is_err());
+        assert!(validate_external_url("file:///tmp/report.html").is_err());
+    }
+
+    #[test]
+    fn accepts_a_public_https_url() {
+        let url = validate_external_url("https://github.com/k7tmiz/A4-Memory/releases/latest")
+            .expect("public GitHub release URL should be accepted");
+        assert_eq!(
+            url.as_str(),
+            "https://github.com/k7tmiz/A4-Memory/releases/latest"
+        );
+    }
 }
 
 #[cfg(target_os = "android")]

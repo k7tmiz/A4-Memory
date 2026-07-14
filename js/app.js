@@ -20,6 +20,7 @@ const {
   buildLatestTermMap,
   getRoundPageCount,
   getRoundItemsByPage,
+  ensureCurrentRoundState,
   clamp,
   normalizeMeaningKey,
   setModalVisible,
@@ -1343,17 +1344,20 @@ function getCurrentRoundIndex() {
 function ensureCurrentRound() {
   if (getCurrentRound()) return
   const langBase = getActiveLangBase()
-  const round = {
-    id: makeId(),
-    startedAt: new Date().toISOString(),
-    finishedAt: "",
-    items: [],
-    roundCap: normalizeRoundCap(appState.roundCap),
-    type: ROUND_TYPE_NORMAL,
-    language: langBase,
-  }
-  appState.rounds = [round]
-  appState.currentRoundId = round.id
+  const next = ensureCurrentRoundState(
+    { rounds: appState.rounds, currentRoundId: appState.currentRoundId },
+    () => ({
+      id: makeId(),
+      startedAt: new Date().toISOString(),
+      finishedAt: "",
+      items: [],
+      roundCap: normalizeRoundCap(appState.roundCap),
+      type: ROUND_TYPE_NORMAL,
+      language: langBase,
+    })
+  )
+  appState.rounds = next.rounds
+  appState.currentRoundId = next.currentRoundId
 }
 
 function finalizeCurrentRound() {

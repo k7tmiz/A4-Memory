@@ -15,9 +15,83 @@
   const normalizeRoundType = window.A4Common?.normalizeRoundType
   const ROUND_TYPE_NORMAL = window.A4Common?.ROUND_TYPE_NORMAL || "normal"
   const normalizeWordObject = window.A4Common?.normalizeWordObject
+  const getWordbooksFromGlobal = window.A4Common?.getWordbooksFromGlobal || (() => [])
   const ACCOUNT_REGISTER_CODE_COOLDOWN_KEY = "a4-memory:register-code-cooldown:v1"
   const ACCOUNT_RESET_CODE_COOLDOWN_KEY = "a4-memory:reset-code-cooldown:v1"
   const ACCOUNT_SYNC_META_KEY = "a4-memory:cloud-sync-meta:v1"
+
+  const AI_PROVIDER_PRESETS = {
+    openai: {
+      baseUrl: "https://api.openai.com/v1",
+      models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"],
+      defaultModel: "gpt-4o-mini",
+    },
+    gemini: {
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+      models: ["gemini-1.5-flash", "gemini-1.5-pro"],
+      defaultModel: "gemini-1.5-flash",
+    },
+    deepseek: {
+      baseUrl: "https://api.deepseek.com/v1",
+      models: ["deepseek-chat", "deepseek-reasoner"],
+      defaultModel: "deepseek-chat",
+    },
+    siliconcloud: {
+      baseUrl: "https://api.siliconflow.cn/v1",
+      models: ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1"],
+      defaultModel: "deepseek-ai/DeepSeek-V3",
+    },
+    custom: {
+      baseUrl: "",
+      models: [],
+      defaultModel: "",
+    },
+  }
+
+  function getAiPreset(provider) {
+    const normalized = normalizeAiProvider(provider)
+    return AI_PROVIDER_PRESETS[normalized] || AI_PROVIDER_PRESETS.custom
+  }
+
+  function getAiEndpointOrigin(value) {
+    const text = String(value || "").trim()
+    if (!text) return ""
+    try {
+      return new URL(text).origin
+    } catch {
+      return `invalid:${text}`
+    }
+  }
+
+  function shouldResetAiApiKey({ prevConfig, nextProvider, nextBaseUrl }) {
+    const prevProvider = normalizeAiProvider(prevConfig?.provider)
+    const normalizedNextProvider = normalizeAiProvider(nextProvider)
+    if (prevProvider !== normalizedNextProvider) return true
+    return getAiEndpointOrigin(prevConfig?.baseUrl) !== getAiEndpointOrigin(nextBaseUrl)
+  }
+
+  function computeAiConfigOnProviderChange({ prevConfig, nextProvider }) {
+    const prevProvider = normalizeAiProvider(prevConfig?.provider)
+    const nextProv = normalizeAiProvider(nextProvider)
+    const prevPreset = getAiPreset(prevProvider)
+    const nextPreset = getAiPreset(nextProv)
+
+    let baseUrl = String(prevConfig?.baseUrl || "").trim()
+    let model = String(prevConfig?.model || "").trim()
+    if (!baseUrl || (prevPreset.baseUrl && baseUrl === prevPreset.baseUrl)) {
+      baseUrl = String(nextPreset.baseUrl || "").trim()
+    }
+    if (!model || (prevPreset.defaultModel && model === prevPreset.defaultModel)) {
+      model = String(nextPreset.defaultModel || "").trim()
+    }
+
+    return {
+      provider: nextProv,
+      baseUrl,
+      apiKey: prevProvider === nextProv ? String(prevConfig?.apiKey || "").trim() : "",
+      model,
+    }
+  }
 
   function buildTestSpeechOptions({ text, state, wordbookLanguage, languageBase }) {
     const source = state && typeof state === "object" ? state : {}
@@ -110,6 +184,7 @@
 
   function normalizePendingKind(value) {
     const v = String(value || "").trim().toLowerCase()
+    if (!v) return ""
     if (v === "due") return "due"
     const status = normalizeStatus(v)
     if (status === "mastered" || status === "learning" || status === "unknown") return status
@@ -308,7 +383,11 @@
       .filter(Boolean)
 
     next.selectedWordbookId = typeof next.selectedWordbookId === "string" ? next.selectedWordbookId : ""
-    if (next.selectedWordbookId && !next.customWordbooks.some((b) => b.id === next.selectedWordbookId)) {
+    const validWordbookIds = new Set([
+      ...getWordbooksFromGlobal().map((book) => String(book?.id || "")).filter(Boolean),
+      ...next.customWordbooks.map((book) => String(book?.id || "")).filter(Boolean),
+    ])
+    if (next.selectedWordbookId && !validWordbookIds.has(next.selectedWordbookId)) {
       next.selectedWordbookId = ""
     }
 
@@ -1882,41 +1961,8 @@
       updateAccountUi()
     }
 
-    const AI_PROVIDER_PRESETS = {
-      openai: {
-        baseUrl: "https://api.openai.com/v1",
-        models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"],
-        defaultModel: "gpt-4o-mini",
-      },
-      gemini: {
-        baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-        models: ["gemini-1.5-flash", "gemini-1.5-pro"],
-        defaultModel: "gemini-1.5-flash",
-      },
-      deepseek: {
-        baseUrl: "https://api.deepseek.com/v1",
-        models: ["deepseek-chat", "deepseek-reasoner"],
-        defaultModel: "deepseek-chat",
-      },
-      siliconcloud: {
-        baseUrl: "https://api.siliconflow.cn/v1",
-        models: ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1"],
-        defaultModel: "deepseek-ai/DeepSeek-V3",
-      },
-      custom: {
-        baseUrl: "",
-        models: [],
-        defaultModel: "",
-      },
-    }
-
     function normalizeAiProviderLocal(value) {
       return normalizeAiProvider(value)
-    }
-
-    function getAiPreset(provider) {
-      const p = normalizeAiProviderLocal(provider)
-      return AI_PROVIDER_PRESETS[p] || AI_PROVIDER_PRESETS.custom
     }
 
     function getAiConfigFromState(state) {
@@ -1933,10 +1979,17 @@
     function patchAiConfig(patch, { syncInputs } = {}) {
       const state = getStateSafe()
       const prev = getAiConfigFromState(state)
+      const nextProvider = patch.provider != null ? normalizeAiProviderLocal(patch.provider) : prev.provider
+      const nextBaseUrl = patch.baseUrl != null ? String(patch.baseUrl || "").trim() : prev.baseUrl
       const next = {
-        provider: patch.provider != null ? normalizeAiProviderLocal(patch.provider) : prev.provider,
-        baseUrl: patch.baseUrl != null ? String(patch.baseUrl || "").trim() : prev.baseUrl,
-        apiKey: patch.apiKey != null ? String(patch.apiKey || "").trim() : prev.apiKey,
+        provider: nextProvider,
+        baseUrl: nextBaseUrl,
+        apiKey:
+          patch.apiKey != null
+            ? String(patch.apiKey || "").trim()
+            : shouldResetAiApiKey({ prevConfig: prev, nextProvider, nextBaseUrl })
+              ? ""
+              : prev.apiKey,
         model: patch.model != null ? String(patch.model || "").trim() : prev.model,
       }
       setStateSafe({ aiConfig: next })
@@ -1947,22 +2000,6 @@
       }
       persistSafe()
       afterChange("aiConfig")
-    }
-
-    function computeAiConfigOnProviderChange({ prevConfig, nextProvider }) {
-      const prevProvider = normalizeAiProviderLocal(prevConfig?.provider)
-      const nextProv = normalizeAiProviderLocal(nextProvider)
-      const prevPreset = getAiPreset(prevProvider)
-      const nextPreset = getAiPreset(nextProv)
-
-      let baseUrl = String(prevConfig?.baseUrl || "").trim()
-      let model = String(prevConfig?.model || "").trim()
-      const apiKey = String(prevConfig?.apiKey || "").trim()
-
-      if (!baseUrl || (prevPreset.baseUrl && baseUrl === prevPreset.baseUrl)) baseUrl = String(nextPreset.baseUrl || "").trim()
-      if (!model || (prevPreset.defaultModel && model === prevPreset.defaultModel)) model = String(nextPreset.defaultModel || "").trim()
-
-      return { provider: nextProv, baseUrl, apiKey, model }
     }
 
     function renderAiProviderUi() {
@@ -3308,6 +3345,8 @@
     normalizePronunciationLang,
     normalizeVoiceMode,
     normalizeImportedState,
+    computeAiConfigOnProviderChange,
+    shouldResetAiApiKey,
     buildTestSpeechOptions,
     formatTestSpeakResult,
     buildOfflineVoiceDownloadArgs,

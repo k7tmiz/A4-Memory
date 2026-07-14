@@ -454,7 +454,7 @@ jobs:
           fi
           echo "Found APK: $UNSIGNED"
           TAG="${{ github.event.release && github.event.release.tag_name || github.ref_name }}"
-          SIGNED="a4-memory-${TAG#v}-android.apk"
+          SIGNED="a4-memory-${TAG}-android.apk"
           echo "Output APK: $SIGNED"
           pwd
           realpath "$SIGNED" || echo "realpath failed, using PWD/$SIGNED"

@@ -20,7 +20,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; connect-src 'self' https://api.k7tmiz.com https://api.github.com https://api.dictionaryapi.dev https://translate.google.com https://speech.platform.bing.com wss://speech.platform.bing.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://raw.githubusercontent.com https://github.com https://objects.githubusercontent.com; media-src 'self' blob: https:; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; script-src 'self'; connect-src 'self' https://api.k7tmiz.com https://api.github.com https://api.dictionaryapi.dev https://api.mymemory.translated.net https://translate.google.com https://speech.platform.bing.com wss://speech.platform.bing.com https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.deepseek.com https://api.siliconflow.cn https://raw.githubusercontent.com https://github.com https://objects.githubusercontent.com; media-src 'self' blob: https:; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {

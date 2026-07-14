@@ -1,5 +1,6 @@
 ;(function () {
   const escapeHtmlAttr = window.A4Sanitize.escapeHtml
+  const escapeCsvFormula = window.A4Sanitize.escapeCsvFormula
 
   function loadState() {
     return window.A4Storage?.loadState?.() || null
@@ -38,7 +39,7 @@
   }
 
   function escapeCsv(value) {
-    const s = String(value ?? "")
+    const s = escapeCsvFormula(value)
     if (/[",\r\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`
     return s
   }

@@ -201,6 +201,7 @@ describe("Android offline TTS build integration", () => {
     assert.match(workflow, /手机端统一使用分段式分类导航与手风琴折叠分组/)
     assert.match(workflow, /手机端紧凑摘要保留单词、连续天数和当前轮次/)
     assert.match(workflow, /Android 以 Release 页面为主下载入口并保留 APK 直链兜底/)
+    assert.match(workflow, /SIGNED="a4-memory-\$\{TAG\}-android\.apk"/)
   })
 
   it("configures the Android NDK linker in pull-request CI", () => {

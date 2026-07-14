@@ -131,17 +131,19 @@ records.html
 - `term + meaning + language` 级别的 key 计算
 - 全局最新状态聚合与首次出现轮次聚合
 - A4 分页、页数、页内计数、整轮去重
+- 当前轮次缺失时保留历史轮次并追加新轮次（`ensureCurrentRoundState`）
 - 查词匹配评分与去重排序
 - 时间格式化、日期 key、统计计算
 - 通用 normalize 与默认设置
 - 词库/单词归一化（`getWordsFromGlobal`、`getWordbooksFromGlobal`、`normalizeWordObject`）
 
 ### `js/core/sanitize.js`
-XSS 防护模块，提供 HTML 和属性转义。记录页 CSV 导出时对释义/例句等内容调用 `escapeHtml` 清洗，防止恶意内容在导出文件中执行。
+输出安全模块，提供 HTML、属性转义和 CSV 公式前缀中和。记录页 CSV 导出对所有单元格调用 `escapeCsvFormula`，避免导入词书中的公式前缀被电子表格软件执行。
 ```javascript
 window.A4Sanitize = {
   escapeHtml(value),   // HTML 转义（& < > " '）
   escapeAttr(value),   // 属性转义（" '）
+  escapeCsvFormula(value), // 中和 = + - @ 公式前缀（含前导空白）
 }
 ```
 
@@ -386,6 +388,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 - 旧数据兼容：`item.pageIndex` 缺失时，导入/云恢复按该轮 `roundCap` 自动补分页；`round.type` 缺失时按 `normal` 处理
 - `currentPageIndex` 是运行态，不写入 `localStorage`；刷新后默认回到当前轮第 1 页
 - 备份导入和云恢复（`settings.js` 的 `normalizeImportedState`）会保留轮次类型、语言和页码；`aiConfig.apiKey` 始终清空
+- AI 提供商或 Base URL origin 变化时清空内存中的 `aiConfig.apiKey`，避免凭据跨服务发送
 - 记录页监听 `storage` 事件，支持多标签页同步刷新显示
 - 所有删除/清空确认弹窗统一使用 `A4Utils.showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`；设置页的云端恢复确认也使用自定义弹窗
-- 弹窗统一由 `common.js` 的 `setModalVisible` 管理，开启时设置焦点陷阱，关闭时恢复触发按钮焦点
+- 首页与记录页的标准弹窗由 `common.js` 的 `setModalVisible` 管理，开启时设置焦点陷阱，关闭时恢复触发按钮焦点；设置页、确认框、Android 选择器和公告弹窗使用各自控制器

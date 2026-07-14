@@ -71,3 +71,17 @@ describe("A4Sanitize.escapeAttr", () => {
     assert.equal(A4Sanitize.escapeAttr(null), "")
   })
 })
+
+describe("A4Sanitize.escapeCsvFormula", () => {
+  it("neutralizes spreadsheet formulas, including formulas hidden by whitespace", () => {
+    for (const value of ["=2+2", "+SUM(A1:A2)", "-1+2", "@SUM(A1:A2)", "\t=2+2", "  @SUM(A1:A2)"]) {
+      assert.equal(A4Sanitize.escapeCsvFormula(value), `'${value}`)
+    }
+  })
+
+  it("leaves ordinary text unchanged", () => {
+    assert.equal(A4Sanitize.escapeCsvFormula("memory"), "memory")
+    assert.equal(A4Sanitize.escapeCsvFormula(123), "123")
+    assert.equal(A4Sanitize.escapeCsvFormula(null), "")
+  })
+})

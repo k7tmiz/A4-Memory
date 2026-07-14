@@ -62,6 +62,39 @@ describe("A4Common core utilities", () => {
     assert.equal(A4Common.normalizeRoundType(""), "normal")
   })
 
+  it("preserves historical rounds when the current round id is missing", () => {
+    const historicalRound = { id: "round-1", items: [{ word: { term: "memory" } }] }
+    const freshRound = { id: "round-2", items: [] }
+
+    const result = A4Common.ensureCurrentRoundState(
+      { rounds: [historicalRound], currentRoundId: "" },
+      () => freshRound
+    )
+
+    assert.deepEqual(JSON.parse(JSON.stringify(result.rounds)), [historicalRound, freshRound])
+    assert.equal(result.currentRoundId, "round-2")
+    assert.equal(result.createdRound, freshRound)
+  })
+
+  it("does not create a round when the current round still exists", () => {
+    const currentRound = { id: "round-1", items: [] }
+    const rounds = [currentRound]
+    let createCalls = 0
+
+    const result = A4Common.ensureCurrentRoundState(
+      { rounds, currentRoundId: "round-1" },
+      () => {
+        createCalls += 1
+        return { id: "round-2", items: [] }
+      }
+    )
+
+    assert.equal(createCalls, 0)
+    assert.equal(result.rounds, rounds)
+    assert.equal(result.currentRoundId, "round-1")
+    assert.equal(result.createdRound, null)
+  })
+
   it("getStatusLabel returns Chinese labels", () => {
     assert.equal(A4Common.getStatusLabel("mastered"), "已掌握")
     assert.equal(A4Common.getStatusLabel("learning"), "学习中")

@@ -1,6 +1,6 @@
 # A4 Memory
 
-[中文](./README.md) | **English**
+[中文](../README.md) | **English**
 
 > **Open Source Notice**: This repository is the open-source frontend. Core code (`js/`, `css/`, `index.html`, etc.) is fully open source.
 > Backend services (user auth, cloud sync, admin panel) are proprietary and closed source.
@@ -134,7 +134,7 @@ Open: http://localhost:8080/ or http://localhost:5173/
 - Review: `reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
 - Pronunciation: `pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`, `onlineTtsEnabled`, `onlineTtsProvider`, `ttsMode`, `offlineVoiceByLang`
 - Wordbooks: `selectedWordbookId`, `customWordbooks`
-- AI config: `aiConfig = { provider, baseUrl, apiKey, model }` (`apiKey` stays in memory and is not written to localStorage, backup files, or cloud state)
+- AI config: `aiConfig = { provider, baseUrl, apiKey, model }` (`apiKey` stays in memory, is not written to localStorage, backup files, or cloud state, and is cleared when the provider or Base URL origin changes)
 - Lookup: `lookupOnlineEnabled`, `lookupOnlineSource`, `lookupLangMode`, `lookupSpanishConjugationEnabled`, `lookupCacheEnabled`, `lookupCacheDays`
 
 ### Online Pronunciation and Privacy

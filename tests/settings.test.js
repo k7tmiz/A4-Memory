@@ -5,23 +5,33 @@ const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
 
 const ROOT = path.join(__dirname, "..")
+const commonCode = fs.readFileSync(path.join(ROOT, "js", "core", "common.js"), "utf8")
 const settingsCode = fs.readFileSync(path.join(ROOT, "js", "settings.js"), "utf8")
 const styleCode = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
 
-function loadSettingsHelpers() {
+function loadSettingsHelpers({ wordbooks = [] } = {}) {
   const document = {
-    body: { appendChild() {} },
+    body: {
+      appendChild() {},
+      classList: { add() {}, remove() {} },
+      style: {},
+    },
     getElementById() { return {} },
   }
   const window = {
     A4Speech: {},
     A4Storage: {},
     A4Utils: {},
+    WORDBOOKS: wordbooks,
+    WORDS: [],
+    scrollY: 0,
+    scrollTo() {},
     document,
   }
   window.window = window
-  const sandbox = { console, document, window }
+  const sandbox = { console, document, window, URL }
   vm.createContext(sandbox)
+  vm.runInContext(commonCode, sandbox)
   vm.runInContext(settingsCode, sandbox)
   return window.A4Settings
 }
@@ -178,6 +188,74 @@ describe("A4Settings compact account summary", () => {
 
     stopListening()
     assert.equal(removedListener, listener)
+  })
+})
+
+describe("A4Settings imported state normalization", () => {
+  it("keeps an empty pending generation intent empty", () => {
+    const settings = loadSettingsHelpers()
+    const state = settings.normalizeImportedState({
+      version: 2,
+      rounds: [],
+      pendingGenerateStatusKind: "",
+    })
+
+    assert.equal(state.pendingGenerateStatusKind, "")
+  })
+
+  it("preserves a valid built-in wordbook selection", () => {
+    const settings = loadSettingsHelpers({
+      wordbooks: [{ id: "cet4", name: "CET4", language: "en", words: [] }],
+    })
+    const state = settings.normalizeImportedState({
+      version: 2,
+      rounds: [],
+      selectedWordbookId: "cet4",
+      customWordbooks: [],
+    })
+
+    assert.equal(state.selectedWordbookId, "cet4")
+  })
+})
+
+describe("A4Settings AI provider changes", () => {
+  it("clears an in-memory API key before changing provider origins", () => {
+    const settings = loadSettingsHelpers()
+    const next = settings.computeAiConfigOnProviderChange({
+      prevConfig: {
+        provider: "openai",
+        baseUrl: "https://api.openai.com/v1",
+        apiKey: "secret-in-memory-only",
+        model: "gpt-4o-mini",
+      },
+      nextProvider: "deepseek",
+    })
+
+    assert.equal(next.provider, "deepseek")
+    assert.equal(next.baseUrl, "https://api.deepseek.com/v1")
+    assert.equal(next.apiKey, "")
+    assert.equal(next.model, "deepseek-chat")
+  })
+
+  it("detects a custom endpoint origin change before reusing a key", () => {
+    const settings = loadSettingsHelpers()
+
+    assert.equal(
+      settings.shouldResetAiApiKey({
+        prevConfig: { provider: "custom", baseUrl: "https://old.example/v1" },
+        nextProvider: "custom",
+        nextBaseUrl: "https://new.example/v1",
+      }),
+      true
+    )
+    assert.equal(
+      settings.shouldResetAiApiKey({
+        prevConfig: { provider: "custom", baseUrl: "https://old.example/v1" },
+        nextProvider: "custom",
+        nextBaseUrl: "https://old.example/openai/v1",
+      }),
+      false
+    )
   })
 })
 
