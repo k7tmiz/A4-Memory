@@ -198,9 +198,9 @@ describe("Android offline TTS build integration", () => {
     const workflow = fs.readFileSync(path.join(ROOT, ".github", "workflows", "release.yml"), "utf8")
     assert.match(readme, /android build -- --apk --target aarch64/)
     assert.doesNotMatch(workflow, /tts\.k7tmiz\.com/)
-    assert.match(workflow, /手机端统一使用分段式分类导航与手风琴折叠分组/)
-    assert.match(workflow, /手机端紧凑摘要保留单词、连续天数和当前轮次/)
-    assert.match(workflow, /Android 以 Release 页面为主下载入口并保留 APK 直链兜底/)
+    assert.match(workflow, /当前轮次引用缺失时历史学习轮次可能被覆盖/)
+    assert.match(workflow, /CSV 会中和公式前缀/)
+    assert.match(workflow, /a4-memory-v1\.0\.33-android\.apk/)
     assert.match(workflow, /SIGNED="a4-memory-\$\{TAG\}-android\.apk"/)
   })
 
