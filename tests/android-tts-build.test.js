@@ -200,6 +200,8 @@ describe("Android offline TTS build integration", () => {
     assert.doesNotMatch(workflow, /tts\.k7tmiz\.com/)
     assert.match(workflow, /当前轮次引用缺失时历史学习轮次可能被覆盖/)
     assert.match(workflow, /CSV 会中和公式前缀/)
+    assert.match(workflow, /Base URL 服务来源/)
+    assert.match(workflow, /云账号安全：强化登录会话与邮箱验证码保护/)
     assert.match(workflow, /a4-memory-v1\.0\.33-android\.apk/)
     assert.match(workflow, /SIGNED="a4-memory-\$\{TAG\}-android\.apk"/)
   })

@@ -16,6 +16,58 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          export TAG_VERSION
+          node <<'NODE'
+          const fs = require("node:fs")
+
+          const expected = process.env.TAG_VERSION
+          const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"))
+          const packageLock = JSON.parse(fs.readFileSync("package-lock.json", "utf8"))
+          const tauriConfig = JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json", "utf8"))
+          const cargoToml = fs.readFileSync("src-tauri/Cargo.toml", "utf8")
+          const cargoLock = fs.readFileSync("src-tauri/Cargo.lock", "utf8")
+          const updater = fs.readFileSync("js/updater.js", "utf8")
+          const releaseWorkflow = fs.readFileSync(".github/workflows/release.yml", "utf8")
+          const versions = new Map([
+            ["package.json", packageJson.version],
+            ["package-lock.json", packageLock.version],
+            ["package-lock root", packageLock.packages[""].version],
+            ["Cargo.toml", cargoToml.match(/^version = "([^"]+)"/m)?.[1]],
+            ["Cargo.lock", cargoLock.match(/\[\[package\]\]\nname = "a4-memory"\nversion = "([^"]+)"/m)?.[1]],
+            ["tauri.conf.json", tauriConfig.version],
+            ["js/updater.js", updater.match(/APP_VERSION = "([^"]+)"/)?.[1]],
+          ])
+          const mismatches = Array.from(versions).filter(([, version]) => version !== expected)
+          const expectedApk = `a4-memory-v${expected}-android.apk`
+          if (!/^\d+\.\d+\.\d+$/.test(expected) || mismatches.length || !releaseWorkflow.includes(expectedApk)) {
+            const details = mismatches.map(([file, version]) => `${file}=${version}`).join(", ")
+            console.error(`Release tag and application versions do not match: tag=${expected}; ${details || "releaseBody APK name mismatch"}`)
+            process.exit(1)
+          }
+          console.log(`Release version validated: ${expected}`)
+          NODE
+
+      - name: Validate required release secrets
+        env:
+          CLOUD_JS_BASE64: ${{ secrets.CLOUD_JS_BASE64 }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$CLOUD_JS_BASE64" ]; then
+            echo "::error::CLOUD_JS_BASE64 is required for production Release builds"
+            exit 1
+          fi
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is required for upgrade-compatible Android builds"
+            exit 1
+          fi
+
       - name: Delete existing release (draft or published) for this tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -134,12 +186,13 @@ jobs:
         env:
           CLOUD_JS_BASE64: ${{ secrets.CLOUD_JS_BASE64 }}
         run: |
-          if [ -n "$CLOUD_JS_BASE64" ]; then
-            node -e "require('fs').writeFileSync('js/cloud.js', Buffer.from(process.env.CLOUD_JS_BASE64, 'base64'))"
-            echo "✓ cloud.js injected"
-          else
-            echo "! CLOUD_JS_BASE64 not set — using stub"
+          if [ -z "$CLOUD_JS_BASE64" ]; then
+            echo "::error::CLOUD_JS_BASE64 is required for production Release builds"
+            exit 1
           fi
+          node -e "require('fs').writeFileSync('js/cloud.js', Buffer.from(process.env.CLOUD_JS_BASE64, 'base64'))"
+          test -s js/cloud.js
+          echo "✓ cloud.js injected"
 
       - run: npm run build
 
@@ -158,8 +211,9 @@ jobs:
             - 数据恢复：修复当前轮次引用缺失时历史学习轮次可能被覆盖的问题，完整保留已有记录
             - 备份兼容：修复空的待生成状态被误判、内置词书选择在导入后被清空的问题
             - 导出安全：CSV 会中和公式前缀，避免内容被表格软件误当作公式执行
-            - AI 安全：切换 AI 提供商或 Base URL 域名时自动清空内存中的 API Key
-            - 桌面与 Android：加强外部链接校验并补全在线服务连接权限；Android 安装包统一为 `a4-memory-v1.0.33-android.apk`
+            - AI 安全：切换 AI 提供商或 Base URL 服务来源时自动清空内存中的 API Key，避免凭据被发送给其他服务
+            - 云账号安全：强化登录会话与邮箱验证码保护；云服务完成本次升级后，需重新登录并重新获取尚未完成的验证码
+            - 桌面与 Android：加强外部链接校验并补全查词与 AI 服务连接权限；Android 安装包统一为 `a4-memory-v1.0.33-android.apk`
 
             ### 功能
             - A4 随机排版、复习轮次、发音朗读、离线使用
@@ -314,20 +368,28 @@ jobs:
         env:
           CLOUD_JS_BASE64: ${{ secrets.CLOUD_JS_BASE64 }}
         run: |
-          if [ -n "$CLOUD_JS_BASE64" ]; then
-            node -e "require('fs').writeFileSync('js/cloud.js', Buffer.from(process.env.CLOUD_JS_BASE64, 'base64'))"
-            echo "✓ cloud.js injected"
-          else
-            echo "! CLOUD_JS_BASE64 not set — using stub"
+          if [ -z "$CLOUD_JS_BASE64" ]; then
+            echo "::error::CLOUD_JS_BASE64 is required for production Release builds"
+            exit 1
           fi
+          node -e "require('fs').writeFileSync('js/cloud.js', Buffer.from(process.env.CLOUD_JS_BASE64, 'base64'))"
+          test -s js/cloud.js
+          echo "✓ cloud.js injected"
 
       - run: npm run build
 
       - name: Init Android project
         run: |
           rm -rf src-tauri/gen/android
+          set -o pipefail
+          set +e
           CI=true npx tauri android init --ci 2>&1 | tee /tmp/android-init.log
-          echo "Init exit: $?"
+          INIT_EXIT=${PIPESTATUS[0]}
+          set -e
+          echo "Init exit: $INIT_EXIT"
+          if [ "$INIT_EXIT" -ne 0 ]; then
+            exit "$INIT_EXIT"
+          fi
 
       - name: Prepare Android offline TTS
         run: node scripts/prepare-android-tts.mjs
@@ -430,21 +492,15 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          # Use persistent keystore if available, otherwise generate a temporary one
-          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
-            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/release.jks
-            KS=/tmp/release.jks
-            echo "✓ Using persistent release keystore"
-          else
-            keytool -genkey -v \
-              -keystore /tmp/debug.jks \
-              -alias a4memory \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass android -keypass android \
-              -dname "CN=A4 Memory, OU=Dev, O=k7tmiz, L=Unknown, ST=Unknown, C=US"
-            KS=/tmp/debug.jks
-            echo "⚠ No ANDROID_KEYSTORE_BASE64 secret — using temporary keystore (won't survive reinstall)"
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is required for upgrade-compatible Android builds"
+            exit 1
           fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/release.jks
+          chmod 600 /tmp/release.jks
+          test -s /tmp/release.jks
+          KS=/tmp/release.jks
+          echo "✓ Using persistent release keystore"
 
           # Find APK: search whole outputs tree (arch-specific subdirs like aarch64/release/)
           UNSIGNED=$(find src-tauri/gen/android/app/build/outputs -type f -name "*.apk" | head -1)
