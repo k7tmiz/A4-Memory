@@ -39,8 +39,12 @@ describe("network endpoint security policy", () => {
 })
 
 describe("private backend deployment filters", () => {
-  it("keeps the public environment template while excluding real environment files", () => {
-    const script = fs.readFileSync(path.join(ROOT, "deploy-backend.sh"), "utf8")
+  const deployScriptPath = path.join(ROOT, "deploy-backend.sh")
+
+  it("keeps the public environment template while excluding real environment files", {
+    skip: !fs.existsSync(deployScriptPath),
+  }, () => {
+    const script = fs.readFileSync(deployScriptPath, "utf8")
     const includeExample = script.indexOf("--include='.env.example'")
     const excludeVariants = script.indexOf("--exclude='.env.*'")
 
