@@ -29,9 +29,10 @@
     }
 
     source = source
-      .replace(/<\s*br\s*\/?\s*>/gi, "\n")
-      .replace(/<\/?(?:p|div|li|h[1-6]|ul|ol|blockquote|pre)(?:\s[^>]*)?>/gi, "\n")
-      .replace(/<[^>]*>/g, "")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<br\b(?:"[^"]*"|'[^']*'|[^'">])*>/gi, "\n")
+      .replace(/<\/?(?:p|div|li|h[1-6]|ul|ol|blockquote|pre)\b(?:"[^"]*"|'[^']*'|[^'">])*>/gi, "\n")
+      .replace(/<\/?[a-z][a-z0-9:-]*\b(?:"[^"]*"|'[^']*'|[^'">])*>/gi, "")
       .replace(/&nbsp;/gi, " ")
       .replace(/&amp;/gi, "&")
       .replace(/&lt;/gi, "<")
@@ -40,9 +41,28 @@
       .replace(/&#39;|&apos;/gi, "'")
       .replace(/\r\n?/g, "\n")
 
+    const recognizedHeading = /^(?:本次更新|更新内容|更新说明|what['’]s changed|changes|changelog|release notes)\s*[:：]?$/i
+    const getMarkdownHeading = (line) => {
+      const match = String(line || "").match(/^\s{0,3}#{1,6}(?:[\t ]+|$)(.*)$/)
+      return match ? match[1].replace(/[\t ]+#+[\t ]*$/, "").trim() : null
+    }
+    let sourceLines = source.split("\n")
+    const sectionStart = sourceLines.findIndex((line) => {
+      const heading = getMarkdownHeading(line)
+      return heading !== null && recognizedHeading.test(heading)
+    })
+    if (sectionStart >= 0) {
+      const sectionLines = []
+      for (let i = sectionStart + 1; i < sourceLines.length; i += 1) {
+        if (getMarkdownHeading(sourceLines[i]) !== null) break
+        sectionLines.push(sourceLines[i])
+      }
+      sourceLines = sectionLines
+    }
+
     const notes = []
     const redundantHeading = /^(?:本次更新|更新内容|更新说明|版本更新|what'?s new|changes?|changelog|release notes?)\s*[:：]?$/i
-    for (const rawLine of source.split("\n")) {
+    for (const rawLine of sourceLines) {
       let line = rawLine.trim()
       if (!line || /^[-*_]{3,}$/.test(line)) continue
 

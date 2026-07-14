@@ -21,11 +21,9 @@ describe("A4Updater release-note normalization", () => {
   it("turns Markdown and HTML-looking release text into clean list items", () => {
     const updater = loadUpdaterHelpers()
     const notes = updater.normalizeReleaseNotes(`
-# 本次更新
 - 修复同步状态
 * <strong>提升</strong>启动速度
 3. 改善 Android 下载提示
-### Release notes
 > 调整深色主题
 `)
 
@@ -35,6 +33,43 @@ describe("A4Updater release-note normalization", () => {
       "改善 Android 下载提示",
       "调整深色主题",
     ])
+  })
+
+  it("prefers the recognized update section and stops at the next Markdown heading", () => {
+    const updater = loadUpdaterHelpers()
+    const notes = updater.normalizeReleaseNotes(`
+## A4 Memory
+
+打破列表式背书模式，让单词随机落在一张 A4 纸上。
+
+### 本次更新
+
+- 修复同步状态
+- 提升启动速度
+- 改善 Android 下载提示
+
+### 功能
+
+- A4 随机排版
+- 学习记录与复习
+`)
+
+    assert.deepEqual(Array.from(notes), [
+      "修复同步状态",
+      "提升启动速度",
+      "改善 Android 下载提示",
+    ])
+  })
+
+  it("preserves ordinary angle-bracket text while stripping actual HTML tags and comments", () => {
+    const updater = loadUpdaterHelpers()
+    const notes = updater.normalizeReleaseNotes(`
+- 1 < 2 > 0
+- <!-- internal note --><strong>提升</strong>启动速度
+- <em class="release-note">稳健</em>渲染
+`)
+
+    assert.deepEqual(Array.from(notes), ["1 < 2 > 0", "提升启动速度", "稳健渲染"])
   })
 
   it("returns no more than four items and caps each item at 120 code units", () => {
@@ -135,6 +170,10 @@ describe("A4Updater card styling", () => {
     assert.match(componentCss, /#updateModal \.update-asset\s*\{[^}]*background:\s*var\(--card2\)/s)
     assert.match(componentCss, /#updateModal \.update-asset-name\s*\{[^}]*overflow-wrap:\s*anywhere/s)
     assert.match(componentCss, /@media \(max-width:\s*480px\)[\s\S]*?#updateModal \.update-card/s)
+    assert.match(
+      componentCss,
+      /@media \(max-width:\s*480px\)[\s\S]*?#updateModal \.update-close,\s*#updateModal \.update-direct-download\s*\{[^}]*min-height:\s*44px/s
+    )
     assert.match(componentCss, /@media \(max-width:\s*480px\)[\s\S]*?#updateModal \.update-actions button\s*\{[^}]*min-height:\s*44px/s)
     assert.doesNotMatch(componentCss, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i)
 

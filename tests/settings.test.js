@@ -115,8 +115,17 @@ describe("A4Settings compact account summary", () => {
     assert.match(settingsCode, /matchMedia\("\(min-width:\s*431px\)"\)/)
     assert.match(
       settingsCode,
-      /function open\(\)\s*\{[\s\S]*?setAccountStatsExpanded\(shouldExpandAccountStatsByDefault\(\)\)[\s\S]*?render\(\)/
+      /function open\(\)\s*\{[\s\S]*?setAccountStatsExpanded\(shouldExpandAccountStatsByDefault\(accountStatsWideQuery\)\)[\s\S]*?render\(\)/
     )
+  })
+
+  it("keeps secondary statistics expanded when matchMedia is unavailable", () => {
+    const settings = loadSettingsHelpers()
+    assert.equal(typeof settings.shouldExpandAccountStatsByDefault, "function")
+    assert.equal(settings.shouldExpandAccountStatsByDefault({ matches: false }), false)
+    assert.equal(settings.shouldExpandAccountStatsByDefault({ matches: true }), true)
+    assert.equal(settings.shouldExpandAccountStatsByDefault(null), true)
+    assert.equal(settings.shouldExpandAccountStatsByDefault(undefined), true)
   })
 
   it("uses a compact three-column mobile summary and exposes all details on larger screens", () => {
@@ -306,6 +315,10 @@ describe("A4Settings responsive category navigation", () => {
   it("uses a theme-aware segmented phone track and a two-column desktop layout", () => {
     assert.match(
       styleCode,
+      /#settingsModal \.modal-panel\s*\{[^}]*width:\s*min\(94vw,\s*560px\)[^}]*max-width:\s*100%/s
+    )
+    assert.match(
+      styleCode,
       /#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*background:\s*var\(--card2\)/s
     )
     assert.match(styleCode, /#settingsModal \.settings-category-tab\s*\{[^}]*white-space:\s*nowrap/s)
@@ -317,9 +330,17 @@ describe("A4Settings responsive category navigation", () => {
     assert.match(selectedRule[1], /color-mix\([^;]*var\(--(?:card2|text|surfaceHover)\)/)
     assert.doesNotMatch(selectedRule[1], /(?:#fff(?:fff)?|\bwhite\b)/i)
 
+    const focusRule = styleCode.match(
+      /#settingsModal \.settings-category-tab:focus-visible\s*\{([^}]*)\}/s
+    )
+    assert.ok(focusRule)
+    assert.match(focusRule[1], /outline:\s*2px\s+solid\s+var\(--text\)/)
+    assert.match(focusRule[1], /outline-offset:\s*2px/)
+    assert.doesNotMatch(focusRule[1], /box-shadow|(?:#fff(?:fff)?|\bwhite\b)/i)
+
     assert.match(
       styleCode,
-      /@media \(min-width:\s*760px\)[\s\S]*?#settingsModal \.modal-panel\s*\{[^}]*width:\s*min\(94vw,\s*920px\)[^}]*\}[\s\S]*?#settingsModal \.settings-shell\s*\{[^}]*grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)[^}]*\}[\s\S]*?#settingsModal \.settings-accordion-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s
+      /@media \(min-width:\s*760px\)[\s\S]*?#settingsModal \.modal-panel\s*\{[^}]*width:\s*min\(94vw,\s*920px\)[^}]*max-width:\s*100%[^}]*\}[\s\S]*?#settingsModal \.settings-shell\s*\{[^}]*grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)[^}]*\}[\s\S]*?#settingsModal \.settings-accordion-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s
     )
   })
 })

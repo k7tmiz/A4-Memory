@@ -1332,6 +1332,11 @@ body.theme-dark .paper {
     align-items: flex-start;
   }
 
+  #updateModal .update-close,
+  #updateModal .update-direct-download {
+    min-height: 44px;
+  }
+
   #updateModal .update-actions {
     padding: 11px 14px 14px;
   }
@@ -1344,7 +1349,7 @@ body.theme-dark .paper {
 
 #settingsModal .modal-panel {
   width: min(94vw, 560px);
-  max-width: calc(100vw - 24px);
+  max-width: 100%;
   max-height: min(88dvh, 760px);
 }
 
@@ -1391,7 +1396,8 @@ body.theme-dark .paper {
 }
 
 #settingsModal .settings-category-tab:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text) 18%, var(--card));
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
 #settingsModal .modal-body {
@@ -1479,7 +1485,7 @@ body.theme-dark .paper {
 @media (min-width: 760px) {
   #settingsModal .modal-panel {
     width: min(94vw, 920px);
-    max-width: calc(100vw - 48px);
+    max-width: 100%;
     height: min(88dvh, 780px);
     max-height: min(88dvh, 780px);
   }

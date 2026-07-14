@@ -966,6 +966,10 @@
     return () => {}
   }
 
+  function shouldExpandAccountStatsByDefault(mediaQuery) {
+    return mediaQuery ? !!mediaQuery.matches : true
+  }
+
   function buildAiPreviewModalDom() {
     const modal = document.createElement("div")
     modal.className = "modal hidden"
@@ -1203,10 +1207,6 @@
     }
     const accountStatsWideQuery =
       typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 431px)") : null
-
-    function shouldExpandAccountStatsByDefault() {
-      return !!accountStatsWideQuery?.matches
-    }
 
     function setAccountStatsExpanded(expanded) {
       const isExpanded = !!expanded
@@ -2173,7 +2173,7 @@
         const isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
         dom.versionPanel.classList.toggle("hidden", !isTauri)
       }
-      setAccountStatsExpanded(shouldExpandAccountStatsByDefault())
+      setAccountStatsExpanded(shouldExpandAccountStatsByDefault(accountStatsWideQuery))
       render()
       renderAiProviderUi()
       setModalVisible(dom.modal, true)
@@ -3313,6 +3313,7 @@
     buildOfflineVoiceDownloadArgs,
     createOfflineVoiceTitle,
     listenForAccountStatsBreakpoint,
+    shouldExpandAccountStatsByDefault,
     installSettingsCategoryNavigation,
     normalizeAiWordbook,
     buildChatCompletionsUrl,
