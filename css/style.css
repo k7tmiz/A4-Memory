@@ -1081,6 +1081,181 @@ body.theme-dark .paper {
   min-width: 0;
 }
 
+#settingsModal .modal-panel {
+  width: min(94vw, 560px);
+  max-width: calc(100vw - 24px);
+  max-height: min(88dvh, 760px);
+}
+
+#settingsModal .settings-shell {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#settingsModal .settings-category-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px;
+  margin: 10px 12px 0;
+  padding: 3px;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  background: var(--card2);
+}
+
+#settingsModal .settings-category-tab {
+  min-width: 0;
+  padding: 8px 3px;
+  border-color: transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+#settingsModal .settings-category-tab:hover {
+  background: var(--surfaceHover);
+  color: var(--text);
+}
+
+#settingsModal .settings-category-tab[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--text) 12%, var(--border2));
+  background: color-mix(in srgb, var(--text) 8%, var(--card2));
+  color: var(--text);
+}
+
+#settingsModal .settings-category-tab:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text) 18%, var(--card));
+}
+
+#settingsModal .modal-body {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+#settingsModal .settings-category-panel {
+  min-width: 0;
+}
+
+#settingsModal .settings-category-panel[hidden] {
+  display: none;
+}
+
+#settingsModal .settings-accordion-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+#settingsModal .settings-accordion-card {
+  min-width: 0;
+  align-self: start;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--card);
+}
+
+#settingsModal .settings-accordion-card > summary {
+  min-height: 44px;
+  padding: 11px 38px 11px 12px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--text);
+  background: var(--card2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  list-style: none;
+}
+
+#settingsModal .settings-accordion-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+#settingsModal .settings-accordion-card > summary::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+#settingsModal .settings-accordion-card[open] > summary {
+  border-bottom: 1px solid var(--border2);
+}
+
+#settingsModal .settings-accordion-card[open] > summary::after {
+  transform: translateY(-30%) rotate(225deg);
+}
+
+#settingsModal .settings-accordion-card > summary:hover {
+  background: var(--surfaceHover);
+}
+
+#settingsModal .settings-accordion-content {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  background: var(--card);
+}
+
+#settingsModal #settingsPanelAccount .account-panel {
+  width: 100%;
+}
+
+@media (min-width: 760px) {
+  #settingsModal .modal-panel {
+    width: min(94vw, 920px);
+    max-width: calc(100vw - 48px);
+    height: min(88dvh, 780px);
+    max-height: min(88dvh, 780px);
+  }
+
+  #settingsModal .settings-shell {
+    display: grid;
+    grid-template-columns: 148px minmax(0, 1fr);
+  }
+
+  #settingsModal .settings-category-tabs {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    gap: 4px;
+    margin: 12px 0 12px 12px;
+    padding: 4px;
+  }
+
+  #settingsModal .settings-category-tab {
+    width: 100%;
+    padding: 11px 12px;
+    text-align: left;
+  }
+
+  #settingsModal .modal-body {
+    padding: 12px;
+  }
+
+  #settingsModal .settings-accordion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #settingsModal .settings-accordion-wide {
+    grid-column: 1 / -1;
+  }
+}
+
 .wordbook-picker-modal,
 .android-select-picker-modal {
   align-items: end;
