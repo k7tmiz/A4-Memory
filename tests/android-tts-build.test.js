@@ -198,7 +198,9 @@ describe("Android offline TTS build integration", () => {
     const workflow = fs.readFileSync(path.join(ROOT, ".github", "workflows", "release.yml"), "utf8")
     assert.match(readme, /android build -- --apk --target aarch64/)
     assert.doesNotMatch(workflow, /tts\.k7tmiz\.com/)
-    assert.match(workflow, /已安装离线语音、系统语音/)
+    assert.match(workflow, /手机端统一使用分段式分类导航与手风琴折叠分组/)
+    assert.match(workflow, /手机端紧凑摘要保留单词、连续天数和当前轮次/)
+    assert.match(workflow, /Android 以 Release 页面为主下载入口并保留 APK 直链兜底/)
   })
 
   it("configures the Android NDK linker in pull-request CI", () => {
