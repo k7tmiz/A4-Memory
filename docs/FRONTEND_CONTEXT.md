@@ -4,9 +4,9 @@
 
 ```
 A4-Memory/
-├── index.html              # 首页（主应用页面）
-├── records.html            # 学习记录页
-├── settings.html           # 独立设置页
+├── index.html              # 持久 App Shell（学习 / 记录 / 设置视图）
+├── records.html            # 学习记录深链兼容入口
+├── settings.html           # 设置深链兼容入口
 ├── manifest.webmanifest   # PWA manifest
 ├── LICENSE
 ├── README.md
@@ -27,12 +27,14 @@ A4-Memory/
 │   │   └── sanitize.js    # XSS 防护（HTML/属性转义）
 │   ├── ui/
 │   │   ├── layers.js      # 共享弹层栈、滚动锁与焦点管理
-│   │   └── motion.js      # 页面导航与进入/退出动效
+│   │   ├── motion.js      # 完整文档导航的兼容动效
+│   │   ├── route-entry.js # 记录 / 设置深链入口
+│   │   └── router.js      # App Shell 路由、生命周期与焦点/滚动恢复
 │   ├── __cloud_stub.js    # cloud.js 占位（仅公开仓库构建时使用）
-│   ├── app.js             # 首页控制器
+│   ├── app.js             # 学习视图控制器
 │   ├── lookup.js          # 查词弹窗控制器
-│   ├── records.js         # 记录页控制器
-│   ├── settings-page.js   # 独立设置页入口、状态与主题接线
+│   ├── records.js         # 记录视图控制器
+│   ├── settings-page.js   # 设置视图状态与生命周期接线
 │   ├── settings.js        # 设置界面与行为控制器
 │   ├── speech.js          # 语音合成封装
 │   ├── storage.js         # localStorage 读写封装
@@ -90,11 +92,13 @@ A4-Memory/
 
 ## 3. 页面与脚本加载顺序
 
-三个页面均按 `css/style.css → css/theme.css → css/shell.css` 加载样式。基础组件、主题变量和响应式壳层保持单向覆盖关系。
+`index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。
 
-学习、记录、设置页面均不使用页面顶栏，通过 `.app-dock-shell` 提供学习、记录、设置三项固定导航；首页底栏另含独立的「下一个单词」主操作。首页纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，首页采用左侧词书/工具、中央 A4 和右侧轮次进度的工作区布局，低频工具通过 `data-action-target` 触发 `js/app.js` 中的既有真实按钮。记录页与设置页使用独立页面容器，并为固定底栏预留底部空间。
+App Shell 按 `css/style.css → css/theme.css → css/shell.css` 加载样式，基础组件、主题变量和响应式壳层保持单向覆盖关系。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
-### 首页（index.html）
+学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，学习视图采用左侧词书/工具、中央 A4 和右侧轮次进度的工作区布局，低频工具通过 `data-action-target` 触发 `js/app.js` 中的真实按钮。
+
+### App Shell（index.html）
 
 ```
 index.html
@@ -102,6 +106,7 @@ index.html
   → js/core/common.js
   → js/ui/layers.js
   → js/ui/motion.js
+  → js/ui/router.js
   → js/core/sanitize.js
   → js/utils.js
   → js/storage.js
@@ -111,46 +116,13 @@ index.html
   → js/settings.js
   → js/lookup.js
   → js/app.js
-```
-
-### 记录页（records.html）
-
-```
-records.html
-  → data/words.js
-  → js/utils.js
-  → js/storage.js
-  → js/cloud.js              ← 可选私有模块
-  → js/core/common.js
-  → js/ui/layers.js
-  → js/ui/motion.js
-  → js/core/sanitize.js
-  → js/speech.js
-  → js/updater.js
-  → js/settings.js
-  → js/lookup.js
   → js/records.js
-```
-
-### 设置页（settings.html）
-
-```
-settings.html
-  → data/words.js
-  → js/utils.js
-  → js/storage.js
-  → js/cloud.js              ← 可选私有模块
-  → js/core/common.js
-  → js/ui/layers.js
-  → js/ui/motion.js
-  → js/core/sanitize.js
-  → js/speech.js
-  → js/updater.js
-  → js/settings.js
   → js/settings-page.js
 ```
 
-`cloud.js` 已在 HTML 中固定引用；缺失时浏览器会 404，但不影响其他脚本加载。
+`records.html` 与 `settings.html` 是 CSP 兼容的深链入口，只加载样式和 `js/ui/route-entry.js`，分别使用 `location.replace()` 进入 `index.html?view=records|settings`。App Shell 启动后通过 `replaceState` 规范化为 `records.html` 或 `settings.html` 的整洁地址；站内带 `data-a4-route` 的入口不经过该重定向。
+
+`cloud.js` 只在 App Shell 中固定引用；缺失时浏览器会 404，但不影响其他脚本加载。
 
 ---
 
@@ -172,6 +144,27 @@ settings.html
 
 ### `js/ui/layers.js`
 共享弹层控制器，暴露 `window.A4UI`。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。首页弹窗、设置页内的确认/预览弹层、确认框和 Android 下拉面板均通过该入口管理。
+
+### `js/ui/router.js`
+持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
+
+```javascript
+window.A4Router = {
+  createRouter(options),
+  navigate(view, options),
+  register(view, { enter, leave }),
+  resolveView(value),
+  hrefForView(view),
+  getCurrentView(),
+  start(),
+}
+```
+
+### `js/ui/route-entry.js`
+记录与设置深链兼容入口。它只读取 `body[data-a4-entry-view]`，将 `records.html` / `settings.html` 原地址替换为 App Shell 的 `?view=` 启动地址，不承载业务状态或页面控制器。
+
+### `js/ui/motion.js`
+完整文档导航的兼容动效。App Shell 内部路由由 `A4Router` 处理；仅在路由器不可用且控制器退回普通页面地址时使用该模块。
 
 ### `js/core/sanitize.js`
 输出安全模块，提供 HTML、属性转义和 CSV 公式前缀中和。记录页 CSV 导出对所有单元格调用 `escapeCsvFormula`，避免导入词书中的公式前缀被电子表格软件执行。
@@ -227,7 +220,7 @@ window.A4Speech = {
 ```
 
 ### `js/settings.js`
-设置界面控制器，暴露 `window.A4Settings`；独立设置页以 `presentation: "page"` 创建控制器，设置页内需要确认或预览的操作仍使用标准弹层：
+设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，视图内需要确认或预览的操作仍使用标准弹层：
 ```javascript
 window.A4Settings = {
   createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation, onClose }),
@@ -236,7 +229,7 @@ window.A4Settings = {
 ```
 
 ### `js/settings-page.js`
-独立设置页入口。它从 `A4Storage` 读取完整状态、应用主题、连接 `createSettingsModalController({ presentation: "page" })`，并根据 `from=study|records` 返回来源页面。设置状态继续写入同一个 `a4-memory:v1`，AI API Key 仍只保留在当前页面内存中。
+设置视图控制器。它从 `A4Storage` 读取完整状态、应用主题、连接 `createSettingsModalController({ presentation: "page" })`，通过路由生命周期在每次进入时刷新状态、离开时持久化，并返回本次进入设置前的学习或记录视图。设置状态继续写入同一个 `a4-memory:v1`，AI API Key 仍只保留在当前页面内存中。
 
 ### `js/lookup.js`
 查词弹窗控制器，暴露 `window.A4Lookup`：
@@ -248,7 +241,7 @@ window.A4Lookup = {
 功能：本地词书检索、在线补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充、查词缓存、"加入当前轮"。
 
 ### `js/app.js`
-首页控制器（UI 层，不含核心业务逻辑）。负责：
+学习视图控制器（UI 层，不含核心业务逻辑）。负责：
 - A4 排版与单词放置
 - 当前轮恢复
 - 首页词书选择；Android 环境使用应用内底部面板，iOS/macOS/桌面浏览器保留原生 `<select>`
@@ -256,10 +249,10 @@ window.A4Lookup = {
 - 词书导入、词书 JSON 导出与在线词书导入
 - 轮次推进与状态写回
 
-宽度不超过 700px 时，首页使用紧凑词书状态，低频入口集中在底部更多面板；宽度达到 701px 时，首页使用左侧词书/工具、中央 A4、右侧轮次进度的无顶栏工作区，低频入口集中在左侧工具菜单。两种布局共用纸面复习/释义操作和悬浮底栏，学习、记录、设置三项始终显示图标与文字，「下一个单词」保持独立主操作。设置导航进入独立 `settings.html`，页码控件仅在当前轮包含多张 A4 时显示。
+宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在底部更多面板；宽度达到 701px 时，学习视图使用左侧词书/工具、中央 A4、右侧轮次进度的无顶栏工作区，低频入口集中在左侧工具菜单。两种布局共用纸面复习/释义操作和悬浮底栏；「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。路由 `leave` 生命周期负责保存学习状态，`enter` 生命周期重新读取存储并刷新纸面。
 
 ### `js/records.js`
-记录页控制器（UI 层）。负责：
+记录视图控制器（UI 层）。进入视图时重新读取存储并刷新统计与列表，离开后仍保持控制器和 DOM 挂载。负责：
 - 轮次视图与状态视图切换
 - 统计计算
 - 手机端显示今日新增、待复习、连续学习三项摘要，并保留累计进度与每日目标
@@ -305,13 +298,13 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 - 词书导入：TXT、CSV、JSON 本地导入均应正常创建自定义词书并可选中。
 - 学习流程：新增单词后自动复习弹窗应打开；记录页手动复习应可返回首页并打开复习弹窗。
 - 安全渲染：导入词条中的 HTML 片段只能作为文本显示，不得生成真实 DOM 标签或触发脚本。
-- 设置与记录：独立设置页、设置页内确认/预览弹层、备份导入导出入口、记录页 CSV/PDF 导出入口应可正常访问。
+- 路由与设置：学习、记录、设置应通过同一底栏无刷新切换；浏览器返回后地址、底栏选中态和可见视图应一致；设置视图内确认/预览弹层、备份导入导出入口、记录视图 CSV/PDF 导出入口应可正常访问。
 
 ---
 
 ## 5. 设置界面结构
 
-设置通过独立 `settings.html` 实现。首页与记录页使用带页面过渡的链接进入，`js/settings-page.js` 负责状态、主题和返回路径，`js/settings.js` 的 `createSettingsModalController` 负责复用设置表单与行为。
+设置作为 App Shell 中的独立路由视图实现。`js/settings-page.js` 负责状态、主题、路由生命周期和返回来源，`js/settings.js` 的 `createSettingsModalController` 负责复用设置表单与行为；`settings.html` 只保留外部深链兼容职责。
 
 ### 设置分区与响应式布局
 
@@ -323,7 +316,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 4. **AI** — 自定义 API 配置、模型选择和词书生成。
 5. **更多** — 包含联网补充（在线查词）、数据管理和版本信息；版本信息仅在 Tauri 桌面端与 Android 应用中显示。
 
-移动端使用跟随主题的统一分段式顶部导航，内容按单列手风琴卡片排列。宽度达到 760px 时，类别导航位于左侧，内容使用响应式两列手风琴布局；账号面板横跨整个内容区。所有宽度均保留学习、记录、设置悬浮底栏。
+移动端使用跟随主题的统一分段式顶部导航，内容按单列手风琴卡片排列。宽度达到 760px 时，类别导航位于左侧，内容使用响应式两列手风琴布局；账号面板横跨整个内容区。所有宽度均复用 App Shell 的学习、记录、设置悬浮底栏。
 
 类别导航采用 `tab` / `tabpanel` 语义。左、右、上、下方向键循环切换类别，`Home` / `End` 分别切换到第一个和最后一个类别。
 
@@ -434,4 +427,4 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 - AI 提供商或 Base URL origin 变化时清空内存中的 `aiConfig.apiKey`，避免凭据跨服务发送
 - 记录页监听 `storage` 事件，支持多标签页同步刷新显示
 - 所有删除/清空确认弹窗统一使用 `A4Utils.showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`；设置页的云端恢复确认也使用自定义弹窗
-- 首页与记录页的标准弹窗、设置页内的确认/预览弹层、Android 选择器和公告弹窗统一进入 `A4UI` 弹层栈；打开期间页面固定且背景不可滚动，嵌套弹层逐层关闭，焦点在关闭后回到触发位置。独立设置页本身使用正常页面滚动，不进入弹层栈
+- 学习与记录视图的标准弹窗、设置视图内的确认/预览弹层、Android 选择器和公告弹窗统一进入 `A4UI` 弹层栈；打开期间页面固定且背景不可滚动，嵌套弹层逐层关闭，焦点在关闭后回到触发位置。设置视图本身使用正常页面滚动，不进入弹层栈

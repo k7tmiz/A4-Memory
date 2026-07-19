@@ -249,7 +249,7 @@ function scheduleAnnouncementCheck(delayMs = 0) {
 }
 
 function openSettingsModal() {
-  if (window.A4Router?.navigate?.("settings") === true) return
+  if (window.A4Router?.navigate?.("settings", { queue: true }) === true) return
   const href = "./settings.html?from=study"
   if (window.A4Motion?.navigate?.(href) === true) return
   window.location.assign(href)
@@ -1465,10 +1465,11 @@ function _persistImpl() {
   })
 }
 
-function renderCurrentRound() {
+function renderCurrentRound({ transition = "" } = {}) {
   ensureCurrentRound()
   const round = getCurrentRound()
   if (!round) return
+  dom.paperInner.classList.remove("a4-paper-page-forward", "a4-paper-page-back")
   clearPaper()
   appState.placed = []
   const paper = getPaperInnerSize()
@@ -1495,6 +1496,19 @@ function renderCurrentRound() {
       fontSize: item.fontSize || "",
       pos: item.pos,
     })
+  }
+
+  const direction = transition === "back" ? "back" : transition === "forward" ? "forward" : ""
+  if (direction) {
+    void dom.paperInner.offsetWidth
+    const className = `a4-paper-page-${direction}`
+    dom.paperInner.classList.add(className)
+    const onAnimationEnd = (event) => {
+      if (event.target !== dom.paperInner) return
+      dom.paperInner.classList.remove(className)
+      dom.paperInner.removeEventListener("animationend", onAnimationEnd)
+    }
+    dom.paperInner.addEventListener("animationend", onAnimationEnd)
   }
 }
 
@@ -2879,7 +2893,7 @@ dom.pagePrevBtn?.addEventListener("click", () => {
   const pageCount = getRoundPageCount(round)
   if (pageCount <= 1) return
   appState.currentPageIndex = clamp(appState.currentPageIndex - 1, 0, pageCount - 1)
-  renderCurrentRound()
+  renderCurrentRound({ transition: "back" })
   updateBadge()
   updateHint()
 })
@@ -2889,7 +2903,7 @@ dom.pageNextBtn?.addEventListener("click", () => {
   const pageCount = getRoundPageCount(round)
   if (pageCount <= 1) return
   appState.currentPageIndex = clamp(appState.currentPageIndex + 1, 0, pageCount - 1)
-  renderCurrentRound()
+  renderCurrentRound({ transition: "forward" })
   updateBadge()
   updateHint()
 })

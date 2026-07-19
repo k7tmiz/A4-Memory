@@ -33,7 +33,7 @@ describe("responsive application shell", () => {
   })
 
   it("uses a roomy full-width mobile dock instead of compressing the destinations", () => {
-    assert.match(shellStyle, /@media \(max-width:\s*700px\)[^]*?\.app-dock-shell\s*\{[^}]*width:\s*min\(calc\(100vw - 16px\),\s*420px\)/s)
+    assert.match(shellStyle, /@media \(max-width:\s*700px\)[^]*?\.app-dock-shell\s*\{[^}]*bottom:\s*calc\(18px \+ env\(safe-area-inset-bottom\)\)[^}]*width:\s*min\(calc\(100vw - 16px\),\s*420px\)/s)
     assert.match(shellStyle, /\.app-dock-nav\s*\{[^}]*flex:\s*1 1 auto/s)
     assert.match(shellStyle, /\.app-dock-item\s*\{[^}]*flex:\s*1 1 0/s)
     assert.match(shellStyle, /\.app-dock-item span\s*\{[^}]*max-width:\s*none[^}]*opacity:\s*1/s)
@@ -66,7 +66,7 @@ describe("responsive application shell", () => {
     assert.match(indexMarkup, /data-a4-view="settings"[^]*id="settingsPageMount"/)
   })
 
-  it("routes every Settings entry to a standalone page instead of opening a modal", () => {
+  it("routes every Settings entry to a dedicated route view instead of opening a modal", () => {
     assert.match(indexMarkup, /id="dockSettingsNav"/)
     assert.match(indexMarkup, /data-a4-route="settings"/)
     assert.doesNotMatch(appCode, /createSettingsModalController\(/)
@@ -102,13 +102,29 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /@media \(prefers-reduced-motion:\s*reduce\)/)
   })
 
-  it("defines matching enter and exit motion for pages, docks, and layers", () => {
-    assert.match(shellStyle, /@keyframes a4-screen-exit/)
-    assert.match(shellStyle, /@keyframes a4-dock-enter/)
-    assert.match(shellStyle, /body\.a4-page-leaving[^}]*animation:\s*a4-screen-exit/s)
-    assert.match(shellStyle, /body\.a4-page-leaving[^}]*app-dock-shell[^}]*a4-dock-exit/s)
+  it("defines directional view motion while the dock remains mounted", () => {
+    assert.match(shellStyle, /@keyframes a4-view-enter-forward/)
+    assert.match(shellStyle, /@keyframes a4-view-leave-back/)
+    assert.match(shellStyle, /\.app-view\.a4-view-entering-forward[^}]*animation:\s*a4-view-enter-forward/s)
+    assert.match(shellStyle, /\.app-view\.a4-view-leaving-back[^}]*animation:\s*a4-view-leave-back/s)
+    assert.doesNotMatch(shellStyle, /body\.a4-page-leaving[^}]*app-dock-shell/)
     assert.match(sharedStyle, /\.modal\.a4-layer-closing\s+\.modal-backdrop/)
     assert.match(sharedStyle, /\.modal\.a4-layer-closing\s+\.modal-panel/)
+  })
+
+  it("slides one shared dock indicator and smoothly collapses Next Word off Study", () => {
+    assert.match(shellStyle, /\.app-dock-indicator\s*\{[^}]*transition:[^}]*transform\s+320ms/s)
+    assert.match(shellStyle, /data-active-view="records"[^}]*--a4-dock-index:\s*1/s)
+    assert.match(shellStyle, /data-active-view="settings"[^}]*--a4-dock-index:\s*2/s)
+    assert.match(shellStyle, /data-active-view="records"[^}]*app-next-action[^}]*flex-basis:\s*0/s)
+    assert.match(shellStyle, /data-active-view="settings"[^}]*app-next-action[^}]*opacity:\s*0/s)
+  })
+
+  it("animates A4 page changes in their navigation direction", () => {
+    assert.match(appCode, /renderCurrentRound\(\{ transition:\s*"back" \}\)/)
+    assert.match(appCode, /renderCurrentRound\(\{ transition:\s*"forward" \}\)/)
+    assert.match(shellStyle, /@keyframes a4-paper-page-forward/)
+    assert.match(shellStyle, /\.paper-inner\.a4-paper-page-back/)
   })
 
   it("loads the router before all three route controllers", () => {
@@ -121,8 +137,9 @@ describe("responsive application shell", () => {
     assert.match(appCode, /A4Router\?\.register\?\.\("study"/)
     assert.match(recordsCode, /A4Router\?\.register\?\.\("records"/)
     assert.match(settingsPageCode, /A4Router\?\.register\?\.\("settings"/)
-    assert.match(appCode, /A4Router\?\.navigate\?\.\("settings"\)/)
-    assert.match(recordsCode, /A4Router\?\.navigate\?\.\("study"\)/)
+    assert.match(appCode, /A4Router\?\.navigate\?\.\("settings",\s*\{ queue:\s*true \}\)/)
+    assert.match(recordsCode, /A4Router\?\.navigate\?\.\("study",\s*\{ queue:\s*true \}\)/)
+    assert.match(settingsPageCode, /A4Router\?\.navigate\?\.\(target,\s*\{ queue:\s*true \}\)/)
     assert.match(recordsCode, /getElementById\("recordsLookupBtn"\)/)
     assert.doesNotMatch(recordsCode, /window\.location\.href\s*=\s*"\.\/index\.html"/)
     assert.doesNotMatch(settingsPageCode, /window\.location\.assign\(/)

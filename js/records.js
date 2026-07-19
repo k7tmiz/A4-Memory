@@ -11,7 +11,7 @@
   }
 
   function navigateToStudy() {
-    if (window.A4Router?.navigate?.("study") === true) return
+    if (window.A4Router?.navigate?.("study", { queue: true }) === true) return
     window.location.assign("./index.html")
   }
 

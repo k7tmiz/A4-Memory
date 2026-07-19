@@ -50,6 +50,7 @@
     const scrollPositions = new Map()
     let currentView = ""
     let pending = false
+    let queuedNavigation = null
     let started = false
     let listenersInstalled = false
 
@@ -90,6 +91,17 @@
     function setDockRoute(view) {
       const dock = documentRef.querySelector?.(".app-dock-shell")
       if (dock?.dataset) dock.dataset.activeView = view
+      const nextAction = documentRef.querySelector?.(".app-next-action")
+      if (nextAction) {
+        nextAction.disabled = view !== "study"
+        if (view === "study") {
+          nextAction.removeAttribute?.("aria-hidden")
+          nextAction.removeAttribute?.("tabindex")
+        } else {
+          nextAction.setAttribute?.("aria-hidden", "true")
+          nextAction.setAttribute?.("tabindex", "-1")
+        }
+      }
       const links = Array.from(documentRef.querySelectorAll?.("[data-a4-route]") || [])
       for (const link of links) {
         const active = normalizeViewName(link?.dataset?.a4Route) === view
@@ -144,6 +156,15 @@
       windowRef.history?.[method]?.({ a4View: view }, "", hrefForView(view))
     }
 
+    function completeNavigation() {
+      pending = false
+      if (!queuedNavigation) return
+      const queued = queuedNavigation
+      queuedNavigation = null
+      if (queued.view === currentView) return
+      windowRef.setTimeout?.(() => navigate(queued.view, queued.options), 0)
+    }
+
     function finishSwitch({ from, to, direction, enterDelay }) {
       const previous = getViewElement(from)
       previous?.classList?.remove?.("a4-view-leaving", `a4-view-leaving-${direction}`)
@@ -159,20 +180,28 @@
 
       if (prefersReducedMotion() || enterDelay <= 0) {
         next?.classList?.remove?.("a4-view-entering", `a4-view-entering-${direction}`)
-        pending = false
+        completeNavigation()
         return
       }
 
       windowRef.setTimeout?.(() => {
         next?.classList?.remove?.("a4-view-entering", `a4-view-entering-${direction}`)
-        pending = false
+        completeNavigation()
       }, enterDelay)
     }
 
     function navigate(view, options = {}) {
       const target = resolveView(view)
       if (!started) start()
-      if (!target || target === currentView || pending) return false
+      if (!target) return false
+      if (pending) {
+        if (options.queue === true) {
+          queuedNavigation = { view: target, options: { ...options, queue: false } }
+          return true
+        }
+        return false
+      }
+      if (target === currentView) return false
 
       const from = currentView
       const direction = getDirection(from, target)
@@ -208,14 +237,14 @@
       const target = normalizeViewName(link?.dataset?.a4Route)
       if (!target) return
       event.preventDefault?.()
-      navigate(target)
+      navigate(target, { queue: true })
     }
 
     function installListeners() {
       if (listenersInstalled) return
       listenersInstalled = true
       documentRef.addEventListener?.("click", handleRouteClick)
-      windowRef.addEventListener?.("popstate", () => navigate(windowRef.location, { history: false }))
+      windowRef.addEventListener?.("popstate", () => navigate(windowRef.location, { history: false, queue: true }))
     }
 
     function start() {

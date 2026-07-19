@@ -63,6 +63,64 @@
   }
 }
 
+@keyframes a4-view-enter-forward {
+  from {
+    opacity: 0;
+    transform: translate3d(22px, 0, 0) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes a4-view-enter-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-22px, 0, 0) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes a4-view-leave-forward {
+  to {
+    opacity: 0;
+    transform: translate3d(-14px, 0, 0) scale(0.996);
+  }
+}
+
+@keyframes a4-view-leave-back {
+  to {
+    opacity: 0;
+    transform: translate3d(14px, 0, 0) scale(0.996);
+  }
+}
+
+@keyframes a4-paper-page-forward {
+  from {
+    opacity: 0.45;
+    transform: translate3d(14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes a4-paper-page-back {
+  from {
+    opacity: 0.45;
+    transform: translate3d(-14px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @keyframes a4-sheet-enter {
   from {
     opacity: 0.7;
@@ -111,6 +169,52 @@
 
 .word-item.word-enter {
   animation: a4-word-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.app-view-stage,
+.app-view {
+  min-height: 100dvh;
+}
+
+.app-view-stage {
+  isolation: isolate;
+}
+
+.app-view[hidden] {
+  display: none !important;
+}
+
+.app-view.a4-view-entering,
+.app-view.a4-view-leaving {
+  will-change: opacity, transform;
+}
+
+.app-view.a4-view-leaving {
+  pointer-events: none;
+}
+
+.app-view.a4-view-entering-forward {
+  animation: a4-view-enter-forward 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.app-view.a4-view-entering-back {
+  animation: a4-view-enter-back 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.app-view.a4-view-leaving-forward {
+  animation: a4-view-leave-forward 140ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.app-view.a4-view-leaving-back {
+  animation: a4-view-leave-back 140ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.paper-inner.a4-paper-page-forward {
+  animation: a4-paper-page-forward 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.paper-inner.a4-paper-page-back {
+  animation: a4-paper-page-back 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 #settingsModal .settings-category-panel:not([hidden]),
@@ -235,14 +339,18 @@ body.records-page .rounds:not(.hidden) {
   filter: drop-shadow(0 14px 24px color-mix(in srgb, var(--text) 17%, transparent));
   transform: translateX(-50%);
   animation: a4-dock-enter 280ms 55ms cubic-bezier(0.18, 0.86, 0.25, 1) both;
+  transition: gap 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-body.a4-page-leaving .app-dock-shell {
-  pointer-events: none;
-  animation: a4-dock-exit 140ms cubic-bezier(0.4, 0, 1, 1) both;
+.app-dock-shell[data-active-view="records"],
+.app-dock-shell[data-active-view="settings"] {
+  gap: 0;
 }
 
 .app-dock-nav {
+  --a4-dock-index: 0;
+  position: relative;
+  isolation: isolate;
   height: 56px;
   padding: 4px;
   flex: 1 1 auto;
@@ -256,7 +364,34 @@ body.a4-page-leaving .app-dock-shell {
   -webkit-backdrop-filter: blur(24px) saturate(155%);
 }
 
+.app-dock-shell[data-active-view="records"] .app-dock-nav {
+  --a4-dock-index: 1;
+}
+
+.app-dock-shell[data-active-view="settings"] .app-dock-nav {
+  --a4-dock-index: 2;
+}
+
+.app-dock-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 4px 13px color-mix(in srgb, var(--text) 9%, transparent);
+  pointer-events: none;
+  transform: translate3d(calc(var(--a4-dock-index) * 100%), 0, 0);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
 .app-dock-item {
+  position: relative;
+  z-index: 1;
   min-width: 84px;
   height: 46px;
   padding: 0 12px;
@@ -288,15 +423,17 @@ body.a4-page-leaving .app-dock-shell {
 }
 
 .app-dock-item.active {
-  background: var(--card);
+  background: transparent;
   color: var(--text);
-  box-shadow: 0 4px 13px color-mix(in srgb, var(--text) 9%, transparent), inset 0 0 0 1px var(--border);
+  box-shadow: none;
 }
 
 .app-next-action {
-  min-width: 172px;
+  width: 172px;
+  min-width: 0;
   height: 56px;
   padding: 0 22px;
+  flex: 0 0 172px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,7 +446,36 @@ body.a4-page-leaving .app-dock-shell {
   font-size: 12px;
   font-weight: 850;
   white-space: nowrap;
-  transition: transform 120ms ease, background 160ms ease;
+  overflow: hidden;
+  transform-origin: right center;
+  transition:
+    flex-basis 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    padding 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-width 240ms ease,
+    opacity 180ms ease,
+    transform 180ms ease,
+    background 160ms ease;
+}
+
+.app-dock-shell[data-active-view="records"] .app-next-action {
+  width: 0;
+  padding-inline: 0;
+  flex-basis: 0;
+  border-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(-8px, 0, 0) scale(0.92);
+}
+
+.app-dock-shell[data-active-view="settings"] .app-next-action {
+  width: 0;
+  padding-inline: 0;
+  flex-basis: 0;
+  border-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(-8px, 0, 0) scale(0.92);
 }
 
 .app-next-action:active {
@@ -348,7 +514,6 @@ body.a4-page-leaving .app-dock-shell {
     align-items: center;
     justify-content: center;
     gap: 28px;
-    animation: a4-screen-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   .desktop-brand {
@@ -599,7 +764,6 @@ body.a4-page-leaving .app-dock-shell {
     box-shadow: 0 18px 54px color-mix(in srgb, var(--text) 8%, transparent);
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
-    animation: a4-screen-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
   body.settings-page .settings-page-main {
@@ -626,14 +790,7 @@ body.a4-page-leaving .app-dock-shell {
   body:not(.records-page) .app {
     max-width: 540px;
     padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
-      calc(74px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-    animation: a4-screen-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  }
-
-  body.a4-page-leaving:not(.records-page) .app,
-  body.a4-page-leaving.records-page .app.records {
-    pointer-events: none;
-    animation: a4-screen-exit 150ms cubic-bezier(0.4, 0, 1, 1) both;
+      calc(84px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
 
   .home-controls {
@@ -793,7 +950,7 @@ body.a4-page-leaving .app-dock-shell {
     position: fixed;
     z-index: 35;
     left: 50%;
-    bottom: calc(62px + env(safe-area-inset-bottom));
+    bottom: calc(78px + env(safe-area-inset-bottom));
     margin: 0;
     padding: 4px;
     gap: 5px;
@@ -839,18 +996,13 @@ body.a4-page-leaving .app-dock-shell {
     position: fixed;
     z-index: 40;
     left: 50%;
-    bottom: calc(8px + env(safe-area-inset-bottom));
+    bottom: calc(18px + env(safe-area-inset-bottom));
     width: min(calc(100vw - 16px), 420px);
     height: 47px;
     gap: 6px;
     filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--text) 18%, transparent));
     transform: translateX(-50%);
     animation: a4-dock-enter 280ms 55ms cubic-bezier(0.18, 0.86, 0.25, 1) both;
-  }
-
-  body.a4-page-leaving .app-dock-shell {
-    pointer-events: none;
-    animation: a4-dock-exit 140ms cubic-bezier(0.4, 0, 1, 1) both;
   }
 
   .app-dock-nav {
@@ -865,6 +1017,15 @@ body.a4-page-leaving .app-dock-shell {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(22px) saturate(155%);
     -webkit-backdrop-filter: blur(22px) saturate(155%);
+  }
+
+  .app-dock-indicator {
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / 3);
+    border-radius: 13px;
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--text) 8%, transparent);
   }
 
   .app-dock-item {
@@ -894,12 +1055,13 @@ body.a4-page-leaving .app-dock-shell {
   }
 
   .app-dock-item.active {
-    background: var(--card);
+    background: transparent;
     color: var(--text);
-    box-shadow: 0 3px 10px color-mix(in srgb, var(--text) 8%, transparent), inset 0 0 0 1px var(--border);
+    box-shadow: none;
   }
 
   .app-next-action {
+    width: auto;
     min-width: 0;
     height: 47px;
     padding: 0 13px;
@@ -916,7 +1078,14 @@ body.a4-page-leaving .app-dock-shell {
     font-size: 11.5px;
     font-weight: 850;
     white-space: nowrap;
-    transition: transform 120ms ease, background 160ms ease;
+    transition:
+      flex-basis 320ms cubic-bezier(0.16, 1, 0.3, 1),
+      width 320ms cubic-bezier(0.16, 1, 0.3, 1),
+      padding 280ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-width 240ms ease,
+      opacity 180ms ease,
+      transform 180ms ease,
+      background 160ms ease;
   }
 
   .app-next-action:active {
@@ -1049,8 +1218,7 @@ body.a4-page-leaving .app-dock-shell {
 
   body.records-page .app.records {
     padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
-      calc(74px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-    animation: a4-screen-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      calc(84px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
 
   .records-stat-card {
@@ -1112,12 +1280,6 @@ body.settings-page {
   margin: 0 auto;
   padding: max(24px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right))
     max(32px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
-  animation: a4-screen-enter 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-body.settings-page.a4-page-leaving .settings-page-main {
-  pointer-events: none;
-  animation: a4-screen-exit 150ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 body.settings-page #settingsModal.settings-page-root {

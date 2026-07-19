@@ -34,7 +34,7 @@
   function navigateBack() {
     persist()
     const target = returnView === "records" ? "records" : "study"
-    if (window.A4Router?.navigate?.(target) === true) return
+    if (window.A4Router?.navigate?.(target, { queue: true }) === true) return
     window.location.href = target === "records" ? "./records.html" : "./index.html"
   }
 

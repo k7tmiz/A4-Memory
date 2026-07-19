@@ -37,6 +37,9 @@ function createElement({ view = "", route = "" } = {}) {
     querySelector(selector) {
       return selector === "[data-a4-route-focus]" ? element.focusTarget || null : null
     },
+    closest(selector) {
+      return selector === "[data-a4-route]" && route ? element : null
+    },
     focusCalls,
   }
   if (view) element.dataset.a4View = view
@@ -50,6 +53,7 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
   for (const view of views) view.focusTarget = createElement()
   const links = ["study", "records", "settings"].map((route) => createElement({ route }))
   const dock = createElement()
+  const nextAction = createElement()
   const body = createElement()
   const documentListeners = new Map()
   const windowListeners = new Map()
@@ -67,6 +71,7 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
     title: "A4 Memory",
     querySelector(selector) {
       if (selector === ".app-dock-shell") return dock
+      if (selector === ".app-next-action") return nextAction
       const match = /^\[data-a4-view="([^"]+)"\]$/.exec(selector)
       return match ? views.find((view) => view.dataset.a4View === match[1]) || null : null
     },
@@ -111,6 +116,7 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
     historyCalls,
     links,
     location,
+    nextAction,
     scrollCalls,
     views,
     window,
@@ -150,6 +156,9 @@ describe("A4Router persistent application shell", () => {
     assert.equal(harness.body.dataset.a4CurrentView, "settings")
     assert.equal(harness.body.dataset.a4View, undefined)
     assert.equal(harness.dock.dataset.activeView, "settings")
+    assert.equal(harness.nextAction.getAttribute("aria-hidden"), "true")
+    assert.equal(harness.nextAction.getAttribute("tabindex"), "-1")
+    assert.equal(harness.nextAction.disabled, true)
     assert.equal(entered.length, 1)
     assert.equal(entered[0].initial, true)
     assert.equal(harness.historyCalls.length, 1)
@@ -189,6 +198,50 @@ describe("A4Router persistent application shell", () => {
 
     assert.equal(harness.A4Router.getCurrentView(), "records")
     assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 0)
+  })
+
+  it("queues browser history changes that arrive during an active transition", async () => {
+    const harness = loadRouter()
+    harness.A4Router.start()
+    harness.A4Router.navigate("records", { exitMs: 4, enterMs: 4 })
+    harness.location.pathname = "/settings.html"
+
+    harness.windowListeners.get("popstate")()
+    await new Promise((resolve) => setTimeout(resolve, 28))
+
+    assert.equal(harness.A4Router.getCurrentView(), "settings")
+    assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 1)
+  })
+
+  it("keeps the latest dock click while another view is still entering", async () => {
+    const harness = loadRouter()
+    harness.A4Router.start()
+    harness.A4Router.navigate("records", { exitMs: 4, enterMs: 4 })
+    let prevented = false
+
+    harness.documentListeners.get("click")({
+      target: harness.links[2],
+      button: 0,
+      preventDefault() { prevented = true },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 28))
+
+    assert.equal(prevented, true)
+    assert.equal(harness.A4Router.getCurrentView(), "settings")
+    assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 2)
+  })
+
+  it("keeps a rapid Back action that targets the view still leaving", async () => {
+    const harness = loadRouter()
+    harness.A4Router.start()
+    harness.A4Router.navigate("records", { exitMs: 4, enterMs: 4 })
+    harness.location.pathname = "/index.html"
+
+    harness.windowListeners.get("popstate")()
+    await new Promise((resolve) => setTimeout(resolve, 28))
+
+    assert.equal(harness.A4Router.getCurrentView(), "study")
+    assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 1)
   })
 
   it("switches immediately when reduced motion is requested", () => {
