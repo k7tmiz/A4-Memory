@@ -110,7 +110,7 @@ describe("release pipeline safety", () => {
       updater.match(/APP_VERSION = "([^"]+)"/)?.[1],
     ]
 
-    assert.deepEqual(new Set(versions), new Set(["1.0.33"]))
+    assert.deepEqual(new Set(versions), new Set(["2.0.0"]))
     assert.match(workflow, /name: Validate release version/)
     assert.match(workflow, /GITHUB_REF_NAME#v/)
     assert.match(workflow, /Release tag and application versions do not match/)
