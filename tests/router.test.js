@@ -1,0 +1,191 @@
+const fs = require("node:fs")
+const path = require("node:path")
+const vm = require("node:vm")
+const { describe, it } = require("node:test")
+const assert = require("node:assert/strict")
+
+const routerPath = path.join(__dirname, "..", "js", "ui", "router.js")
+
+function createClassList(initial = []) {
+  const values = new Set(initial)
+  return {
+    add(...names) { names.forEach((name) => values.add(name)) },
+    remove(...names) { names.forEach((name) => values.delete(name)) },
+    toggle(name, force) {
+      if (force === true) values.add(name)
+      else if (force === false) values.delete(name)
+      else if (values.has(name)) values.delete(name)
+      else values.add(name)
+      return values.has(name)
+    },
+    contains(name) { return values.has(name) },
+  }
+}
+
+function createElement({ view = "", route = "" } = {}) {
+  const attributes = new Map()
+  const focusCalls = []
+  const element = {
+    classList: createClassList(),
+    dataset: {},
+    hidden: false,
+    inert: false,
+    setAttribute(name, value) { attributes.set(name, String(value)) },
+    removeAttribute(name) { attributes.delete(name) },
+    getAttribute(name) { return attributes.get(name) ?? null },
+    focus(options) { focusCalls.push(options) },
+    querySelector(selector) {
+      return selector === "[data-a4-route-focus]" ? element.focusTarget || null : null
+    },
+    focusCalls,
+  }
+  if (view) element.dataset.a4View = view
+  if (route) element.dataset.a4Route = route
+  return element
+}
+
+function loadRouter({ pathname = "/index.html", search = "", reducedMotion = false } = {}) {
+  const code = fs.readFileSync(routerPath, "utf8")
+  const views = ["study", "records", "settings"].map((view) => createElement({ view }))
+  for (const view of views) view.focusTarget = createElement()
+  const links = ["study", "records", "settings"].map((route) => createElement({ route }))
+  const dock = createElement()
+  const body = createElement()
+  const documentListeners = new Map()
+  const windowListeners = new Map()
+  const historyCalls = []
+  const scrollCalls = []
+  const location = {
+    href: `https://example.test${pathname}${search}`,
+    origin: "https://example.test",
+    pathname,
+    search,
+  }
+  const document = {
+    body,
+    title: "A4 Memory",
+    querySelector(selector) {
+      if (selector === ".app-dock-shell") return dock
+      const match = /^\[data-a4-view="([^"]+)"\]$/.exec(selector)
+      return match ? views.find((view) => view.dataset.a4View === match[1]) || null : null
+    },
+    querySelectorAll(selector) {
+      if (selector === "[data-a4-view]") return views
+      if (selector === "[data-a4-route]") return links
+      return []
+    },
+    addEventListener(type, listener) { documentListeners.set(type, listener) },
+  }
+  const window = {
+    document,
+    URLSearchParams,
+    location,
+    history: {
+      pushState(state, unused, href) { historyCalls.push(["push", state, href]) },
+      replaceState(state, unused, href) { historyCalls.push(["replace", state, href]) },
+    },
+    matchMedia: () => ({ matches: reducedMotion }),
+    addEventListener(type, listener) { windowListeners.set(type, listener) },
+    setTimeout,
+    clearTimeout,
+    requestAnimationFrame(callback) { callback() },
+    scrollY: 0,
+    scrollTo(options) { scrollCalls.push(options) },
+  }
+  window.window = window
+  const sandbox = { window, document, URL, URLSearchParams, setTimeout, clearTimeout }
+  vm.createContext(sandbox)
+  vm.runInContext(code, sandbox)
+  const A4Router = window.A4Router.createRouter({
+    windowRef: window,
+    documentRef: document,
+    exitMs: 4,
+    enterMs: 4,
+  })
+  return {
+    A4Router,
+    body,
+    dock,
+    documentListeners,
+    historyCalls,
+    links,
+    location,
+    scrollCalls,
+    views,
+    window,
+    windowListeners,
+  }
+}
+
+describe("A4Router persistent application shell", () => {
+  it("normalizes route names and existing clean URLs", () => {
+    const { A4Router } = loadRouter()
+
+    assert.equal(A4Router.resolveView("study"), "study")
+    assert.equal(A4Router.resolveView("./records.html"), "records")
+    assert.equal(A4Router.resolveView("https://example.test/settings.html?from=records"), "settings")
+    assert.equal(A4Router.resolveView("./unknown.html"), "study")
+    assert.equal(A4Router.hrefForView("records"), "./records.html")
+  })
+
+  it("starts from a compatibility view query and mounts exactly one view", () => {
+    const harness = loadRouter({ pathname: "/index.html", search: "?view=settings" })
+    const entered = []
+    harness.A4Router.register("settings", { enter: (context) => entered.push(context) })
+
+    assert.equal(harness.A4Router.start(), true)
+    assert.equal(harness.A4Router.getCurrentView(), "settings")
+    assert.deepEqual(harness.views.map((view) => view.hidden), [true, true, false])
+    assert.equal(harness.body.classList.contains("settings-page"), true)
+    assert.equal(harness.dock.dataset.activeView, "settings")
+    assert.equal(entered.length, 1)
+    assert.equal(entered[0].initial, true)
+    assert.equal(harness.historyCalls.length, 1)
+    assert.equal(harness.historyCalls[0][0], "replace")
+    assert.equal(harness.historyCalls[0][1].a4View, "settings")
+    assert.equal(harness.historyCalls[0][2], "./settings.html")
+  })
+
+  it("runs leave and enter lifecycles while rejecting duplicate navigation", async () => {
+    const harness = loadRouter()
+    const events = []
+    harness.A4Router.register("study", { leave: ({ to }) => events.push(`leave:${to}`) })
+    harness.A4Router.register("records", { enter: ({ from }) => events.push(`enter:${from}`) })
+    harness.A4Router.start()
+
+    assert.equal(harness.A4Router.navigate("records", { exitMs: 4, enterMs: 4 }), true)
+    assert.equal(harness.A4Router.navigate("settings"), false)
+    assert.deepEqual(events, ["leave:records"])
+
+    await new Promise((resolve) => setTimeout(resolve, 14))
+    assert.equal(harness.A4Router.getCurrentView(), "records")
+    assert.deepEqual(events, ["leave:records", "enter:study"])
+    const historyCall = harness.historyCalls.at(-1)
+    assert.equal(historyCall[0], "push")
+    assert.equal(historyCall[1].a4View, "records")
+    assert.equal(historyCall[2], "./records.html")
+  })
+
+  it("uses popstate without adding a second history entry", async () => {
+    const harness = loadRouter()
+    harness.A4Router.start()
+    harness.location.pathname = "/records.html"
+    harness.location.search = ""
+
+    harness.windowListeners.get("popstate")()
+    await new Promise((resolve) => setTimeout(resolve, 16))
+
+    assert.equal(harness.A4Router.getCurrentView(), "records")
+    assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 0)
+  })
+
+  it("switches immediately when reduced motion is requested", () => {
+    const harness = loadRouter({ reducedMotion: true })
+    harness.A4Router.start()
+
+    assert.equal(harness.A4Router.navigate("settings"), true)
+    assert.equal(harness.A4Router.getCurrentView(), "settings")
+    assert.equal(harness.views[2].hidden, false)
+    assert.equal(harness.views[2].classList.contains("a4-view-entering"), false)
+  })
+})
