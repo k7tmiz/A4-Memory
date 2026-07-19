@@ -167,6 +167,15 @@ describe("A4Common core utilities", () => {
     assert.equal(A4Common.normalizeThemeMode("invalid"), "auto")
   })
 
+  it("normalizes the supported visual palettes without reviving removed options", () => {
+    assert.equal(typeof A4Common.normalizeThemePalette, "function")
+    assert.equal(A4Common.normalizeThemePalette("classic"), "classic")
+    assert.equal(A4Common.normalizeThemePalette("paper"), "paper")
+    assert.equal(A4Common.normalizeThemePalette("ocean"), "ocean")
+    assert.equal(A4Common.normalizeThemePalette("plum"), "classic")
+    assert.equal(A4Common.normalizeThemePalette("unknown"), "classic")
+  })
+
   it("round-trips offline TTS preferences through serialized state", () => {
     const preferences = normalizeTtsPreferences({
       ttsMode: " OFFLINE ",

@@ -7,6 +7,7 @@ const DIST = 'dist';
 const FILES = [
   'index.html',
   'records.html',
+  'settings.html',
   'manifest.webmanifest',
 ];
 

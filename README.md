@@ -24,8 +24,8 @@ Demo：https://k7tmiz.com/words
 - 学习记录：轮次视图、状态视图、导出 CSV/PDF、生成复习轮；桌面端和 Android 端会调用系统打印/保存为 PDF，Android JSON/CSV 导出会保存到下载目录
 - 词书：内置 CET4 / CET6 / 西班牙语示例，支持 TXT/CSV/JSON 导入、JSON 导出和 GitHub 在线导入
 - 查词：本地优先、联网补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充
-- 发音：Web 端使用 SpeechSynthesis；Android Tauri 端通过原生 TextToSpeech 桥接发音，支持 en/es/ja/ko/pt/fr/de/it/eo；在线模式支持 Microsoft Edge / Google 翻译，浏览器直连优先，未及时开始播放时尝试同源代理、另一在线源、已安装离线语音和系统语音；桌面端和 Android 应用可在设置页按需下载英语/西语离线语音包（Sherpa-ONNX），完全本地推理
-- 外观：释义显示/隐藏、沉浸模式、auto/light/dark 主题
+- 发音：Web 端使用 SpeechSynthesis；Android Tauri 端通过原生 TextToSpeech 桥接发音，支持 en/es/ja/ko/pt/fr/de/it/eo；在线模式支持 Microsoft Edge / Google 翻译，浏览器直连优先，未及时开始播放时尝试同源代理、另一在线源、已安装离线语音和系统语音；设置页始终展示离线语音包管理，桌面端和 Android 应用可按需下载英语/西语模型（Sherpa-ONNX），Web 端会明确提示平台限制
+- 外观：学习、记录、设置共用无顶栏页面壳层与悬浮底栏；桌面首页以中央 A4、左侧词书/工具和右侧进度组成工作区，手机首页使用紧凑词书状态与纸面快捷操作，设置为独立页面；支持释义显示/隐藏、沉浸模式、auto/light/dark 主题，以及经典、纸张绿、海蓝三套配色
 - 备份：完整 JSON 导入/导出
 - AI 生成词书：OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
 - 版本更新检测：自动检测 GitHub Release 新版本，桌面端会打开对应平台安装包，Android 端打开 Release 页面并提示点击 APK 文件
@@ -46,15 +46,23 @@ Demo：https://k7tmiz.com/words
 A4-Memory/
 ├── index.html              # 首页
 ├── records.html            # 学习记录页
-├── css/style.css          # 样式
+├── settings.html           # 独立设置页
+├── css/
+│   ├── style.css          # 基础样式与组件
+│   ├── theme.css          # 主题与配色变量
+│   └── shell.css          # 响应式页面壳层与交互动画
 ├── data/words.js          # 内置词书
 ├── js/
 │   ├── core/
 │   │   ├── common.js     # 跨页共享业务逻辑
 │   │   └── sanitize.js   # XSS 防护（HTML/属性转义）
+│   ├── ui/
+│   │   ├── layers.js     # 共享弹层栈、滚动锁与焦点管理
+│   │   └── motion.js     # 页面导航与进入/退出动效
 │   ├── app.js             # 首页控制器
 │   ├── lookup.js          # 查词控制器
 │   ├── records.js         # 记录页控制器
+│   ├── settings-page.js   # 独立设置页入口
 │   ├── settings.js        # 设置控制器
 │   ├── speech.js          # 语音合成
 │   ├── storage.js         # localStorage 封装
@@ -130,7 +138,7 @@ npm run build
 ### 主状态摘要
 
 - 轮次相关：`rounds`, `currentRoundId`, `pendingReviewRoundId`, `pendingGenerateStatusKind`
-- UI：`showMeaning`, `immersiveMode`, `themeMode`, `darkMode`
+- UI：`showMeaning`, `immersiveMode`, `themeMode`, `themePalette`, `darkMode`
 - 学习设置：`roundCap`, `dailyGoalRounds`, `dailyGoalWords`
 - 复习设置：`reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
 - 发音设置：`pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`, `onlineTtsEnabled`, `onlineTtsProvider`, `ttsMode`, `offlineVoiceByLang`

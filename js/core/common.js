@@ -221,6 +221,12 @@
     return "auto"
   }
 
+  function normalizeThemePalette(value) {
+    const v = String(value || "").trim().toLowerCase()
+    if (v === "paper" || v === "ocean") return v
+    return "classic"
+  }
+
   function normalizeRoundCap(value) {
     const n = Math.round(Number(value) || 0)
     return clamp(n || 30, 20, 30)
@@ -355,6 +361,7 @@
   // ── Defaults ────────────────────────────────────────────────────────────────
 
   const DEFAULTS = {
+    themePalette: "classic",
     reviewSystemEnabled: true,
     reviewAutoCloseModal: true,
     continuousStudyMode: false,
@@ -458,6 +465,10 @@
 
   function setModalVisible(modal, visible) {
     if (!modal) return
+    if (window.A4UI?.setLayerVisible) {
+      window.A4UI.setLayerVisible(modal, visible)
+      return
+    }
     if (visible) {
       const prevFocus = document.activeElement
       modal.dataset.prevFocus = prevFocus ? prevFocus.id || "" : ""
@@ -675,6 +686,7 @@
     getRoundItemsByPage,
     normalizeAiProvider,
     normalizeThemeMode,
+    normalizeThemePalette,
     normalizeRoundCap,
     normalizeAccent,
     normalizeVoiceMode,

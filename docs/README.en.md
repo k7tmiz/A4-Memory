@@ -23,8 +23,8 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Records: round view, status view, CSV/PDF export, generate review rounds; desktop and Android builds invoke the system print / save-as-PDF flow, and Android JSON/CSV exports are saved to Downloads
 - Wordbooks: built-in CET4 / CET6 / Spanish samples, TXT/CSV/JSON import, JSON export, GitHub online import
 - Lookup: local-first, online supplement (MyMemory + dictionaryapi.dev), Spanish conjugation, AI supplement
-- Pronunciation: SpeechSynthesis on Web; Android Tauri uses the native TextToSpeech bridge for en/es/ja/ko/pt/fr/de/it/eo; online mode supports Microsoft Edge and Google Translate, preferring direct browser playback and falling back to the same-provider proxy, the other online provider, an installed offline voice, and then the system voice; desktop and Android builds can download English/Spanish offline voice packs (Sherpa-ONNX) from Settings for fully local synthesis
-- Appearance: meaning toggle, immersive mode, auto/light/dark theme
+- Pronunciation: SpeechSynthesis on Web; Android Tauri uses the native TextToSpeech bridge for en/es/ja/ko/pt/fr/de/it/eo; online mode supports Microsoft Edge and Google Translate, preferring direct browser playback and falling back to the same-provider proxy, the other online provider, an installed offline voice, and then the system voice; Settings always exposes offline voice management, desktop and Android builds can download English/Spanish Sherpa-ONNX packs, and Web clearly reports the platform limitation
+- Appearance: Study, Records, and Settings share a headerless shell and floating dock; the desktop workspace places the A4 sheet in the center with wordbook/tools on the left and progress on the right, while phones use a compact wordbook status and paper actions; Settings is a dedicated page, with meaning toggle, immersive mode, auto/light/dark theme, and Classic, Paper Green, and Ocean palettes
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
 - Version update check: auto-detects new GitHub Releases, opens the platform-specific desktop installer, and opens the Release page on Android with the APK filename highlighted
@@ -45,15 +45,23 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 A4-Memory/
 ├── index.html              # Home page
 ├── records.html            # Learning records page
-├── css/style.css          # Styles
+├── settings.html           # Dedicated Settings page
+├── css/
+│   ├── style.css          # Base and component styles
+│   ├── theme.css          # Theme and palette tokens
+│   └── shell.css          # Responsive page shell and motion
 ├── data/words.js          # Built-in wordbooks
 ├── js/
 │   ├── core/
 │   │   ├── common.js      # Cross-page shared business logic
 │   │   └── sanitize.js    # XSS protection (HTML/attribute escaping)
+│   ├── ui/
+│   │   ├── layers.js      # Shared layer stack, scroll lock, and focus management
+│   │   └── motion.js      # Page navigation and enter/exit motion
 │   ├── app.js             # Home page controller
 │   ├── lookup.js          # Lookup controller
 │   ├── records.js         # Records page controller
+│   ├── settings-page.js   # Dedicated Settings page entry
 │   ├── settings.js        # Settings controller
 │   ├── speech.js          # Speech synthesis
 │   ├── storage.js         # localStorage wrapper
@@ -129,7 +137,7 @@ Open: http://localhost:8080/ or http://localhost:5173/
 ### Main state summary
 
 - Rounds: `rounds`, `currentRoundId`, `pendingReviewRoundId`, `pendingGenerateStatusKind`
-- UI: `showMeaning`, `immersiveMode`, `themeMode`, `darkMode`
+- UI: `showMeaning`, `immersiveMode`, `themeMode`, `themePalette`, `darkMode`
 - Learning: `roundCap`, `dailyGoalRounds`, `dailyGoalWords`
 - Review: `reviewSystemEnabled`, `reviewIntervals`, `continuousStudyMode`, `reviewCardFlipEnabled`
 - Pronunciation: `pronunciationEnabled`, `pronunciationAccent`, `pronunciationLang`, `voiceMode`, `voiceURI`, `onlineTtsEnabled`, `onlineTtsProvider`, `ttsMode`, `offlineVoiceByLang`

@@ -216,6 +216,46 @@ describe("A4Settings imported state normalization", () => {
 
     assert.equal(state.selectedWordbookId, "cet4")
   })
+
+  it("preserves supported palettes and falls back removed palettes to classic", () => {
+    const settings = loadSettingsHelpers()
+    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "paper" }).themePalette, "paper")
+    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "ocean" }).themePalette, "ocean")
+    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "plum" }).themePalette, "classic")
+  })
+})
+
+describe("A4Settings visual palettes", () => {
+  it("offers only Classic, Paper Green, and Ocean as accessible palette choices", () => {
+    assert.match(settingsCode, /id="themePaletteGroup"[^>]*role="radiogroup"/)
+    assert.match(settingsCode, /data-theme-palette="classic"[^>]*>[^<]*经典/s)
+    assert.match(settingsCode, /data-theme-palette="paper"[^>]*>[^<]*纸张绿/s)
+    assert.match(settingsCode, /data-theme-palette="ocean"[^>]*>[^<]*海蓝/s)
+    assert.doesNotMatch(settingsCode, /data-theme-palette="plum"/)
+  })
+
+  it("defines light and dark tokens for the two optional palettes", () => {
+    const themeCode = fs.readFileSync(path.join(ROOT, "css", "theme.css"), "utf8")
+    assert.match(themeCode, /body\.theme-palette-paper\s*\{/)
+    assert.match(themeCode, /body\.theme-dark\.theme-palette-paper\s*\{/)
+    assert.match(themeCode, /body\.theme-palette-ocean\s*\{/)
+    assert.match(themeCode, /body\.theme-dark\.theme-palette-ocean\s*\{/)
+    assert.doesNotMatch(themeCode, /theme-palette-plum/)
+  })
+})
+
+describe("A4Settings offline voice manager visibility", () => {
+  it("keeps offline models manageable for every speech mode", () => {
+    assert.match(settingsCode, /<details class="settings-accordion-card settings-accordion-wide" id="offlineTtsCard" open>/)
+    assert.match(settingsCode, /class="form-row offline-tts-section" id="offlineTtsSection"/)
+    assert.doesNotMatch(settingsCode, /offlineTtsSection\.classList\.toggle\("hidden",\s*ttsMode !== "offline"\)/)
+    assert.match(settingsCode, /dom\.offlineTtsSection\.classList\.remove\("hidden"\)/)
+    assert.match(settingsCode, /renderOfflineVoiceList\(\)/)
+  })
+
+  it("explains why models remain relevant while online speech is selected", () => {
+    assert.match(settingsCode, /在线发音不可用时，会按已安装离线语音包.*系统语音兜底/)
+  })
 })
 
 describe("A4Settings AI provider changes", () => {
@@ -305,7 +345,7 @@ describe("A4Settings responsive category navigation", () => {
     assert.match(account, /<section class="panel account-panel" id="accountPanel">/)
     assert.doesNotMatch(account, /settings-accordion-card/)
     assertAccordionGroups(learning, ["外观与目标", "复习节奏", "学习体验"], ["外观与目标"])
-    assertAccordionGroups(pronunciation, ["发音方式", "离线语音包", "系统语音"], ["发音方式"])
+    assertAccordionGroups(pronunciation, ["发音方式", "离线语音包", "系统语音"], ["发音方式", "离线语音包"])
     assertAccordionGroups(ai, ["模型配置", "生成参数"], ["模型配置"])
     assertAccordionGroups(more, ["联网补充", "数据管理", "版本信息"], ["联网补充"])
 

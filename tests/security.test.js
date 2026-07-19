@@ -16,6 +16,7 @@ describe("network endpoint security policy", () => {
   it("allows every fixed origin used by the public frontend", () => {
     const indexCsp = readHtmlCsp("index.html")
     const recordsCsp = readHtmlCsp("records.html")
+    const settingsCsp = readHtmlCsp("settings.html")
     const tauriConfig = JSON.parse(
       fs.readFileSync(path.join(ROOT, "src-tauri", "tauri.conf.json"), "utf8")
     )
@@ -29,11 +30,13 @@ describe("network endpoint security policy", () => {
     for (const origin of sharedOrigins) {
       assert.match(indexCsp, new RegExp(origin.replaceAll(".", "\\.")))
       assert.match(recordsCsp, new RegExp(origin.replaceAll(".", "\\.")))
+      assert.match(settingsCsp, new RegExp(origin.replaceAll(".", "\\.")))
       assert.match(tauriCsp, new RegExp(origin.replaceAll(".", "\\.")))
     }
 
     const rawGithub = "https://raw.githubusercontent.com"
     assert.match(indexCsp, new RegExp(rawGithub.replaceAll(".", "\\.")))
+    assert.match(settingsCsp, new RegExp(rawGithub.replaceAll(".", "\\.")))
     assert.match(tauriCsp, new RegExp(rawGithub.replaceAll(".", "\\.")))
   })
 })

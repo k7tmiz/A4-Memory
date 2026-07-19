@@ -492,8 +492,9 @@ describe("A4Settings TTS helpers", () => {
     assert.equal(created.length, 3)
   })
 
-  it("uses a compact full-width offline voice list with inline errors", () => {
-    assert.match(settingsCode, /class="form-row offline-tts-section hidden" id="offlineTtsSection"/)
+  it("uses an always-visible compact full-width offline voice list with inline errors", () => {
+    assert.match(settingsCode, /class="form-row offline-tts-section" id="offlineTtsSection"/)
+    assert.doesNotMatch(settingsCode, /class="form-row offline-tts-section hidden"/)
     assert.match(settingsCode, /id="offlineTtsStatus"[^>]*role="status"[^>]*aria-live="polite"/)
     assert.match(settingsCode, /row\.className = "offline-voice-row"/)
     assert.match(settingsCode, /head\.className = "offline-voice-head"/)
