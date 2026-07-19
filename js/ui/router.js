@@ -83,7 +83,7 @@
       if (!body) return
       for (const config of Object.values(VIEW_CONFIG)) body.classList?.remove?.(config.bodyClass)
       body.classList?.add?.(VIEW_CONFIG[view].bodyClass)
-      if (body.dataset) body.dataset.a4View = view
+      if (body.dataset) body.dataset.a4CurrentView = view
       documentRef.title = VIEW_CONFIG[view].title
     }
 

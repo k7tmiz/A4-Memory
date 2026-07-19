@@ -249,6 +249,7 @@ function scheduleAnnouncementCheck(delayMs = 0) {
 }
 
 function openSettingsModal() {
+  if (window.A4Router?.navigate?.("settings") === true) return
   const href = "./settings.html?from=study"
   if (window.A4Motion?.navigate?.(href) === true) return
   window.location.assign(href)
@@ -2232,7 +2233,7 @@ function newRound() {
   startNextRound()
 }
 
-function restore() {
+function restore({ showStartupPrompts = false } = {}) {
   const saved = loadState()
   if (!saved) {
     appState.customWordbooks = []
@@ -2242,11 +2243,13 @@ function restore() {
     updateImmersiveToggle()
     applyTheme()
     persist()
-    try {
-      const seen = localStorage.getItem(INTRO_SEEN_KEY)
-      if (!seen) requestAnimationFrame(() => openIntroModal())
-    } catch { /* ignore */ }
-    scheduleAnnouncementCheck(300)
+    if (showStartupPrompts) {
+      try {
+        const seen = localStorage.getItem(INTRO_SEEN_KEY)
+        if (!seen) requestAnimationFrame(() => openIntroModal())
+      } catch { /* ignore */ }
+      scheduleAnnouncementCheck(300)
+    }
     return
   }
   if (typeof saved.meaningVisible === "boolean") appState.showMeaning = saved.meaningVisible
@@ -2407,11 +2410,13 @@ function restore() {
       requestAnimationFrame(() => generateStatusRound(kind))
     }
     if (pendingOpenSettings) openSettingsModal()
-    try {
-      const seen = localStorage.getItem(INTRO_SEEN_KEY)
-      if (!seen) requestAnimationFrame(() => openIntroModal())
-    } catch { /* ignore */ }
-    scheduleAnnouncementCheck(300)
+    if (showStartupPrompts) {
+      try {
+        const seen = localStorage.getItem(INTRO_SEEN_KEY)
+        if (!seen) requestAnimationFrame(() => openIntroModal())
+      } catch { /* ignore */ }
+      scheduleAnnouncementCheck(300)
+    }
     return
   }
 
@@ -2449,7 +2454,7 @@ function restore() {
   updateBadge()
   updateHint()
   persist()
-  scheduleAnnouncementCheck(300)
+  if (showStartupPrompts) scheduleAnnouncementCheck(300)
 }
 
 function buildAllRoundsWordKeySet({ excludeRoundId } = {}) {
@@ -3315,6 +3320,7 @@ function isEditingTarget(target) {
 
 window.addEventListener("keydown", (e) => {
   if (e.defaultPrevented) return
+  if (window.A4Router?.getCurrentView?.() && window.A4Router.getCurrentView() !== "study") return
   if (e.metaKey || e.ctrlKey || e.altKey) return
   if (isAnyModalOpen()) return
   if (isEditingTarget(e.target)) return
@@ -3373,10 +3379,22 @@ window.addEventListener("a4-cloud-auth-changed", (e) => {
 updateMeaningToggle()
 updateImmersiveToggle()
 applyTheme()
-restore()
 
-updateBadge()
-updateHint()
+function enterStudyView({ initial = false } = {}) {
+  restore({ showStartupPrompts: initial })
+  updateBadge()
+  updateHint()
+}
+
+const studyRouteRegistered = window.A4Router?.register?.("study", {
+  enter: ({ initial }) => enterStudyView({ initial }),
+  leave: () => {
+    persistNow()
+    setDesktopToolsVisible(false)
+    setMobileMoreVisible(false)
+  },
+})
+if (!studyRouteRegistered) enterStudyView({ initial: true })
 
 dom.roundFullBackdrop.addEventListener("click", () => cancelRoundFullModal())
 dom.closeRoundFullBtn.addEventListener("click", () => cancelRoundFullModal())

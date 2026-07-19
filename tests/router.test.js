@@ -147,6 +147,8 @@ describe("A4Router persistent application shell", () => {
     assert.equal(harness.A4Router.getCurrentView(), "settings")
     assert.deepEqual(harness.views.map((view) => view.hidden), [true, true, false])
     assert.equal(harness.body.classList.contains("settings-page"), true)
+    assert.equal(harness.body.dataset.a4CurrentView, "settings")
+    assert.equal(harness.body.dataset.a4View, undefined)
     assert.equal(harness.dock.dataset.activeView, "settings")
     assert.equal(entered.length, 1)
     assert.equal(entered[0].initial, true)

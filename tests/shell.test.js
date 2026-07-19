@@ -57,6 +57,8 @@ describe("responsive application shell", () => {
 
   it("mounts Study, Records, and Settings inside one route stage", () => {
     assert.match(indexMarkup, /class="app-view-stage"[^>]*id="appViewStage"/)
+    assert.match(indexMarkup, /<body class="home-page" data-a4-current-view="study">/)
+    assert.doesNotMatch(indexMarkup, /<body[^>]*data-a4-view=/)
     for (const view of ["study", "records", "settings"]) {
       assert.match(indexMarkup, new RegExp(`data-a4-view="${view}"`))
     }
@@ -113,6 +115,17 @@ describe("responsive application shell", () => {
     assert.match(indexMarkup, /ui\/layers\.js[^]*ui\/motion\.js[^]*ui\/router\.js[^]*app\.js[^]*records\.js[^]*settings-page\.js/)
     assert.match(indexMarkup, /href="\.\/records\.html"[^>]*data-a4-route="records"/)
     assert.match(indexMarkup, /href="\.\/index\.html"[^>]*data-a4-route="study"/)
+  })
+
+  it("refreshes each mounted controller through the shared router lifecycle", () => {
+    assert.match(appCode, /A4Router\?\.register\?\.\("study"/)
+    assert.match(recordsCode, /A4Router\?\.register\?\.\("records"/)
+    assert.match(settingsPageCode, /A4Router\?\.register\?\.\("settings"/)
+    assert.match(appCode, /A4Router\?\.navigate\?\.\("settings"\)/)
+    assert.match(recordsCode, /A4Router\?\.navigate\?\.\("study"\)/)
+    assert.match(recordsCode, /getElementById\("recordsLookupBtn"\)/)
+    assert.doesNotMatch(recordsCode, /window\.location\.href\s*=\s*"\.\/index\.html"/)
+    assert.doesNotMatch(settingsPageCode, /window\.location\.assign\(/)
   })
 
   it("softens settings and records content changes without animating reduced-motion users", () => {

@@ -10,6 +10,11 @@
     window.A4Storage?.saveState?.(state)
   }
 
+  function navigateToStudy() {
+    if (window.A4Router?.navigate?.("study") === true) return
+    window.location.assign("./index.html")
+  }
+
   const { downloadTextFile, showConfirmDialog } = window.A4Utils || {}
 
   const {
@@ -494,7 +499,7 @@
           const kind = g.id === "due" ? "due" : g.id
           const next = { ...state, rounds, pendingGenerateStatusKind: kind }
           saveState(next)
-          window.location.href = "./index.html"
+          navigateToStudy()
         })
         actions.appendChild(genBtn)
       }
@@ -814,7 +819,7 @@
     const viewStatusBtn = document.getElementById("viewStatusBtn")
     const roundsView = document.getElementById("rounds")
     const statusView = document.getElementById("statusView")
-    const lookupBtn = document.getElementById("lookupBtn")
+    const lookupBtn = document.getElementById("recordsLookupBtn")
     const clearBtn = document.getElementById("clearBtn")
 
     let state = normalizeState(loadState())
@@ -993,7 +998,7 @@
           if (!has) return
           const next = { ...state, rounds, currentRoundId: roundId, pendingReviewRoundId: roundId }
           saveState(next)
-          window.location.href = "./index.html"
+          navigateToStudy()
         },
         getRoundCap: (r) => normalizeRoundCap(r?.roundCap || state.roundCap),
       })
@@ -1031,18 +1036,20 @@
       recordsStats.replaceChildren(grid, detail)
     }
 
-    render()
-    renderStats()
-    checkAnnouncements()
+    const refresh = ({ checkUnread = false } = {}) => {
+      const next = normalizeState(loadState())
+      state = next
+      rounds = Array.isArray(next.rounds) ? next.rounds : []
+      applyTheme()
+      render()
+      renderStats()
+      if (checkUnread) checkAnnouncements()
+    }
 
     const STORAGE_KEY = window.A4Storage?.STORAGE_KEY || "a4-memory:v1"
     window.addEventListener("storage", (e) => {
       if (!e || e.key !== STORAGE_KEY) return
-      const next = normalizeState(loadState())
-      state = next
-      rounds = Array.isArray(next.rounds) ? next.rounds : []
-      render()
-      renderStats()
+      refresh()
     })
 
     window.addEventListener("a4-cloud-auth-changed", () => {
@@ -1085,7 +1092,11 @@
       renderStats()
     })
 
-    setView("rounds")
+    const recordsRouteRegistered = window.A4Router?.register?.("records", {
+      enter: () => refresh({ checkUnread: true }),
+      leave: () => clearPrintPages(),
+    })
+    if (!recordsRouteRegistered) refresh({ checkUnread: true })
   }
 
   main()

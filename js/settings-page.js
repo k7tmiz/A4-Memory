@@ -2,12 +2,16 @@
   const storage = window.A4Storage
   const settings = window.A4Settings
   const common = window.A4Common
-  const source = storage?.loadState?.()
-  const state = source && typeof source === "object"
-    ? source
-    : { version: 2, rounds: [], customWordbooks: [], aiConfig: {} }
-  const from = new window.URLSearchParams(window.location.search).get("from")
-  const returnHref = from === "records" ? "./records.html" : "./index.html"
+  let returnView = "study"
+
+  function loadSettingsState() {
+    const source = storage?.loadState?.()
+    return source && typeof source === "object"
+      ? source
+      : { version: 2, rounds: [], customWordbooks: [], aiConfig: {} }
+  }
+
+  let state = loadSettingsState()
 
   function getResolvedDarkMode() {
     const mode = settings?.normalizeThemeMode?.(state.themeMode) || "auto"
@@ -29,8 +33,9 @@
 
   function navigateBack() {
     persist()
-    if (window.A4Motion?.navigate?.(returnHref) === true) return
-    window.location.assign(returnHref)
+    const target = returnView === "records" ? "records" : "study"
+    if (window.A4Router?.navigate?.(target) === true) return
+    window.location.href = target === "records" ? "./records.html" : "./index.html"
   }
 
   function getWordbookLanguage() {
@@ -61,12 +66,23 @@
     onClose: navigateBack,
   })
 
-  if (controller) {
-    controller.open()
-  } else {
+  function enterSettingsView({ from } = {}) {
+    if (from === "study" || from === "records") returnView = from
+    state = loadSettingsState()
+    applyTheme()
+    if (controller) {
+      controller.open()
+      return
+    }
     const mount = document.getElementById("settingsPageMount")
     if (mount) mount.textContent = "设置模块加载失败，请刷新后重试。"
   }
+
+  const settingsRouteRegistered = window.A4Router?.register?.("settings", {
+    enter: enterSettingsView,
+    leave: persist,
+  })
+  if (!settingsRouteRegistered) enterSettingsView()
 
   window.addEventListener("pagehide", persist)
 })()
