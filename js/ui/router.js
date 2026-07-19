@@ -247,5 +247,11 @@
     })
   }
 
-  window.A4Router = createRouter()
+  const router = createRouter()
+  window.A4Router = router
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => router.start(), { once: true })
+  } else {
+    router.start()
+  }
 })()

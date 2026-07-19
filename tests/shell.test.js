@@ -22,9 +22,12 @@ const buildCode = fs.readFileSync(path.join(ROOT, "scripts", "build.mjs"), "utf8
 describe("responsive application shell", () => {
   it("keeps the three frequent destinations and Next Word in one shared dock", () => {
     assert.match(indexMarkup, /<nav class="app-dock-nav"[^>]*aria-label="主要导航"/)
-    assert.match(indexMarkup, /id="dockStudyNav"[^>]*aria-current="page"/)
-    assert.match(indexMarkup, /href="\.\/records\.html"[^>]*class="app-dock-item"/)
-    assert.match(indexMarkup, /href="\.\/settings\.html\?from=study"[^>]*class="app-dock-item"[^>]*id="dockSettingsNav"/)
+    assert.equal((indexMarkup.match(/class="app-dock-shell"/g) || []).length, 1)
+    assert.match(indexMarkup, /class="app-dock-indicator"[^>]*aria-hidden="true"/)
+    assert.match(indexMarkup, /id="dockStudyNav"[^>]*data-a4-route="study"/)
+    assert.match(indexMarkup, /href="\.\/records\.html"[^>]*data-a4-route="records"/)
+    assert.match(indexMarkup, /href="\.\/settings\.html"[^>]*data-a4-route="settings"/)
+    assert.match(indexMarkup, /id="dockSettingsNav"/)
     assert.match(indexMarkup, /id="dockNextBtn"[^>]*>[^]*下一个单词[^]*<\/button>/)
     assert.doesNotMatch(indexMarkup, /app-dock-shell[^>]*mobile-only/)
   })
@@ -34,7 +37,7 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /\.app-dock-nav\s*\{[^}]*flex:\s*1 1 auto/s)
     assert.match(shellStyle, /\.app-dock-item\s*\{[^}]*flex:\s*1 1 0/s)
     assert.match(shellStyle, /\.app-dock-item span\s*\{[^}]*max-width:\s*none[^}]*opacity:\s*1/s)
-    assert.match(shellStyle, /\.app-dock-shell\.is-secondary\s*\{[^}]*width:\s*min\(calc\(100vw - 24px\),\s*360px\)/s)
+    assert.doesNotMatch(shellStyle, /\.app-dock-shell\.is-secondary/)
   })
 
   it("moves lower-frequency study actions into one dismissible mobile sheet", () => {
@@ -52,28 +55,40 @@ describe("responsive application shell", () => {
     assert.match(appCode, /paperMeaningBtn\.setAttribute\("aria-pressed"/)
   })
 
-  it("gives the records page the same navigation shell with Records active", () => {
-    assert.match(recordsMarkup, /class="app-dock-item active"[^>]*aria-current="page"[^>]*>[^]*记录/)
-    assert.match(recordsMarkup, /href="\.\/settings\.html\?from=records"[^>]*class="app-dock-item"[^>]*id="dockRecordsSettingsNav"/)
+  it("mounts Study, Records, and Settings inside one route stage", () => {
+    assert.match(indexMarkup, /class="app-view-stage"[^>]*id="appViewStage"/)
+    for (const view of ["study", "records", "settings"]) {
+      assert.match(indexMarkup, new RegExp(`data-a4-view="${view}"`))
+    }
+    assert.match(indexMarkup, /data-a4-view="records"[^]*id="recordsLookupBtn"/)
+    assert.match(indexMarkup, /data-a4-view="settings"[^]*id="settingsPageMount"/)
   })
 
   it("routes every Settings entry to a standalone page instead of opening a modal", () => {
-    assert.match(indexMarkup, /id="dockSettingsNav"[^>]*data-a4-page-transition/)
-    assert.match(recordsMarkup, /id="dockRecordsSettingsNav"[^>]*data-a4-page-transition/)
+    assert.match(indexMarkup, /id="dockSettingsNav"/)
+    assert.match(indexMarkup, /data-a4-route="settings"/)
     assert.doesNotMatch(appCode, /createSettingsModalController\(/)
     assert.doesNotMatch(recordsCode, /createSettingsModalController\(/)
     assert.match(settingsCode, /document\.getElementById\("settingsPageMount"\)/)
   })
 
-  it("provides a dedicated Settings document with page navigation and build output", () => {
-    assert.match(settingsMarkup, /<body class="settings-page"/)
-    assert.match(settingsMarkup, /<main[^>]*id="settingsPageMount"/)
-    assert.match(settingsMarkup, /class="app-dock-item active"[^>]*aria-current="page"[^>]*>[^]*设置/)
-    assert.doesNotMatch(settingsMarkup, /app-dock-shell[^>]*mobile-only/)
-    assert.match(settingsMarkup, /js\/settings\.js[^>]*>[\s\S]*js\/settings-page\.js/)
+  it("keeps Records and Settings URLs as CSP-safe compatibility entrypoints", () => {
+    assert.match(recordsMarkup, /<body[^>]*data-a4-entry-view="records"/)
+    assert.match(settingsMarkup, /<body[^>]*data-a4-entry-view="settings"/)
+    assert.match(recordsMarkup, /<script src="\.\/js\/ui\/route-entry\.js(?:\?[^\"]*)?"/)
+    assert.match(settingsMarkup, /<script src="\.\/js\/ui\/route-entry\.js(?:\?[^\"]*)?"/)
+    assert.doesNotMatch(recordsMarkup, /app-dock-shell/)
+    assert.doesNotMatch(settingsMarkup, /app-dock-shell/)
+    assert.doesNotMatch(recordsMarkup, /<script(?![^>]*\bsrc=)[^>]*>/)
+    assert.doesNotMatch(settingsMarkup, /<script(?![^>]*\bsrc=)[^>]*>/)
     assert.match(settingsPageCode, /presentation:\s*"page"/)
-    assert.match(settingsPageCode, /from === "records"\s*\?\s*"\.\/records\.html"\s*:\s*"\.\/index\.html"/)
     assert.match(buildCode, /'settings\.html'/)
+  })
+
+  it("keeps every mounted control id unique", () => {
+    const ids = Array.from(indexMarkup.matchAll(/\sid="([^"]+)"/g), (match) => match[1])
+    const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index)
+    assert.deepEqual(duplicates, [])
   })
 
   it("loads the isolated shell stylesheet after the shared theme tokens", () => {
@@ -94,11 +109,10 @@ describe("responsive application shell", () => {
     assert.match(sharedStyle, /\.modal\.a4-layer-closing\s+\.modal-panel/)
   })
 
-  it("routes mobile Study and Records navigation through the shared motion controller", () => {
-    assert.match(indexMarkup, /href="\.\/records\.html"[^>]*data-a4-page-transition/)
-    assert.match(recordsMarkup, /href="\.\/index\.html"[^>]*data-a4-page-transition/)
-    assert.match(indexMarkup, /ui\/layers\.js[^]*ui\/motion\.js/)
-    assert.match(recordsMarkup, /ui\/layers\.js[^]*ui\/motion\.js/)
+  it("loads the router before all three route controllers", () => {
+    assert.match(indexMarkup, /ui\/layers\.js[^]*ui\/motion\.js[^]*ui\/router\.js[^]*app\.js[^]*records\.js[^]*settings-page\.js/)
+    assert.match(indexMarkup, /href="\.\/records\.html"[^>]*data-a4-route="records"/)
+    assert.match(indexMarkup, /href="\.\/index\.html"[^>]*data-a4-route="study"/)
   })
 
   it("softens settings and records content changes without animating reduced-motion users", () => {
@@ -121,9 +135,9 @@ describe("responsive application shell", () => {
   })
 
   it("renders Records and Settings as desktop page surfaces above the shared dock", () => {
-    assert.doesNotMatch(recordsMarkup, /<header class="app-header"/)
-    assert.match(recordsMarkup, /class="page-heading"/)
-    assert.match(recordsMarkup, /id="lookupBtn"[^>]*>查词<\/button>/)
+    assert.doesNotMatch(indexMarkup, /<header class="app-header"/)
+    assert.match(indexMarkup, /data-a4-view="records"[^]*class="page-heading"/)
+    assert.match(indexMarkup, /id="recordsLookupBtn"[^>]*>查词<\/button>/)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.records-page \.app\.records\s*\{[^}]*border-radius:\s*26px/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.settings-page \.settings-page-main\s*\{[^}]*padding-bottom:\s*96px/s)
   })

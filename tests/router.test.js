@@ -63,6 +63,7 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
   }
   const document = {
     body,
+    readyState: "loading",
     title: "A4 Memory",
     querySelector(selector) {
       if (selector === ".app-dock-shell") return dock
@@ -118,6 +119,15 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
 }
 
 describe("A4Router persistent application shell", () => {
+  it("starts the default router only after every deferred controller has loaded", () => {
+    const harness = loadRouter()
+    assert.equal(harness.window.A4Router.getCurrentView(), "")
+
+    harness.documentListeners.get("DOMContentLoaded")()
+
+    assert.equal(harness.window.A4Router.getCurrentView(), "study")
+  })
+
   it("normalizes route names and existing clean URLs", () => {
     const { A4Router } = loadRouter()
 

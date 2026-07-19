@@ -19,7 +19,9 @@
     <link rel="stylesheet" href="./css/theme.css?v=20260719-1" />
     <link rel="stylesheet" href="./css/shell.css?v=20260719-5" />
   </head>
-  <body class="home-page">
+  <body class="home-page" data-a4-view="study">
+    <div class="app-view-stage" id="appViewStage">
+      <section class="app-view is-active" data-a4-view="study" aria-hidden="false">
     <aside class="desktop-status-stack" aria-label="本轮学习进度">
       <section class="desktop-status-card">
         <div class="desktop-status-eyebrow">本轮进度</div>
@@ -33,7 +35,7 @@
       </section>
     </aside>
 
-    <main class="app">
+    <main class="app" data-a4-route-focus tabindex="-1">
       <section class="controls home-controls" aria-label="控制区">
         <div class="desktop-brand desktop-only">
           <span class="desktop-brand-mark" aria-hidden="true">A4</span>
@@ -51,7 +53,7 @@
             <button id="newRoundBtn" type="button">新建一轮</button>
             <button class="ghost" id="introBtn" type="button">用法介绍</button>
             <button class="ghost" id="lookupBtn" type="button">查词</button>
-            <a class="button-link" href="./records.html">学习记录</a>
+            <a class="button-link" href="./records.html" data-a4-route="records">学习记录</a>
           </div>
         </div>
         <div class="controls-row controls-row-wordbook immersive-hide">
@@ -114,16 +116,56 @@
         </div>
       </section>
     </main>
+      </section>
 
-    <div class="app-dock-shell" aria-label="学习快捷操作">
+      <section class="app-view" data-a4-view="records" aria-hidden="true" hidden>
+        <main class="app records" data-a4-route-focus tabindex="-1">
+          <div class="page-heading">
+            <h1>学习记录</h1>
+            <p>回看轮次、状态与待复习内容</p>
+          </div>
+          <section class="controls no-print records-controls-top" aria-label="视图与导出">
+            <div class="view-tabs" role="tablist" aria-label="记录视图">
+              <button class="ghost active" id="viewRoundsBtn" type="button" role="tab" aria-selected="true">
+                轮次视图
+              </button>
+              <button class="ghost" id="viewStatusBtn" type="button" role="tab" aria-selected="false">状态视图</button>
+            </div>
+            <div class="records-controls-actions">
+              <button class="ghost" id="recordsLookupBtn" type="button">查词</button>
+              <button class="primary" id="exportCsvBtn" type="button">导出 CSV</button>
+              <button id="printPdfBtn" type="button">导出 PDF</button>
+              <button class="ghost" id="clearBtn" type="button">清空记录</button>
+            </div>
+          </section>
+          <div class="records-stats no-print" id="recordsStats"></div>
+
+          <div class="empty hidden" id="emptyState">
+            <div class="empty-title">还没有学习记录</div>
+            <div class="empty-sub">回到背单词页面开始第一轮，记录会自动保存</div>
+            <a class="button-link" href="./index.html" data-a4-route="study">去背单词</a>
+          </div>
+
+          <section class="rounds" id="rounds"></section>
+          <section class="rounds hidden" id="statusView"></section>
+        </main>
+      </section>
+
+      <section class="app-view" data-a4-view="settings" aria-hidden="true" hidden>
+        <main class="settings-page-main" id="settingsPageMount" data-a4-route-focus tabindex="-1" aria-label="应用设置"></main>
+      </section>
+    </div>
+
+    <div class="app-dock-shell" data-active-view="study" aria-label="应用快捷操作">
       <nav class="app-dock-nav" aria-label="主要导航">
-        <a class="app-dock-item active" id="dockStudyNav" aria-current="page" href="./index.html">
+        <span class="app-dock-indicator" aria-hidden="true"></span>
+        <a class="app-dock-item active" id="dockStudyNav" data-a4-route="study" aria-current="page" href="./index.html">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5.5h13v10h-13z"></path><path d="M6.5 3.5h7"></path></svg><span>学习</span>
         </a>
-        <a href="./records.html" class="app-dock-item" data-a4-page-transition>
+        <a href="./records.html" class="app-dock-item" data-a4-route="records">
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.2"></circle><path d="M10 6.5V10l2.7 1.7"></path></svg><span>记录</span>
         </a>
-        <a href="./settings.html?from=study" class="app-dock-item" id="dockSettingsNav" data-a4-page-transition>
+        <a href="./settings.html" data-a4-route="settings" class="app-dock-item" id="dockSettingsNav">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5h13M3.5 10h13M3.5 15h13"></path><circle cx="7" cy="5" r="1.4"></circle><circle cx="13" cy="10" r="1.4"></circle><circle cx="8.5" cy="15" r="1.4"></circle></svg><span>设置</span>
         </a>
       </nav>
@@ -413,6 +455,7 @@ ability,n.,能力</pre>
     <script src="./js/core/common.js?v=20260719-1"></script>
     <script src="./js/ui/layers.js?v=20260719-3"></script>
     <script src="./js/ui/motion.js?v=20260719-3"></script>
+    <script src="./js/ui/router.js?v=20260719-1"></script>
     <script src="./js/core/sanitize.js?v=20260714-2"></script>
     <script src="./js/utils.js?v=20260719-3"></script>
     <script src="./js/storage.js"></script>
@@ -422,5 +465,7 @@ ability,n.,能力</pre>
     <script src="./js/settings.js?v=20260719-4"></script>
     <script src="./js/lookup.js"></script>
     <script src="./js/app.js?v=20260719-5"></script>
+    <script src="./js/records.js?v=20260719-5"></script>
+    <script src="./js/settings-page.js?v=20260719-2"></script>
   </body>
 </html>
