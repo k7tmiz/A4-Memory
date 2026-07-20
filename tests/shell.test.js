@@ -146,11 +146,18 @@ describe("responsive application shell", () => {
     assert.doesNotMatch(settingsPageCode, /window\.location\.assign\(/)
   })
 
-  it("softens settings and records content changes without animating reduced-motion users", () => {
+  it("uses directional Settings panel motion while preserving records animation and reduced-motion safety", () => {
     assert.match(shellStyle, /@keyframes a4-content-enter/)
-    assert.match(shellStyle, /settings-category-panel:not\(\[hidden\]\)[^}]*a4-content-enter/s)
     assert.match(shellStyle, /\.rounds:not\(\.hidden\)[^}]*a4-content-enter/s)
+    assert.match(shellStyle, /@keyframes settings-panel-enter-initial/)
+    assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-initial\s*\{[^}]*settings-panel-enter-initial/s)
+    assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-forward\s*\{[^}]*settings-panel-enter-forward/s)
+    assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-back\s*\{[^}]*settings-panel-enter-back/s)
+    assert.doesNotMatch(shellStyle, /body\.settings-page #settingsModal \.modal-header/)
+    assert.match(shellStyle, /body\.settings-page #settingsModal \.settings-category-tabs\s*\{[^}]*top:\s*0/s)
     assert.match(shellStyle, /prefers-reduced-motion[^]*animation-duration:\s*1ms/s)
+    assert.match(shellStyle, /prefers-reduced-motion[^]*\.settings-category-indicator\s*\{[^}]*transition:\s*none\s*!important/s)
+    assert.match(shellStyle, /prefers-reduced-motion[^]*\.settings-category-panel\.settings-panel-enter-forward[^}]*animation:\s*none\s*!important/s)
   })
 
   it("implements the approved no-header desktop A4 workspace", () => {

@@ -540,22 +540,23 @@ describe("A4Settings responsive category navigation", () => {
     assert.doesNotMatch(settingsCode, /insertBefore\(accountPanel,\s*modalBody\.firstElementChild\)/)
   })
 
-  it("uses a theme-aware segmented phone track and a two-column desktop layout", () => {
+  it("uses a theme-aware shared-indicator phone track and a two-column desktop layout", () => {
     assert.match(
       styleCode,
       /#settingsModal \.modal-panel\s*\{[^}]*width:\s*min\(94vw,\s*560px\)[^}]*max-width:\s*100%/s
     )
     assert.match(
       styleCode,
-      /#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*background:\s*var\(--card2\)/s
+      /#settingsModal \.settings-category-tabs\s*\{[^}]*position:\s*relative[^}]*isolation:\s*isolate[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*background:\s*var\(--card2\)/s
     )
-    assert.match(styleCode, /#settingsModal \.settings-category-tab\s*\{[^}]*white-space:\s*nowrap/s)
+    assert.match(styleCode, /#settingsModal \.settings-category-indicator\s*\{[^}]*--settings-indicator-width[^}]*--settings-indicator-height[^}]*--settings-indicator-x[^}]*--settings-indicator-y[^}]*transition:[^}]*transform\s+280ms[^}]*width\s+280ms[^}]*height\s+280ms/s)
+    assert.match(styleCode, /#settingsModal \.settings-category-tab\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1[^}]*white-space:\s*nowrap/s)
 
     const selectedRule = styleCode.match(
       /#settingsModal \.settings-category-tab\[aria-selected="true"\]\s*\{([^}]*)\}/s
     )
     assert.ok(selectedRule)
-    assert.match(selectedRule[1], /color-mix\([^;]*var\(--(?:card2|text|surfaceHover)\)/)
+    assert.match(selectedRule[1], /background:\s*transparent/)
     assert.doesNotMatch(selectedRule[1], /(?:#fff(?:fff)?|\bwhite\b)/i)
 
     const focusRule = styleCode.match(

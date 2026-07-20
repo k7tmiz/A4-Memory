@@ -1397,6 +1397,9 @@ body.theme-dark .paper {
 }
 
 #settingsModal .settings-category-tabs {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px;
@@ -1407,7 +1410,37 @@ body.theme-dark .paper {
   background: var(--card2);
 }
 
+#settingsModal .settings-category-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  width: var(--settings-indicator-width, 0px);
+  height: var(--settings-indicator-height, 0px);
+  border: 1px solid color-mix(in srgb, var(--text) 12%, var(--border2));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--text) 8%, var(--card2));
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(
+    var(--settings-indicator-x, 0px),
+    var(--settings-indicator-y, 0px),
+    0
+  );
+  transition:
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 120ms ease-out;
+}
+
+#settingsModal .settings-category-tabs.is-indicator-ready .settings-category-indicator {
+  opacity: 1;
+}
+
 #settingsModal .settings-category-tab {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   padding: 8px 3px;
   border-color: transparent;
@@ -1418,6 +1451,7 @@ body.theme-dark .paper {
   font-weight: 700;
   white-space: nowrap;
   box-shadow: none;
+  transition: color 180ms ease, transform 180ms ease;
 }
 
 #settingsModal .settings-category-tab:hover {
@@ -1426,8 +1460,8 @@ body.theme-dark .paper {
 }
 
 #settingsModal .settings-category-tab[aria-selected="true"] {
-  border-color: color-mix(in srgb, var(--text) 12%, var(--border2));
-  background: color-mix(in srgb, var(--text) 8%, var(--card2));
+  border-color: transparent;
+  background: transparent;
   color: var(--text);
 }
 

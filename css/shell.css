@@ -167,6 +167,39 @@
   }
 }
 
+@keyframes settings-panel-enter-initial {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes settings-panel-enter-forward {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes settings-panel-enter-back {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .word-item.word-enter {
   animation: a4-word-enter 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -217,9 +250,20 @@
   animation: a4-paper-page-back 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-#settingsModal .settings-category-panel:not([hidden]),
 body.records-page .rounds:not(.hidden) {
   animation: a4-content-enter 190ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+#settingsModal .settings-category-panel.settings-panel-enter-initial {
+  animation: settings-panel-enter-initial 160ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+#settingsModal .settings-category-panel.settings-panel-enter-forward {
+  animation: settings-panel-enter-forward 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#settingsModal .settings-category-panel.settings-panel-enter-back {
+  animation: settings-panel-enter-back 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .records-stats {
@@ -1257,14 +1301,10 @@ body.records-page .rounds:not(.hidden) {
     border-radius: 20px;
   }
 
-  body.settings-page #settingsModal .modal-header {
-    top: 0;
-  }
-
   body.settings-page #settingsModal .settings-category-tabs {
     position: sticky;
     z-index: 8;
-    top: 55px;
+    top: 0;
     background: color-mix(in srgb, var(--card2) 94%, transparent);
     backdrop-filter: blur(18px) saturate(145%);
     -webkit-backdrop-filter: blur(18px) saturate(145%);
@@ -1303,16 +1343,6 @@ body.settings-page #settingsModal .modal-panel {
   animation: none;
 }
 
-body.settings-page #settingsModal .modal-header {
-  position: sticky;
-  z-index: 10;
-  top: 0;
-  border-radius: inherit inherit 0 0;
-  background: color-mix(in srgb, var(--card) 94%, transparent);
-  backdrop-filter: blur(20px) saturate(145%);
-  -webkit-backdrop-filter: blur(20px) saturate(145%);
-}
-
 body.settings-page #settingsModal .settings-shell,
 body.settings-page #settingsModal .modal-body {
   overflow: visible;
@@ -1323,6 +1353,16 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  #settingsModal .settings-category-indicator {
+    transition: none !important;
+  }
+
+  #settingsModal .settings-category-panel.settings-panel-enter-initial,
+  #settingsModal .settings-category-panel.settings-panel-enter-forward,
+  #settingsModal .settings-category-panel.settings-panel-enter-back {
+    animation: none !important;
+  }
+
   *,
   *::before,
   *::after {
