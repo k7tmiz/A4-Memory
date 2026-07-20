@@ -490,15 +490,38 @@
     return { name, description, language, words, removedEmpty, removedDup }
   }
 
-  function installSettingsCategoryNavigation({ tabs, panels, scrollContainer } = {}) {
+  function installSettingsCategoryNavigation({ tabs, panels, scrollContainer, tablist, indicator } = {}) {
     const tabList = Array.from(tabs || [])
     const panelList = Array.from(panels || [])
     const panelById = new Map(panelList.map((panel) => [panel.id, panel]))
+    const motionClasses = [
+      "settings-panel-enter-initial",
+      "settings-panel-enter-forward",
+      "settings-panel-enter-back",
+    ]
     const navigationKeys = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"])
+    let activeIndex = -1
+
+    function refreshIndicator() {
+      const activeTab = tabList[activeIndex]
+      if (!activeTab || !indicator || !tablist) return
+      const width = activeTab.offsetWidth
+      const height = activeTab.offsetHeight
+      if (!width || !height) {
+        tablist.classList.remove("is-indicator-ready")
+        return
+      }
+      indicator.style.setProperty("--settings-indicator-x", `${activeTab.offsetLeft}px`)
+      indicator.style.setProperty("--settings-indicator-y", `${activeTab.offsetTop}px`)
+      indicator.style.setProperty("--settings-indicator-width", `${width}px`)
+      indicator.style.setProperty("--settings-indicator-height", `${height}px`)
+      tablist.classList.add("is-indicator-ready")
+    }
 
     function activate(tabOrIndex, { focus = false, resetScroll = true } = {}) {
       const index = typeof tabOrIndex === "number" ? tabOrIndex : tabList.indexOf(tabOrIndex)
       if (index < 0 || index >= tabList.length) return
+      const previousIndex = activeIndex
       const activeTab = tabList[index]
       const activePanel = panelById.get(activeTab.getAttribute("aria-controls"))
 
@@ -507,7 +530,21 @@
         tab.setAttribute("aria-selected", selected ? "true" : "false")
         tab.tabIndex = selected ? 0 : -1
       }
-      for (const panel of panelList) panel.hidden = panel !== activePanel
+      for (const panel of panelList) {
+        panel.classList.remove(...motionClasses)
+        panel.hidden = panel !== activePanel
+      }
+
+      activeIndex = index
+      if (activePanel && index !== previousIndex) {
+        const motionClass = previousIndex < 0
+          ? "settings-panel-enter-initial"
+          : index > previousIndex
+            ? "settings-panel-enter-forward"
+            : "settings-panel-enter-back"
+        activePanel.classList.add(motionClass)
+      }
+      refreshIndicator()
       if (resetScroll && scrollContainer) scrollContainer.scrollTop = 0
       if (focus) activeTab.focus()
     }
@@ -529,7 +566,7 @@
       })
     })
 
-    return { activate }
+    return { activate, refreshIndicator }
   }
 
   function configureSettingsPresentation(modal, presentation = "modal") {
@@ -564,6 +601,7 @@
         </div>
         <div class="settings-shell">
           <div class="settings-category-tabs" role="tablist" aria-label="设置类别">
+            <span class="settings-category-indicator" aria-hidden="true"></span>
             <button class="settings-category-tab" id="settingsTabAccount" type="button" role="tab" aria-controls="settingsPanelAccount" aria-selected="true" tabindex="0">账号</button>
             <button class="settings-category-tab" id="settingsTabLearning" type="button" role="tab" aria-controls="settingsPanelLearning" aria-selected="false" tabindex="-1">学习</button>
             <button class="settings-category-tab" id="settingsTabPronunciation" type="button" role="tab" aria-controls="settingsPanelPronunciation" aria-selected="false" tabindex="-1">发音</button>
@@ -1148,7 +1186,10 @@
       tabs: modal.querySelectorAll(".settings-category-tab"),
       panels: modal.querySelectorAll(".settings-category-panel"),
       scrollContainer: modalBody,
+      tablist: modal.querySelector(".settings-category-tabs"),
+      indicator: modal.querySelector(".settings-category-indicator"),
     })
+    window.addEventListener?.("resize", settingsNavigation.refreshIndicator)
 
     const dom = {
       modal,
@@ -2275,9 +2316,15 @@
       if (pagePresentation) {
         dom.modal.classList.remove("hidden", "a4-layer-closing")
         dom.modal.setAttribute("aria-hidden", "false")
-        return
+      } else {
+        setModalVisible(dom.modal, true)
       }
-      setModalVisible(dom.modal, true)
+      const refreshNavigationIndicator = () => settingsNavigation.refreshIndicator()
+      if (typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(refreshNavigationIndicator)
+      } else {
+        refreshNavigationIndicator()
+      }
     }
 
     function close() {

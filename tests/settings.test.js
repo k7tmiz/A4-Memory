@@ -40,11 +40,21 @@ function createInteractiveElement(id) {
   const attributes = new Map()
   const classes = new Set()
   const listeners = new Map()
+  const styleValues = new Map()
   return {
     id,
     hidden: false,
     tabIndex: -1,
     focusCount: 0,
+    dataset: {},
+    offsetLeft: 0,
+    offsetTop: 0,
+    offsetWidth: 0,
+    offsetHeight: 0,
+    style: {
+      setProperty(name, value) { styleValues.set(name, String(value)) },
+      getPropertyValue(name) { return styleValues.get(name) || "" },
+    },
     classList: {
       add(...names) { for (const name of names) classes.add(name) },
       remove(...names) { for (const name of names) classes.delete(name) },
@@ -354,6 +364,10 @@ describe("A4Settings responsive category navigation", () => {
       /<div class="settings-category-tabs" role="tablist" aria-label="设置类别">([\s\S]*?)<\/div>\s*<div class="modal-body">/
     )
     assert.ok(navigation)
+    assert.equal(
+      (navigation[1].match(/<span class="settings-category-indicator" aria-hidden="true"><\/span>/g) || []).length,
+      1
+    )
 
     const tabs = [...navigation[1].matchAll(
       /<button class="settings-category-tab" id="([^"]+)" type="button" role="tab" aria-controls="([^"]+)" aria-selected="(true|false)" tabindex="(-?\d+)">([^<]+)<\/button>/g
@@ -469,6 +483,53 @@ describe("A4Settings responsive category navigation", () => {
     press(4, "ArrowRight", 0)
     press(0, "ArrowLeft", 4)
     press(4, "Home", 0)
+  })
+
+  it("moves one shared indicator and leaves only the latest directional panel active", () => {
+    const settings = loadSettingsHelpers()
+    const tablist = createInteractiveElement("settingsTabs")
+    const indicator = createInteractiveElement("settingsIndicator")
+    const panelIds = ["account", "learning", "pronunciation", "ai", "more"]
+    const tabs = panelIds.map((panelId, index) => {
+      const tab = createInteractiveElement(`tab-${index}`)
+      tab.setAttribute("aria-controls", panelId)
+      tab.offsetLeft = 8 + index * 60
+      tab.offsetTop = 4
+      tab.offsetWidth = 56
+      tab.offsetHeight = 38
+      return tab
+    })
+    const panels = panelIds.map((id) => createInteractiveElement(id))
+    const navigation = settings.installSettingsCategoryNavigation({
+      tabs,
+      panels,
+      scrollContainer: { scrollTop: 0 },
+      tablist,
+      indicator,
+    })
+
+    navigation.activate(0)
+    assert.equal(panels[0].classList.contains("settings-panel-enter-initial"), true)
+
+    navigation.activate(3)
+    assert.equal(panels[3].classList.contains("settings-panel-enter-forward"), true)
+    navigation.activate(1)
+    assert.equal(panels[1].classList.contains("settings-panel-enter-back"), true)
+
+    tabs[4].offsetLeft = 4
+    tabs[4].offsetTop = 180
+    tabs[4].offsetWidth = 132
+    tabs[4].offsetHeight = 42
+    navigation.activate(4)
+    assert.equal(indicator.style.getPropertyValue("--settings-indicator-x"), "4px")
+    assert.equal(indicator.style.getPropertyValue("--settings-indicator-y"), "180px")
+    assert.equal(indicator.style.getPropertyValue("--settings-indicator-width"), "132px")
+    assert.equal(indicator.style.getPropertyValue("--settings-indicator-height"), "42px")
+    assert.equal(tablist.classList.contains("is-indicator-ready"), true)
+
+    navigation.activate(2)
+    assert.deepEqual(panels.map((panel) => panel.hidden), [true, true, false, true, true])
+    assert.deepEqual(tabs.map((tab) => tab.getAttribute("aria-selected")), ["false", "false", "true", "false", "false"])
   })
 
   it("resets to Account every time the dialog opens without runtime panel reordering", () => {
