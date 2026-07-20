@@ -179,4 +179,16 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.records-page \.app\.records\s*\{[^}]*border-radius:\s*26px/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.settings-page \.settings-page-main\s*\{[^}]*padding-bottom:\s*96px/s)
   })
+
+  it("cache-busts every changed shell asset", () => {
+    const revision = "20260720-1"
+    for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
+      assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${revision}"`))
+      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${revision}"`))
+    }
+    for (const script of ["js/core/common.js", "js/settings.js", "js/records.js", "js/settings-page.js"]) {
+      const escapedScript = script.replaceAll(".", "\\.")
+      assert.match(indexMarkup, new RegExp(`src="\\./${escapedScript}\\?v=${revision}"`))
+    }
+  })
 })
