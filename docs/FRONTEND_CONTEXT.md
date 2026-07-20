@@ -92,7 +92,7 @@ A4-Memory/
 
 ## 3. 页面与脚本加载顺序
 
-`index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。
+`index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。设置是一级 App Shell 路由，其页面呈现不使用弹窗式标题或返回头。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。
 
 App Shell 按 `css/style.css → css/theme.css → css/shell.css` 加载样式，基础组件、主题变量和响应式壳层保持单向覆盖关系。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
@@ -220,16 +220,16 @@ window.A4Speech = {
 ```
 
 ### `js/settings.js`
-设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，视图内需要确认或预览的操作仍使用标准弹层：
+设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层：
 ```javascript
 window.A4Settings = {
-  createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation, onClose }),
+  createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation }),
   // AI 词书生成、备份导入导出、normalize 函数等
 }
 ```
 
 ### `js/settings-page.js`
-设置视图控制器。它从 `A4Storage` 读取完整状态、应用主题、连接 `createSettingsModalController({ presentation: "page" })`，通过路由生命周期在每次进入时刷新状态、离开时持久化，并返回本次进入设置前的学习或记录视图。设置状态继续写入同一个 `a4-memory:v1`，AI API Key 仍只保留在当前页面内存中。
+设置视图控制器。它从 `A4Storage` 读取完整状态、应用主题、连接 `createSettingsModalController({ presentation: "page" })`，并通过路由生命周期在每次进入时刷新状态、离开时持久化；它只负责设置状态、主题和路由生命周期接线，不记录返回来源或发起导航。设置状态继续写入同一个 `a4-memory:v1`，AI API Key 仍只保留在当前页面内存中。
 
 ### `js/lookup.js`
 查词弹窗控制器，暴露 `window.A4Lookup`：
@@ -304,7 +304,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 
 ## 5. 设置界面结构
 
-设置作为 App Shell 中的独立路由视图实现。`js/settings-page.js` 负责状态、主题、路由生命周期和返回来源，`js/settings.js` 的 `createSettingsModalController` 负责复用设置表单与行为；`settings.html` 只保留外部深链兼容职责。
+设置作为 App Shell 中的独立路由视图实现。`js/settings-page.js` 负责设置状态、主题和路由生命周期接线，不记录返回来源或发起导航；`js/settings.js` 的 `createSettingsModalController` 负责复用设置表单与行为；`settings.html` 只保留外部深链兼容职责。
 
 ### 设置分区与响应式布局
 
