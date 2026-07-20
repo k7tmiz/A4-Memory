@@ -532,6 +532,22 @@
     return { activate }
   }
 
+  function configureSettingsPresentation(modal, presentation = "modal") {
+    if (!modal || presentation !== "page") return false
+
+    modal.classList.add("settings-page-root")
+    modal.classList.remove("modal")
+    modal.querySelector("#settingsBackdrop")?.setAttribute("hidden", "")
+
+    const panel = modal.querySelector(".modal-panel")
+    panel?.setAttribute("role", "region")
+    panel?.removeAttribute("aria-modal")
+    panel?.removeAttribute("aria-labelledby")
+    panel?.setAttribute("aria-label", "设置")
+    modal.querySelector(".modal-header")?.remove()
+    return true
+  }
+
   function buildSettingsModalDom() {
     const modal = document.createElement("div")
     modal.className = "modal hidden"
@@ -1111,7 +1127,6 @@
     onAfterChange,
     getWordbookLanguage,
     presentation = "modal",
-    onClose,
   }) {
     window.A4Speech?.installSpeech?.({
       onVoicesChanged: () => {
@@ -1126,16 +1141,7 @@
       document.body.appendChild(modal)
     }
 
-    const pagePresentation = presentation === "page"
-    if (pagePresentation) {
-      modal.classList.add("settings-page-root")
-      modal.classList.remove("modal")
-      modal.querySelector("#settingsBackdrop")?.setAttribute("hidden", "")
-      const panel = modal.querySelector(".modal-panel")
-      panel?.setAttribute("role", "region")
-      panel?.removeAttribute("aria-modal")
-      modal.querySelector("#closeSettingsBtn")?.replaceChildren("返回")
-    }
+    const pagePresentation = configureSettingsPresentation(modal, presentation)
 
     const modalBody = modal.querySelector(".modal-body")
     const settingsNavigation = installSettingsCategoryNavigation({
@@ -2275,10 +2281,7 @@
     }
 
     function close() {
-      if (pagePresentation) {
-        if (typeof onClose === "function") onClose()
-        return
-      }
+      if (pagePresentation) return
       setModalVisible(dom.modal, false)
     }
 
@@ -3429,6 +3432,7 @@
     listenForAccountStatsBreakpoint,
     shouldExpandAccountStatsByDefault,
     installSettingsCategoryNavigation,
+    configureSettingsPresentation,
     normalizeAiWordbook,
     buildChatCompletionsUrl,
     stripJsonFromText,

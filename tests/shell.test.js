@@ -84,6 +84,8 @@ describe("responsive application shell", () => {
     assert.doesNotMatch(recordsMarkup, /<script(?![^>]*\bsrc=)[^>]*>/)
     assert.doesNotMatch(settingsMarkup, /<script(?![^>]*\bsrc=)[^>]*>/)
     assert.match(settingsPageCode, /presentation:\s*"page"/)
+    assert.doesNotMatch(settingsPageCode, /returnView|navigateBack|onClose/)
+    assert.doesNotMatch(settingsPageCode, /A4Router\?\.navigate|window\.location\.href/)
     assert.match(buildCode, /'settings\.html'/)
   })
 
@@ -139,7 +141,6 @@ describe("responsive application shell", () => {
     assert.match(settingsPageCode, /A4Router\?\.register\?\.\("settings"/)
     assert.match(appCode, /A4Router\?\.navigate\?\.\("settings",\s*\{ queue:\s*true \}\)/)
     assert.match(recordsCode, /A4Router\?\.navigate\?\.\("study",\s*\{ queue:\s*true \}\)/)
-    assert.match(settingsPageCode, /A4Router\?\.navigate\?\.\(target,\s*\{ queue:\s*true \}\)/)
     assert.match(recordsCode, /getElementById\("recordsLookupBtn"\)/)
     assert.doesNotMatch(recordsCode, /window\.location\.href\s*=\s*"\.\/index\.html"/)
     assert.doesNotMatch(settingsPageCode, /window\.location\.assign\(/)

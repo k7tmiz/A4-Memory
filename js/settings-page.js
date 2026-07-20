@@ -2,7 +2,6 @@
   const storage = window.A4Storage
   const settings = window.A4Settings
   const common = window.A4Common
-  let returnView = "study"
 
   function loadSettingsState() {
     const source = storage?.loadState?.()
@@ -31,13 +30,6 @@
     storage?.saveState?.(state)
   }
 
-  function navigateBack() {
-    persist()
-    const target = returnView === "records" ? "records" : "study"
-    if (window.A4Router?.navigate?.(target, { queue: true }) === true) return
-    window.location.href = target === "records" ? "./records.html" : "./index.html"
-  }
-
   function getWordbookLanguage() {
     const selected = String(state.selectedWordbookId || "")
     const builtIn = common?.getWordbooksFromGlobal?.() || []
@@ -63,11 +55,9 @@
     onAfterChange: () => {},
     getWordbookLanguage,
     presentation: "page",
-    onClose: navigateBack,
   })
 
-  function enterSettingsView({ from } = {}) {
-    if (from === "study" || from === "records") returnView = from
+  function enterSettingsView() {
     state = loadSettingsState()
     applyTheme()
     if (controller) {

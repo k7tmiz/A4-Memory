@@ -46,18 +46,44 @@ function createInteractiveElement(id) {
     tabIndex: -1,
     focusCount: 0,
     classList: {
+      add(...names) { for (const name of names) classes.add(name) },
+      remove(...names) { for (const name of names) classes.delete(name) },
       contains(name) { return classes.has(name) },
       toggle(name, force) {
-        if (force) classes.add(name)
+        const enabled = force === undefined ? !classes.has(name) : !!force
+        if (enabled) classes.add(name)
         else classes.delete(name)
+        return enabled
       },
     },
     setAttribute(name, value) { attributes.set(name, String(value)) },
     getAttribute(name) { return attributes.get(name) ?? null },
+    removeAttribute(name) { attributes.delete(name) },
     addEventListener(type, listener) { listeners.set(type, listener) },
     dispatch(type, event = {}) { listeners.get(type)?.(event) },
     focus() { this.focusCount += 1 },
   }
+}
+
+function createSettingsPresentationFixture() {
+  const panel = createInteractiveElement("panel")
+  panel.setAttribute("role", "dialog")
+  panel.setAttribute("aria-modal", "true")
+  panel.setAttribute("aria-labelledby", "settingsTitle")
+  const backdrop = createInteractiveElement("settingsBackdrop")
+  const header = {
+    removed: false,
+    remove() { this.removed = true },
+  }
+  const nodes = new Map([
+    [".modal-panel", panel],
+    ["#settingsBackdrop", backdrop],
+    [".modal-header", header],
+  ])
+  const modal = createInteractiveElement("settingsModal")
+  modal.classList.add("modal")
+  modal.querySelector = (selector) => nodes.get(selector) || null
+  return { modal, panel, backdrop, header }
 }
 
 function getCategoryPanelMarkup(panelId, nextPanelId) {
@@ -300,6 +326,29 @@ describe("A4Settings AI provider changes", () => {
 })
 
 describe("A4Settings responsive category navigation", () => {
+  it("removes modal chrome and exposes named region semantics only for page presentation", () => {
+    const settings = loadSettingsHelpers()
+    const page = createSettingsPresentationFixture()
+
+    assert.equal(settings.configureSettingsPresentation(page.modal, "page"), true)
+    assert.equal(page.modal.classList.contains("settings-page-root"), true)
+    assert.equal(page.modal.classList.contains("modal"), false)
+    assert.equal(page.backdrop.getAttribute("hidden"), "")
+    assert.equal(page.panel.getAttribute("role"), "region")
+    assert.equal(page.panel.getAttribute("aria-modal"), null)
+    assert.equal(page.panel.getAttribute("aria-labelledby"), null)
+    assert.equal(page.panel.getAttribute("aria-label"), "设置")
+    assert.equal(page.header.removed, true)
+
+    const dialog = createSettingsPresentationFixture()
+    assert.equal(settings.configureSettingsPresentation(dialog.modal, "modal"), false)
+    assert.equal(dialog.modal.classList.contains("modal"), true)
+    assert.equal(dialog.panel.getAttribute("role"), "dialog")
+    assert.equal(dialog.panel.getAttribute("aria-modal"), "true")
+    assert.equal(dialog.panel.getAttribute("aria-labelledby"), "settingsTitle")
+    assert.equal(dialog.header.removed, false)
+  })
+
   it("renders five accessible top-level categories in the approved order", () => {
     const navigation = settingsCode.match(
       /<div class="settings-category-tabs" role="tablist" aria-label="设置类别">([\s\S]*?)<\/div>\s*<div class="modal-body">/
