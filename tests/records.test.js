@@ -80,14 +80,15 @@ describe("records CSV export", () => {
 describe("records summary cards", () => {
   it("computes the three frequent mobile metrics and the compact goal line", () => {
     const { computeRecordsSummary } = loadRecordsInternals()
-    const nowMs = Date.parse("2026-07-19T12:00:00.000Z")
+    const localTime = (day, hour, minute = 0) => new Date(2026, 6, day, hour, minute).toISOString()
+    const nowMs = new Date(2026, 6, 19, 12).getTime()
     const rounds = [
       {
-        startedAt: "2026-07-19T08:00:00.000Z",
-        finishedAt: "2026-07-19T09:00:00.000Z",
+        startedAt: localTime(19, 8),
+        finishedAt: localTime(19, 9),
         items: [
-          { word: { term: "memory" }, createdAt: "2026-07-19T08:10:00.000Z", nextReviewAt: "2026-07-19T10:00:00.000Z" },
-          { word: { term: "future" }, createdAt: "2026-07-19T08:20:00.000Z", nextReviewAt: "2026-07-20T10:00:00.000Z" },
+          { word: { term: "memory" }, createdAt: localTime(19, 8, 10), nextReviewAt: localTime(19, 10) },
+          { word: { term: "future" }, createdAt: localTime(19, 8, 20), nextReviewAt: localTime(20, 10) },
         ],
       },
     ]
