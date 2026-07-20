@@ -90,8 +90,9 @@
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
   }
 
-  function computeStudyStats(rounds) {
-    const todayKey = toLocalDateKey(new Date())
+  function computeStudyStats(rounds, referenceTime = new Date()) {
+    const referenceDate = new Date(referenceTime)
+    const todayKey = toLocalDateKey(referenceDate)
     const daySet = new Set()
     let totalWords = 0
     let todayWords = 0
@@ -114,7 +115,7 @@
 
     let streak = 0
     if (daySet.has(todayKey)) {
-      const cursor = new Date()
+      const cursor = new Date(referenceDate)
       while (true) {
         const key = toLocalDateKey(cursor)
         if (!daySet.has(key)) break

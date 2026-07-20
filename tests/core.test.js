@@ -102,14 +102,15 @@ describe("A4Common core utilities", () => {
   })
 
   it("computeStudyStats counts completed rounds and today words", () => {
-    const today = new Date().toISOString()
-    const yesterday = new Date(Date.now() - 86400000).toISOString()
+    const nowMs = Date.parse("2026-07-19T12:00:00.000Z")
+    const today = "2026-07-19T08:00:00.000Z"
+    const yesterday = "2026-07-18T08:00:00.000Z"
     const rounds = [
       { startedAt: today, finishedAt: today, items: [{ term: "a", createdAt: today }, { term: "b", createdAt: today }] },
       { startedAt: yesterday, finishedAt: yesterday, items: [{ term: "c", createdAt: yesterday }] },
       { startedAt: today, finishedAt: "", items: [{ term: "d", createdAt: today }] },
     ]
-    const stats = A4Common.computeStudyStats(rounds)
+    const stats = A4Common.computeStudyStats(rounds, nowMs)
     assert.equal(stats.totalWords, 4)
     assert.equal(stats.todayWords, 3)
     assert.equal(stats.completedRounds, 2)

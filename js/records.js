@@ -628,7 +628,7 @@
   function computeRecordsSummary({ rounds, state, nowMs = Date.now() }) {
     const list = Array.isArray(rounds) ? rounds : []
     const source = state && typeof state === "object" ? state : {}
-    const stats = computeStudyStats(list)
+    const stats = computeStudyStats(list, nowMs)
     const dueWords = source.reviewSystemEnabled === false
       ? 0
       : Array.from(buildLatestTermMap(list).values()).filter((entry) => {
