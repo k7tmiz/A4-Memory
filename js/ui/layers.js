@@ -174,10 +174,13 @@
     return true
   }
 
-  function closeLayer(layer) {
+  function closeLayer(layer, { immediate = false } = {}) {
     if (!layer) return Promise.resolve(false)
     const pending = closingLayers.get(layer)
-    if (pending) return pending.promise
+    if (pending) {
+      if (immediate) return Promise.resolve(finishLayerClose(layer))
+      return pending.promise
+    }
 
     const openIndex = openLayers.indexOf(layer)
     if (openIndex < 0) {
@@ -187,7 +190,7 @@
     }
     openLayers.splice(openIndex, 1)
 
-    if (!shouldAnimateLayerExit()) {
+    if (immediate || !shouldAnimateLayerExit()) {
       finishLayerClose(layer)
       return Promise.resolve(true)
     }
@@ -231,10 +234,17 @@
     return openLayers.length > 0 || closingLayers.size > 0
   }
 
+  function closeAll({ immediate = false } = {}) {
+    const layers = Array.from(new Set([...openLayers, ...closingLayers.keys()]))
+    for (const layer of layers) closeLayer(layer, { immediate })
+    return layers.length
+  }
+
   window.A4UI = Object.freeze({
     setLayerVisible,
     setModalVisible: setLayerVisible,
     closeLayer,
+    closeAll,
     getOpenLayers,
     hasOpenLayer,
     requestTopLayerClose,

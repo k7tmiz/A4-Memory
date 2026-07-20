@@ -47,7 +47,7 @@ function createElement({ view = "", route = "" } = {}) {
   return element
 }
 
-function loadRouter({ pathname = "/index.html", search = "", reducedMotion = false } = {}) {
+function loadRouter({ pathname = "/index.html", search = "", reducedMotion = false, A4UI = null } = {}) {
   const code = fs.readFileSync(routerPath, "utf8")
   const views = ["study", "records", "settings"].map((view) => createElement({ view }))
   for (const view of views) view.focusTarget = createElement()
@@ -98,6 +98,7 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
     scrollY: 0,
     scrollTo(options) { scrollCalls.push(options) },
   }
+  if (A4UI) window.A4UI = A4UI
   window.window = window
   const sandbox = { window, document, URL, URLSearchParams, setTimeout, clearTimeout }
   vm.createContext(sandbox)
@@ -252,5 +253,66 @@ describe("A4Router persistent application shell", () => {
     assert.equal(harness.A4Router.getCurrentView(), "settings")
     assert.equal(harness.views[2].hidden, false)
     assert.equal(harness.views[2].classList.contains("a4-view-entering"), false)
+  })
+
+  it("runs document-exit persistence only for the active controller in script registration order", () => {
+    const harness = loadRouter({ reducedMotion: true })
+    const writes = []
+    harness.A4Router.register("study", { exit: () => writes.push("study") })
+    harness.A4Router.register("records", {})
+    harness.A4Router.register("settings", { exit: () => writes.push("settings") })
+    harness.A4Router.start()
+
+    harness.windowListeners.get("pagehide")()
+    assert.deepEqual(writes, ["study"])
+
+    harness.A4Router.navigate("records")
+    harness.windowListeners.get("beforeunload")()
+    assert.deepEqual(writes, ["study"])
+
+    harness.A4Router.navigate("settings")
+    harness.windowListeners.get("pagehide")()
+    assert.deepEqual(writes, ["study", "settings"])
+  })
+
+  it("exposes one active-route ownership check for long-lived controller listeners", () => {
+    const harness = loadRouter({ reducedMotion: true })
+    const reactions = []
+    const reactFor = (view, value) => {
+      if (harness.A4Router.isActive(view)) reactions.push([view, value])
+    }
+    harness.A4Router.start()
+
+    assert.equal(harness.A4Router.isActive("study"), true)
+    assert.equal(harness.A4Router.isActive("records"), false)
+    reactFor("study", "study-old")
+    reactFor("records", "records-old")
+    reactFor("settings", "settings-new")
+    assert.deepEqual(reactions, [["study", "study-old"]])
+
+    harness.A4Router.navigate("settings")
+    assert.equal(harness.A4Router.isActive("study"), false)
+    assert.equal(harness.A4Router.isActive("settings"), true)
+    reactFor("study", "study-old")
+    reactFor("records", "records-old")
+    reactFor("settings", "settings-new")
+    assert.deepEqual(reactions, [["study", "study-old"], ["settings", "settings-new"]])
+  })
+
+  it("closes every shared layer before a history route switch leaves its owner", () => {
+    const events = []
+    const harness = loadRouter({
+      reducedMotion: true,
+      A4UI: { closeAll(options) { events.push(["layers", options]) } },
+    })
+    harness.A4Router.register("study", { leave: () => events.push(["leave"]) })
+    harness.A4Router.start()
+    harness.location.pathname = "/records.html"
+
+    harness.windowListeners.get("popstate")()
+
+    assert.deepEqual(events.map(([kind]) => kind), ["layers", "leave"])
+    assert.equal(events[0][1].immediate, true)
+    assert.equal(harness.A4Router.getCurrentView(), "records")
   })
 })

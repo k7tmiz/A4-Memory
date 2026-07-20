@@ -37,6 +37,7 @@
     formatMeaning,
     normalizeTtsPreferences,
     normalizeThemePalette,
+    setModalVisible,
   } = window.A4Common || {}
 
   function formatDateTimeText(value) {
@@ -58,11 +59,20 @@
   })
   const PRINT_PREVIEW_WIDTH = 794
   const PRINT_PREVIEW_HEIGHT = 1123
+  let activePrintPreviewTeardown = null
 
   function clearPrintPages() {
     const existing = document.getElementById("pdfPrintPages")
     if (existing) existing.remove()
     document.body.classList.remove("a4-printing")
+  }
+
+  function closePrintPreview() {
+    const teardown = activePrintPreviewTeardown
+    activePrintPreviewTeardown = null
+    teardown?.()
+    document.getElementById("pdfPrintOverlay")?.remove()
+    clearPrintPages()
   }
 
   function buildPrintPages(pageInfos) {
@@ -671,11 +681,8 @@
     })
 
     if (pageInfos.length === 0) return
+    closePrintPreview()
     buildPrintPages(pageInfos)
-
-    // Remove existing overlay if any
-    const existing = document.getElementById("pdfPrintOverlay")
-    if (existing) existing.remove()
 
     // Build overlay
     const overlay = document.createElement("div")
@@ -692,8 +699,7 @@
     closeBtn.textContent = "关闭"
     closeBtn.style.cssText = "padding:6px 14px;border:1px solid rgba(255,255,255,.35);border-radius:6px;background:transparent;color:#fff;font-size:14px"
     closeBtn.addEventListener("click", () => {
-      overlay.remove()
-      clearPrintPages()
+      closePrintPreview()
     })
     topBar.appendChild(pageLabel)
     topBar.appendChild(closeBtn)
@@ -784,7 +790,7 @@
     const onKey = (e) => {
       if (!document.getElementById("pdfPrintOverlay")) return
       if (e.key === "Escape") {
-        overlay.remove()
+        closePrintPreview()
         return
       }
       if (e.key === "ArrowLeft") showPage(currentIdx - 1)
@@ -792,13 +798,19 @@
     }
     document.addEventListener("keydown", onKey)
 
+    let tornDown = false
     const teardown = () => {
+      if (tornDown) return
+      tornDown = true
       window.removeEventListener("resize", fitPreviewPage)
       overlay.removeEventListener("touchstart", onTouchStart)
       overlay.removeEventListener("touchend", onTouchEnd)
       document.removeEventListener("keydown", onKey)
       observer.disconnect()
+      overlay.remove()
+      if (activePrintPreviewTeardown === teardown) activePrintPreviewTeardown = null
     }
+    activePrintPreviewTeardown = teardown
 
     // MutationObserver tears down listeners once the overlay is removed
     const observer = new MutationObserver(() => {
@@ -908,24 +920,22 @@
           await window.A4Cloud.markAnnouncementsRead(ids)
         } catch { /* ignore */ }
       }
-      const modal = ensureAnnouncementModal()
-      modal.classList.add("hidden")
-      modal.setAttribute("aria-hidden", "true")
+      setModalVisible(ensureAnnouncementModal(), false)
     }
 
     const checkAnnouncements = async () => {
+      if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
       if (!window.A4Cloud?.isLoggedIn?.()) return
       if (!window.A4Cloud?.fetchAnnouncements) return
       try {
         const result = await window.A4Cloud.fetchAnnouncements(10)
+        if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
         if (!result?.success) return
         const unreadIds = Array.isArray(result.unreadIds) ? result.unreadIds.filter((id) => Number.isFinite(Number(id))) : []
         if (!unreadIds.length) return
         announcementUnreadIds = unreadIds
         renderAnnouncementList(result.announcements || [])
-        const modal = ensureAnnouncementModal()
-        modal.classList.remove("hidden")
-        modal.setAttribute("aria-hidden", "false")
+        setModalVisible(ensureAnnouncementModal(), true)
       } catch { /* ignore */ }
     }
 
@@ -934,10 +944,12 @@
     const themeMedia = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null
     if (themeMedia && typeof themeMedia.addEventListener === "function") {
       themeMedia.addEventListener("change", () => {
+        if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
         if (state.themeMode === "auto") applyTheme()
       })
     } else if (themeMedia && typeof themeMedia.addListener === "function") {
       themeMedia.addListener(() => {
+        if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
         if (state.themeMode === "auto") applyTheme()
       })
     }
@@ -1053,6 +1065,7 @@
     })
 
     window.addEventListener("a4-cloud-auth-changed", () => {
+      if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
       checkAnnouncements()
     })
 
@@ -1094,7 +1107,7 @@
 
     const recordsRouteRegistered = window.A4Router?.register?.("records", {
       enter: () => refresh({ checkUnread: true }),
-      leave: () => clearPrintPages(),
+      leave: () => closePrintPreview(),
     })
     if (!recordsRouteRegistered) refresh({ checkUnread: true })
   }

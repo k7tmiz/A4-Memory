@@ -15,6 +15,9 @@ const appCode = fs.readFileSync(path.join(ROOT, "js", "app.js"), "utf8")
 const recordsCode = fs.readFileSync(path.join(ROOT, "js", "records.js"), "utf8")
 const settingsCode = fs.readFileSync(path.join(ROOT, "js", "settings.js"), "utf8")
 const settingsPageCode = readOptional("js/settings-page.js")
+const lookupCode = fs.readFileSync(path.join(ROOT, "js", "lookup.js"), "utf8")
+const routerCode = fs.readFileSync(path.join(ROOT, "js", "ui", "router.js"), "utf8")
+const layersCode = fs.readFileSync(path.join(ROOT, "js", "ui", "layers.js"), "utf8")
 const sharedStyle = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
 const shellStyle = fs.readFileSync(path.join(ROOT, "css", "shell.css"), "utf8")
 const buildCode = fs.readFileSync(path.join(ROOT, "scripts", "build.mjs"), "utf8")
@@ -146,6 +149,41 @@ describe("responsive application shell", () => {
     assert.doesNotMatch(settingsPageCode, /window\.location\.assign\(/)
   })
 
+  it("gives the active route sole ownership of unload persistence and global reactions", () => {
+    assert.match(routerCode, /beforeunload[^]*invokeLifecycle\(currentView,\s*"exit"/)
+    assert.match(routerCode, /pagehide[^]*invokeLifecycle\(currentView,\s*"exit"/)
+    assert.doesNotMatch(appCode, /addEventListener\("(?:pagehide|beforeunload)"/)
+    assert.doesNotMatch(settingsPageCode, /addEventListener\("pagehide"/)
+    assert.match(appCode, /register\?\.\("study"[^]*exit:\s*persistNow/s)
+    assert.match(settingsPageCode, /register\?\.\("settings"[^]*exit:\s*persist/s)
+    assert.match(appCode, /themeMedia[^]*isActive\("study"\)/s)
+    assert.match(recordsCode, /themeMedia[^]*isActive\("records"\)/s)
+    assert.match(settingsPageCode, /onSystemThemeChange[^]*isActive\("settings"\)/s)
+    assert.match(appCode, /function isAnyModalOpen\(\)[^]*A4UI\?\.hasOpenLayer[^]*A4UI\.hasOpenLayer\(\)/s)
+    assert.doesNotMatch(
+      appCode.match(/function isAnyModalOpen\(\)\s*\{([^]*?)\n\}/)?.[1] || "",
+      /settingsModal/
+    )
+  })
+
+  it("uses one context-switching lookup controller and route-owned announcement work", () => {
+    assert.match(lookupCode, /sharedLookupController/)
+    assert.match(lookupCode, /setContext/)
+    assert.match(appCode, /addWordToCurrentRound:\s*addWordToCurrentRoundFromLookup/)
+    assert.doesNotMatch(appCode, /window\.A4AddWordFromLookup/)
+    assert.doesNotMatch(recordsCode, /addWordToCurrentRound:/)
+    assert.match(appCode, /a4-cloud-auth-changed[^]*isActive\("study"\)/s)
+    assert.match(recordsCode, /a4-cloud-auth-changed[^]*isActive\("records"\)/s)
+    assert.match(recordsCode, /setModalVisible\(ensureAnnouncementModal\(\),\s*true\)/)
+  })
+
+  it("cleans route-owned layers and the Records print preview during every router leave", () => {
+    assert.match(routerCode, /A4UI\?\.closeAll\?\.\(\{ immediate:\s*true \}\)/)
+    assert.match(layersCode, /function closeAll\(/)
+    assert.match(recordsCode, /leave:\s*\(\)\s*=>\s*closePrintPreview\(\)/)
+    assert.match(recordsCode, /activePrintPreviewTeardown/)
+  })
+
   it("uses directional Settings panel motion while preserving records animation and reduced-motion safety", () => {
     assert.match(shellStyle, /@keyframes a4-content-enter/)
     assert.match(shellStyle, /\.rounds:not\(\.hidden\)[^}]*a4-content-enter/s)
@@ -181,14 +219,15 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const revision = "20260720-1"
+    const styleRevision = "20260720-1"
+    const scriptRevision = "20260720-2"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
-      assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${revision}"`))
-      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${revision}"`))
+      assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
+      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${styleRevision}"`))
     }
-    for (const script of ["js/core/common.js", "js/settings.js", "js/records.js", "js/settings-page.js"]) {
+    for (const script of ["js/ui/layers.js", "js/ui/router.js", "js/lookup.js", "js/app.js", "js/records.js", "js/settings-page.js"]) {
       const escapedScript = script.replaceAll(".", "\\.")
-      assert.match(indexMarkup, new RegExp(`src="\\./${escapedScript}\\?v=${revision}"`))
+      assert.match(indexMarkup, new RegExp(`src="\\./${escapedScript}\\?v=${scriptRevision}"`))
     }
   })
 })

@@ -1006,13 +1006,50 @@
     return panel
   }
 
-  function createLookupModalController({
-    getState,
-    setState,
-    persist,
-    getWordbookLanguage,
-    onOpen,
-  } = {}) {
+  let sharedLookupController = null
+
+  function createLookupModalController(context = {}) {
+    if (!sharedLookupController) sharedLookupController = createSharedLookupModalController()
+    const routeContext = { ...context }
+    return Object.freeze({
+      open(options) {
+        sharedLookupController.setContext(routeContext)
+        return sharedLookupController.open(options)
+      },
+      close() {
+        return sharedLookupController.close()
+      },
+      runLookup(query) {
+        sharedLookupController.setContext(routeContext)
+        return sharedLookupController.runLookup(query)
+      },
+    })
+  }
+
+  function createSharedLookupModalController() {
+    let getState
+    let setState
+    let persist
+    let getWordbookLanguage
+    let onOpen
+    let addWordToCurrentRound
+    let activeContext = null
+
+    function setContext(context = {}) {
+      if (activeContext && activeContext !== context) {
+        lastQueryId += 1
+        abortOnline?.abort?.()
+        abortOnline = null
+      }
+      activeContext = context
+      getState = context.getState
+      setState = context.setState
+      persist = context.persist
+      getWordbookLanguage = context.getWordbookLanguage
+      onOpen = context.onOpen
+      addWordToCurrentRound = context.addWordToCurrentRound
+    }
+
     let modal = document.getElementById("lookupModal")
     if (!modal) {
       modal = buildLookupModalDom()
@@ -1556,13 +1593,13 @@
       const meaning = String(raw?.meaning || "").trim()
       if (!term) return
       if (LOOKUP_DEBUG) console.debug("[lookup] tryAddWordToCurrentRound →", { term, pos, meaning })
-      const langBase =
-        typeof window.A4GetActiveLangBase === "function"
-          ? String(window.A4GetActiveLangBase() || "").trim().toLowerCase()
-          : ""
+      const wordbookLanguage = typeof getWordbookLanguage === "function" ? getWordbookLanguage() : ""
+      const langBase = normalizeLangTag
+        ? String(normalizeLangTag(wordbookLanguage)?.base || "")
+        : String(wordbookLanguage || "").trim().toLowerCase().split(/[-_]/)[0]
       const word = { term, pos, meaning, lang: langBase }
 
-      if (typeof window.A4AddWordFromLookup !== "function") {
+      if (typeof addWordToCurrentRound !== "function") {
         showToast("请在首页加入当前轮")
         return
       }
@@ -1572,7 +1609,7 @@
         return
       }
 
-      window.A4AddWordFromLookup(word)
+      addWordToCurrentRound(word)
       showToast("已加入当前轮")
     }
 
@@ -1594,7 +1631,7 @@
     }
 
     bind()
-    return { open, close, runLookup }
+    return { open, close, runLookup, setContext }
   }
 
   window.A4Lookup = {

@@ -8,10 +8,15 @@ const commonCode = fs.readFileSync(path.join(__dirname, "..", "js", "core", "com
 const sanitizeCode = fs.readFileSync(path.join(__dirname, "..", "js", "core", "sanitize.js"), "utf8")
 const recordsCode = fs.readFileSync(path.join(__dirname, "..", "js", "records.js"), "utf8")
 
-function loadRecordsInternals() {
+function loadRecordsInternals({ document: documentRef } = {}) {
+  const document = documentRef || {
+    body: { classList: { remove() {} } },
+    getElementById() { return null },
+  }
   const sandbox = {
     console,
     Date,
+    document,
     window: {
       A4Settings: { normalizeRoundCap(value) { return Math.max(20, Math.min(30, Math.round(Number(value) || 30))) } },
       A4Storage: {},
@@ -24,7 +29,7 @@ function loadRecordsInternals() {
   vm.runInContext(sanitizeCode, sandbox)
   const instrumented = recordsCode.replace(
     /\n  main\(\)\n\}\)\(\)\s*$/,
-    "\n  window.__recordsInternals = { normalizeState, buildCsv, computeRecordsSummary }\n})()"
+    "\n  window.__recordsInternals = { normalizeState, buildCsv, computeRecordsSummary, closePrintPreview: typeof closePrintPreview === \"function\" ? closePrintPreview : undefined }\n})()"
   )
   assert.notEqual(instrumented, recordsCode, "records test instrumentation must replace main()")
   vm.runInContext(instrumented, sandbox)
@@ -104,5 +109,27 @@ describe("records summary cards", () => {
     assert.equal(summary.streak, 1)
     assert.equal(summary.goalText, "每日目标：2/5 个词 · 未达成")
     assert.equal(summary.totalText, "累计 2 个词 · 完成 1 轮")
+  })
+})
+
+describe("records print preview lifecycle", () => {
+  it("fully removes preview and print output when Records loses route ownership", () => {
+    const removed = []
+    const nodes = new Map([
+      ["pdfPrintOverlay", { remove() { removed.push("overlay"); nodes.delete("pdfPrintOverlay") } }],
+      ["pdfPrintPages", { remove() { removed.push("pages"); nodes.delete("pdfPrintPages") } }],
+    ])
+    const removedClasses = []
+    const { closePrintPreview } = loadRecordsInternals({
+      document: {
+        body: { classList: { remove(name) { removedClasses.push(name) } } },
+        getElementById(id) { return nodes.get(id) || null },
+      },
+    })
+
+    closePrintPreview()
+
+    assert.deepEqual(removed, ["overlay", "pages"])
+    assert.deepEqual(removedClasses, ["a4-printing"])
   })
 })

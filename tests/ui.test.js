@@ -263,4 +263,30 @@ describe("A4UI layer manager", () => {
 
     assert.equal(body.style.top, "")
   })
+
+  it("closes every open or animating layer immediately for a route handoff", () => {
+    const { A4UI, attach, body } = loadUi({ motion: true })
+    const first = createLayer("first")
+    const second = createLayer("second")
+    attach(first.layer)
+    attach(second.layer)
+    A4UI.setLayerVisible(first.layer, true)
+    A4UI.setLayerVisible(second.layer, true)
+    A4UI.closeLayer(second.layer)
+
+    assert.equal(body.classList.contains("modal-open"), true)
+    assert.equal(A4UI.closeAll({ immediate: true }), 2)
+    assert.equal(first.layer.classList.contains("hidden"), true)
+    assert.equal(second.layer.classList.contains("hidden"), true)
+    assert.equal(A4UI.hasOpenLayer(), false)
+    assert.equal(body.classList.contains("modal-open"), false)
+  })
+
+  it("does not treat a visible Settings page surface as an open modal layer", () => {
+    const { A4UI, attach } = loadUi()
+    const settingsPage = attach(createElement({ id: "settingsModal", classes: ["settings-page-root"] }))
+
+    assert.equal(settingsPage.classList.contains("hidden"), false)
+    assert.equal(A4UI.hasOpenLayer(), false)
+  })
 })

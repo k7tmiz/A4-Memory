@@ -42,6 +42,7 @@
 
   const media = window.matchMedia?.("(prefers-color-scheme: dark)")
   const onSystemThemeChange = () => {
+    if (window.A4Router?.isActive && !window.A4Router.isActive("settings")) return
     if ((settings?.normalizeThemeMode?.(state.themeMode) || "auto") === "auto") applyTheme()
   }
   media?.addEventListener?.("change", onSystemThemeChange)
@@ -71,8 +72,7 @@
   const settingsRouteRegistered = window.A4Router?.register?.("settings", {
     enter: enterSettingsView,
     leave: persist,
+    exit: persist,
   })
   if (!settingsRouteRegistered) enterSettingsView()
-
-  window.addEventListener("pagehide", persist)
 })()

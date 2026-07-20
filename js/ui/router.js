@@ -135,6 +135,7 @@
       lifecycles.set(normalized, {
         enter: typeof lifecycle.enter === "function" ? lifecycle.enter : null,
         leave: typeof lifecycle.leave === "function" ? lifecycle.leave : null,
+        exit: typeof lifecycle.exit === "function" ? lifecycle.exit : null,
       })
       return true
     }
@@ -212,6 +213,7 @@
 
       pending = true
       scrollPositions.set(from, Math.max(0, Number(windowRef.scrollY) || 0))
+      windowRef.A4UI?.closeAll?.({ immediate: true })
       invokeLifecycle(from, "leave", { from, to: target, direction, initial: false })
       setDockRoute(target)
       writeHistory(target, historyMode)
@@ -245,6 +247,8 @@
       listenersInstalled = true
       documentRef.addEventListener?.("click", handleRouteClick)
       windowRef.addEventListener?.("popstate", () => navigate(windowRef.location, { history: false, queue: true }))
+      windowRef.addEventListener?.("beforeunload", () => invokeLifecycle(currentView, "exit", { view: currentView }))
+      windowRef.addEventListener?.("pagehide", () => invokeLifecycle(currentView, "exit", { view: currentView }))
     }
 
     function start() {
@@ -268,6 +272,7 @@
     return Object.freeze({
       createRouter,
       getCurrentView: () => currentView,
+      isActive: (view) => normalizeViewName(view) === currentView,
       hrefForView,
       navigate,
       register,

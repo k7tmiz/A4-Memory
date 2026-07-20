@@ -227,10 +227,12 @@ async function dismissAnnouncementModal() {
 }
 
 async function checkAnnouncements() {
+  if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
   if (!window.A4Cloud?.isLoggedIn?.()) return
   if (!window.A4Cloud?.fetchAnnouncements) return
   try {
     const result = await window.A4Cloud.fetchAnnouncements(10)
+    if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
     if (!result?.success) return
     const unreadIds = Array.isArray(result.unreadIds) ? result.unreadIds.filter((id) => Number.isFinite(Number(id))) : []
     if (!unreadIds.length) return
@@ -547,11 +549,13 @@ const themeMedia = window.matchMedia ? window.matchMedia("(prefers-color-scheme:
 if (themeMedia && typeof themeMedia.matches === "boolean") appState.systemPrefersDark = themeMedia.matches
 if (themeMedia && typeof themeMedia.addEventListener === "function") {
   themeMedia.addEventListener("change", (e) => {
+    if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
     appState.systemPrefersDark = !!e.matches
     if (appState.themeMode === "auto") applyTheme()
   })
 } else if (themeMedia && typeof themeMedia.addListener === "function") {
   themeMedia.addListener((e) => {
+    if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
     appState.systemPrefersDark = !!e.matches
     if (appState.themeMode === "auto") applyTheme()
   })
@@ -1417,8 +1421,6 @@ function persist() {
     _persistImpl()
   }, 80)
 }
-window.addEventListener("pagehide", () => persistNow(), { once: false })
-window.addEventListener("beforeunload", () => persistNow())
 function _persistImpl() {
   const darkMode = getResolvedDarkMode()
   const ttsPreferences = normalizeTtsPreferences(appState)
@@ -2690,6 +2692,7 @@ if (window.A4Lookup && typeof window.A4Lookup.createLookupModalController === "f
     setState: (patch) => Object.assign(appState, patch),
     persist,
     getWordbookLanguage: () => getWordbookLanguageForSpeech(),
+    addWordToCurrentRound: addWordToCurrentRoundFromLookup,
   })
 }
 
@@ -3311,6 +3314,7 @@ function isModalOpen(modalEl) {
 }
 
 function isAnyModalOpen() {
+  if (window.A4UI?.hasOpenLayer) return window.A4UI.hasOpenLayer()
   return (
     isModalOpen(dom.reviewModal) ||
     isModalOpen(dom.roundFullModal) ||
@@ -3318,7 +3322,6 @@ function isAnyModalOpen() {
     isModalOpen(dom.remoteImportModal) ||
     isModalOpen(dom.wordbookPickerModal) ||
     isModalOpen(dom.introModal) ||
-    isModalOpen(dom.settingsModal) ||
     isModalOpen(dom.aiPreviewModal) ||
     isModalOpen(document.getElementById("lookupModal")) ||
     isModalOpen(document.getElementById("a4-confirm-title")?.closest(".modal"))
@@ -3381,6 +3384,7 @@ window.addEventListener("resize", () => {
 })
 
 window.addEventListener("a4-cloud-auth-changed", (e) => {
+  if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
   const loggedIn = !!(e && e.detail && e.detail.loggedIn)
   if (!loggedIn) {
     announcementUnreadIds = []
@@ -3398,6 +3402,7 @@ function enterStudyView({ initial = false } = {}) {
   restore({ showStartupPrompts: initial })
   updateBadge()
   updateHint()
+  scheduleAnnouncementCheck(initial ? 300 : 0)
 }
 
 const studyRouteRegistered = window.A4Router?.register?.("study", {
@@ -3407,6 +3412,7 @@ const studyRouteRegistered = window.A4Router?.register?.("study", {
     setDesktopToolsVisible(false)
     setMobileMoreVisible(false)
   },
+  exit: persistNow,
 })
 if (!studyRouteRegistered) enterStudyView({ initial: true })
 
@@ -3432,17 +3438,3 @@ dom.reviewFromFullBtn.addEventListener("click", () => {
   pendingNextWordAfterRoundFull = false
   openReviewCurrentRound()
 })
-
-window.A4AddWordFromLookup = (word) => {
-  try {
-    addWordToCurrentRoundFromLookup(word)
-  } catch { /* ignore */ }
-}
-
-window.A4GetActiveLangBase = () => {
-  try {
-    return getActiveLangBase()
-  } catch {
-    return "en"
-  }
-}

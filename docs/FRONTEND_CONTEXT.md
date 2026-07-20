@@ -92,7 +92,7 @@ A4-Memory/
 
 ## 3. 页面与脚本加载顺序
 
-`index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。设置是一级 App Shell 路由，其页面呈现不使用弹窗式标题或返回头。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。
+`index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。设置是一级 App Shell 路由，其页面呈现不使用弹窗式标题或返回头。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。页面退出时只有活动视图接收 `exit` 生命周期，非活动控制器不会用旧的完整状态快照覆盖存储。
 
 App Shell 按 `css/style.css → css/theme.css → css/shell.css` 加载样式，基础组件、主题变量和响应式壳层保持单向覆盖关系。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
@@ -143,16 +143,17 @@ index.html
 - 词库/单词归一化（`getWordsFromGlobal`、`getWordbooksFromGlobal`、`normalizeWordObject`）
 
 ### `js/ui/layers.js`
-共享弹层控制器，暴露 `window.A4UI`。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。首页弹窗、设置页内的确认/预览弹层、确认框和 Android 下拉面板均通过该入口管理。
+共享弹层控制器，暴露 `window.A4UI`。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。首页弹窗、设置页内的确认/预览弹层、确认框、公告和 Android 下拉面板均通过该入口管理。路由切换会同步关闭所有已打开或正在退出的共享弹层，确保目标视图接管焦点和滚动时没有旧层残留。
 
 ### `js/ui/router.js`
-持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
+持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
 
 ```javascript
 window.A4Router = {
   createRouter(options),
   navigate(view, options),
-  register(view, { enter, leave }),
+  register(view, { enter, leave, exit }),
+  isActive(view),
   resolveView(value),
   hrefForView(view),
   getCurrentView(),
@@ -235,10 +236,10 @@ window.A4Settings = {
 查词弹窗控制器，暴露 `window.A4Lookup`：
 ```javascript
 window.A4Lookup = {
-  createLookupModalController({ getState, setState, persist, getWordbookLanguage }),
+  createLookupModalController({ getState, setState, persist, getWordbookLanguage, addWordToCurrentRound }),
 }
 ```
-功能：本地词书检索、在线补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充、查词缓存、"加入当前轮"。
+App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每个视图获得一个打开句柄，打开时切换到该视图的状态、持久化与词书语言上下文。学习视图的查词上下文提供“加入当前轮”能力，记录视图的查词上下文不提供该操作。功能包括本地词书检索、在线补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充和查词缓存。
 
 ### `js/app.js`
 学习视图控制器（UI 层，不含核心业务逻辑）。负责：
@@ -249,14 +250,14 @@ window.A4Lookup = {
 - 词书导入、词书 JSON 导出与在线词书导入
 - 轮次推进与状态写回
 
-宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在底部更多面板；宽度达到 701px 时，学习视图使用左侧词书/工具、中央 A4、右侧轮次进度的无顶栏工作区，低频入口集中在左侧工具菜单。两种布局共用纸面复习/释义操作和悬浮底栏；「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。路由 `leave` 生命周期负责保存学习状态，`enter` 生命周期重新读取存储并刷新纸面。
+宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在底部更多面板；宽度达到 701px 时，学习视图使用左侧词书/工具、中央 A4、右侧轮次进度的无顶栏工作区，低频入口集中在左侧工具菜单。两种布局共用纸面复习/释义操作和悬浮底栏；「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
 
 ### `js/records.js`
 记录视图控制器（UI 层）。进入视图时重新读取存储并刷新统计与列表，离开后仍保持控制器和 DOM 挂载。负责：
 - 轮次视图与状态视图切换
 - 统计计算
 - 手机端显示今日新增、待复习、连续学习三项摘要，并保留累计进度与每日目标
-- CSV/PDF 导出；PDF 会生成隐藏的 A4 打印输出层，桌面端走 Tauri WebView 打印权限，Android 端走原生打印桥接
+- CSV/PDF 导出；PDF 会生成隐藏的 A4 打印输出层，桌面端走 Tauri WebView 打印权限，Android 端走原生打印桥接；离开记录路由会移除预览、打印输出与其窗口/键盘/触摸监听
 - 轮次删除与清空记录（确认弹窗使用 `A4Utils.showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`）
 - 跳转首页触发复习轮生成
 
@@ -427,4 +428,5 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 - AI 提供商或 Base URL origin 变化时清空内存中的 `aiConfig.apiKey`，避免凭据跨服务发送
 - 记录页监听 `storage` 事件，支持多标签页同步刷新显示
 - 所有删除/清空确认弹窗统一使用 `A4Utils.showConfirmDialog`，不依赖原生 `window.confirm`，避免 Tauri WKWebView 对话框委托未实现导致返回 `undefined`；设置页的云端恢复确认也使用自定义弹窗
-- 学习与记录视图的标准弹窗、设置视图内的确认/预览弹层、Android 选择器和公告弹窗统一进入 `A4UI` 弹层栈；打开期间页面固定且背景不可滚动，嵌套弹层逐层关闭，焦点在关闭后回到触发位置。设置视图本身使用正常页面滚动，不进入弹层栈
+- 学习与记录视图的标准弹窗、设置视图内的确认/预览弹层、Android 选择器和公告弹窗统一进入 `A4UI` 弹层栈；打开期间页面固定且背景不可滚动，嵌套弹层逐层关闭，焦点在关闭后回到触发位置。路由切换会立即清理旧视图弹层；设置视图本身使用正常页面滚动，不进入弹层栈，也不阻断学习视图快捷键
+- 常驻控制器的系统主题与鉴权监听只在所属路由活动时更新页面或请求公告；进入学习/记录视图时会使用最新持久状态刷新主题并检查未读公告
