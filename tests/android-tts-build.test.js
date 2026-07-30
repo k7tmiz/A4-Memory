@@ -202,7 +202,7 @@ describe("Android offline TTS build integration", () => {
     assert.match(workflow, /经典、纸张绿、海蓝配色/)
     assert.match(workflow, /固定背景页面并恢复原滚动位置与焦点/)
     assert.match(workflow, /A4 翻页控件仅在当前轮包含多张纸时显示/)
-    assert.match(workflow, /a4-memory-v2\.0\.0-android\.apk/)
+    assert.match(workflow, /a4-memory-v2\.0\.1-android\.apk/)
     assert.match(workflow, /SIGNED="a4-memory-\$\{TAG\}-android\.apk"/)
   })
 
