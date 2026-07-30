@@ -2,11 +2,14 @@
   const openLayers = []
   const closingLayers = new Map()
   const previousFocus = new WeakMap()
+  const layerOpenOrder = new WeakMap()
   const isolatedBodyChildren = new Map()
   const LAYER_EXIT_MS = 180
   let savedScrollY = 0
   let savedBodyTop = ""
   let keydownHandler = null
+  let batchClosing = false
+  let nextLayerOrder = 0
 
   function getFocusableElements(root) {
     if (!root || typeof root.querySelectorAll !== "function") return []
@@ -93,14 +96,22 @@
     }
   }
 
-  function requestTopLayerClose() {
-    const layer = openLayers[openLayers.length - 1]
+  function requestLayerDismiss(layer, { immediate = false, reason = "request" } = {}) {
     if (!layer) return false
-    const event = new CustomEvent("a4-layer-request-close", { cancelable: true })
-    if (layer.dispatchEvent?.(event) === false) return false
+    const event = new CustomEvent("a4-layer-dismiss", {
+      cancelable: true,
+      detail: { immediate, reason },
+    })
+    layer.dispatchEvent?.(event)
+    if (event.defaultPrevented) return true
     const closeControl = layer.querySelector?.("[data-layer-close], .modal-backdrop")
     closeControl?.click?.()
     return !!closeControl
+  }
+
+  function requestTopLayerClose() {
+    const layer = openLayers[openLayers.length - 1]
+    return requestLayerDismiss(layer, { reason: "escape" })
   }
 
   function onDocumentKeydown(event) {
@@ -151,14 +162,16 @@
     }
   }
 
-  function finishLayerClose(layer, result = true) {
+  function finishLayerClose(layer, result = true, { restoreFocus = true } = {}) {
     const pending = closingLayers.get(layer)
     if (pending?.timer) window.clearTimeout?.(pending.timer)
     closingLayers.delete(layer)
+    layerOpenOrder.delete(layer)
     layer.classList?.remove("a4-layer-closing")
     layer.classList?.add("hidden")
     layer.setAttribute?.("aria-hidden", "true")
-    restoreLayerFocus(layer)
+    if (restoreFocus && !batchClosing) restoreLayerFocus(layer)
+    else previousFocus.delete(layer)
     if (openLayers.length === 0 && closingLayers.size === 0) unlockPage()
     pending?.resolve?.(result)
     return result
@@ -174,11 +187,16 @@
     return true
   }
 
-  function closeLayer(layer, { immediate = false } = {}) {
+  function closeLayer(layer, { immediate = false, restoreFocus = true } = {}) {
     if (!layer) return Promise.resolve(false)
     const pending = closingLayers.get(layer)
     if (pending) {
-      if (immediate) return Promise.resolve(finishLayerClose(layer))
+      pending.restoreFocus = pending.restoreFocus !== false && restoreFocus !== false
+      if (immediate) {
+        return Promise.resolve(
+          finishLayerClose(layer, true, { restoreFocus: pending.restoreFocus })
+        )
+      }
       return pending.promise
     }
 
@@ -191,15 +209,24 @@
     openLayers.splice(openIndex, 1)
 
     if (immediate || !shouldAnimateLayerExit()) {
-      finishLayerClose(layer)
+      finishLayerClose(layer, true, { restoreFocus })
       return Promise.resolve(true)
     }
 
     layer.classList?.add("a4-layer-closing")
     let resolveClose
     const promise = new Promise((resolve) => { resolveClose = resolve })
-    const timer = window.setTimeout?.(() => finishLayerClose(layer), LAYER_EXIT_MS)
-    closingLayers.set(layer, { promise, resolve: resolveClose, timer })
+    const pendingClose = {
+      promise,
+      resolve: resolveClose,
+      timer: null,
+      restoreFocus: restoreFocus !== false,
+    }
+    pendingClose.timer = window.setTimeout?.(
+      () => finishLayerClose(layer, true, { restoreFocus: pendingClose.restoreFocus }),
+      LAYER_EXIT_MS
+    )
+    closingLayers.set(layer, pendingClose)
     return promise
   }
 
@@ -211,6 +238,7 @@
       const openIndex = openLayers.indexOf(layer)
       if (openIndex >= 0) return false
       previousFocus.set(layer, document.activeElement || null)
+      layerOpenOrder.set(layer, nextLayerOrder++)
       layer.classList?.remove("a4-layer-closing")
       layer.classList?.remove("hidden")
       layer.setAttribute?.("aria-hidden", "false")
@@ -235,8 +263,20 @@
   }
 
   function closeAll({ immediate = false } = {}) {
-    const layers = Array.from(new Set([...openLayers, ...closingLayers.keys()]))
-    for (const layer of layers) closeLayer(layer, { immediate })
+    const layers = Array.from(new Set([...openLayers, ...closingLayers.keys()])).sort(
+      (left, right) => (layerOpenOrder.get(right) || 0) - (layerOpenOrder.get(left) || 0)
+    )
+    const activeElement = document.activeElement
+    if (layers.some((layer) => layer.contains?.(activeElement))) activeElement?.blur?.()
+    batchClosing = true
+    try {
+      for (const layer of layers) {
+        requestLayerDismiss(layer, { immediate, reason: "batch" })
+        closeLayer(layer, { immediate, restoreFocus: false })
+      }
+    } finally {
+      batchClosing = false
+    }
     return layers.length
   }
 
@@ -247,6 +287,7 @@
     closeAll,
     getOpenLayers,
     hasOpenLayer,
+    requestLayerDismiss,
     requestTopLayerClose,
   })
 })()

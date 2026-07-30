@@ -177,6 +177,30 @@ describe("A4Common core utilities", () => {
     assert.equal(A4Common.normalizeThemePalette("unknown"), "classic")
   })
 
+  it("keeps the system theme cache current while inactive and applies it on re-entry", () => {
+    assert.equal(typeof A4Common.syncSystemThemePreference, "function")
+    const state = { themeMode: "auto", systemPrefersDark: false }
+    let applyCount = 0
+
+    A4Common.syncSystemThemePreference({
+      state,
+      matches: true,
+      active: false,
+      applyTheme: () => { applyCount += 1 },
+    })
+    assert.equal(state.systemPrefersDark, true)
+    assert.equal(applyCount, 0)
+
+    A4Common.syncSystemThemePreference({
+      state,
+      matches: true,
+      active: true,
+      applyTheme: () => { applyCount += 1 },
+    })
+    assert.equal(state.systemPrefersDark, true)
+    assert.equal(applyCount, 1)
+  })
+
   it("round-trips offline TTS preferences through serialized state", () => {
     const preferences = normalizeTtsPreferences({
       ttsMode: " OFFLINE ",

@@ -56,6 +56,9 @@ function createElement({ id = "", classes = [], tagName = "DIV", focusable = fal
       element.focusCount += 1
       element.ownerDocument.activeElement = element
     },
+    blur() {
+      if (element.ownerDocument.activeElement === element) element.ownerDocument.activeElement = null
+    },
     click() { element.clickCount += 1 },
     contains(candidate) {
       if (candidate === element) return true
@@ -118,6 +121,7 @@ function loadUi({ motion = false } = {}) {
       constructor(type, options = {}) {
         this.type = type
         this.cancelable = !!options.cancelable
+        this.detail = options.detail
         this.defaultPrevented = false
       }
       preventDefault() { if (this.cancelable) this.defaultPrevented = true }
@@ -265,21 +269,59 @@ describe("A4UI layer manager", () => {
   })
 
   it("closes every open or animating layer immediately for a route handoff", () => {
-    const { A4UI, attach, body } = loadUi({ motion: true })
+    const { A4UI, attach, body, document } = loadUi({ motion: true })
     const first = createLayer("first")
     const second = createLayer("second")
+    const third = createLayer("third")
     attach(first.layer)
     attach(second.layer)
+    attach(third.layer)
+    const dismissOrder = []
+    for (const current of [first, second, third]) {
+      current.layer.addEventListener("a4-layer-dismiss", (event) => {
+        dismissOrder.push(current.layer.id)
+        event.preventDefault()
+        A4UI.closeLayer(current.layer, { immediate: event.detail?.immediate })
+      })
+    }
     A4UI.setLayerVisible(first.layer, true)
     A4UI.setLayerVisible(second.layer, true)
     A4UI.closeLayer(second.layer)
+    A4UI.setLayerVisible(third.layer, true)
+    document.activeElement = third.firstButton
 
     assert.equal(body.classList.contains("modal-open"), true)
-    assert.equal(A4UI.closeAll({ immediate: true }), 2)
+    assert.equal(A4UI.closeAll({ immediate: true }), 3)
+    assert.deepEqual(dismissOrder, ["third", "second", "first"])
     assert.equal(first.layer.classList.contains("hidden"), true)
     assert.equal(second.layer.classList.contains("hidden"), true)
+    assert.equal(third.layer.classList.contains("hidden"), true)
     assert.equal(A4UI.hasOpenLayer(), false)
     assert.equal(body.classList.contains("modal-open"), false)
+    assert.equal(document.activeElement, null)
+    assert.equal(first.firstButton.focusCount, 1)
+    assert.equal(second.firstButton.focusCount, 1)
+    assert.equal(third.firstButton.focusCount, 1)
+  })
+
+  it("keeps focus suppressed when an animating layer joins an asynchronous batch close", async () => {
+    const { A4UI, attach, document } = loadUi({ motion: true })
+    const trigger = attach(createElement({ id: "trigger", focusable: true }))
+    const outer = createLayer("outer")
+    const inner = createLayer("inner")
+    attach(outer.layer)
+    attach(inner.layer)
+    trigger.focus()
+    A4UI.setLayerVisible(outer.layer, true)
+    A4UI.setLayerVisible(inner.layer, true)
+
+    A4UI.closeLayer(inner.layer)
+    assert.equal(A4UI.closeAll(), 2)
+    await new Promise((resolve) => setTimeout(resolve, 220))
+
+    assert.equal(A4UI.hasOpenLayer(), false)
+    assert.equal(document.activeElement, null)
+    assert.equal(trigger.focusCount, 1)
   })
 
   it("does not treat a visible Settings page surface as an open modal layer", () => {

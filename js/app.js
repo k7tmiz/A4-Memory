@@ -28,6 +28,7 @@ const {
   normalizeWordObject,
   normalizeOnlineTtsProvider,
   normalizeTtsPreferences,
+  syncSystemThemePreference,
 } = window.A4Common || {}
 
 const settings = window.A4Settings || {}
@@ -546,19 +547,27 @@ function applyTheme() {
 }
 
 const themeMedia = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null
-if (themeMedia && typeof themeMedia.matches === "boolean") appState.systemPrefersDark = themeMedia.matches
+function syncStudySystemTheme(matches, { apply = true } = {}) {
+  if (typeof syncSystemThemePreference === "function") {
+    return syncSystemThemePreference({
+      state: appState,
+      matches,
+      active:
+        apply &&
+        (!window.A4Router?.isActive || window.A4Router.isActive("study")),
+      applyTheme,
+    })
+  }
+  appState.systemPrefersDark = !!matches
+  if (apply && appState.themeMode === "auto") applyTheme()
+  return appState.systemPrefersDark
+}
+
+if (themeMedia && typeof themeMedia.matches === "boolean") syncStudySystemTheme(themeMedia.matches)
 if (themeMedia && typeof themeMedia.addEventListener === "function") {
-  themeMedia.addEventListener("change", (e) => {
-    if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
-    appState.systemPrefersDark = !!e.matches
-    if (appState.themeMode === "auto") applyTheme()
-  })
+  themeMedia.addEventListener("change", (e) => syncStudySystemTheme(e.matches))
 } else if (themeMedia && typeof themeMedia.addListener === "function") {
-  themeMedia.addListener((e) => {
-    if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
-    appState.systemPrefersDark = !!e.matches
-    if (appState.themeMode === "auto") applyTheme()
-  })
+  themeMedia.addListener((e) => syncStudySystemTheme(e.matches))
 }
 
 function getAllWordbooks() {
@@ -3399,6 +3408,9 @@ updateImmersiveToggle()
 applyTheme()
 
 function enterStudyView({ initial = false } = {}) {
+  if (themeMedia && typeof themeMedia.matches === "boolean") {
+    syncStudySystemTheme(themeMedia.matches, { apply: false })
+  }
   restore({ showStartupPrompts: initial })
   updateBadge()
   updateHint()

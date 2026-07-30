@@ -4,6 +4,9 @@ const vm = require("node:vm")
 const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
 
+const utilsCode = fs.readFileSync(path.join(__dirname, "..", "js", "utils.js"), "utf8")
+const layersCode = fs.readFileSync(path.join(__dirname, "..", "js", "ui", "layers.js"), "utf8")
+
 function loadUtils() {
   const filePath = path.join(__dirname, "..", "js", "utils.js")
   const code = fs.readFileSync(filePath, "utf8")
@@ -113,6 +116,172 @@ function loadUtilsWithLayerSpy({ deferClose = false } = {}) {
   return { A4Utils: window.A4Utils, body, layerCalls, releaseClose: () => releaseClose?.() }
 }
 
+function loadUtilsWithRealLayers({ reducedMotion = false } = {}) {
+  function createClassList(initial = []) {
+    const values = new Set(initial)
+    return {
+      add(...names) { names.forEach((name) => values.add(name)) },
+      remove(...names) { names.forEach((name) => values.delete(name)) },
+      contains(name) { return values.has(name) },
+      toggle(name, force) {
+        const enabled = force === undefined ? !values.has(name) : !!force
+        if (enabled) values.add(name)
+        else values.delete(name)
+        return enabled
+      },
+      values,
+    }
+  }
+
+  const documentListeners = new Map()
+  const document = {
+    readyState: "complete",
+    activeElement: null,
+    addEventListener(type, listener) {
+      const entries = documentListeners.get(type) || []
+      entries.push(listener)
+      documentListeners.set(type, entries)
+    },
+    removeEventListener(type, listener) {
+      documentListeners.set(type, (documentListeners.get(type) || []).filter((entry) => entry !== listener))
+    },
+    getElementById(id) {
+      const visit = (node) => {
+        if (node.id === id) return node
+        for (const child of node.children || []) {
+          const match = visit(child)
+          if (match) return match
+        }
+        return null
+      }
+      return visit(document.body)
+    },
+    querySelectorAll() { return [] },
+  }
+
+  function createElement(tagName = "div") {
+    const attributes = new Map()
+    const listeners = new Map()
+    const element = {
+      id: "",
+      tagName: String(tagName).toUpperCase(),
+      children: [],
+      parentElement: null,
+      ownerDocument: document,
+      style: {},
+      dataset: {},
+      textContent: "",
+      type: "",
+      disabled: false,
+      inert: false,
+      offsetParent: String(tagName).toUpperCase() === "BUTTON" ? {} : null,
+      classList: createClassList(),
+      setAttribute(name, value) { attributes.set(name, String(value)) },
+      getAttribute(name) { return attributes.get(name) ?? null },
+      hasAttribute(name) { return attributes.has(name) },
+      removeAttribute(name) { attributes.delete(name) },
+      addEventListener(type, listener) {
+        const entries = listeners.get(type) || []
+        entries.push(listener)
+        listeners.set(type, entries)
+      },
+      removeEventListener(type, listener) {
+        listeners.set(type, (listeners.get(type) || []).filter((entry) => entry !== listener))
+      },
+      dispatchEvent(event) {
+        event.target ||= element
+        for (const listener of listeners.get(event.type) || []) listener(event)
+        return !event.defaultPrevented
+      },
+      click() {
+        element.dispatchEvent({ type: "click", defaultPrevented: false, preventDefault() { this.defaultPrevented = true } })
+      },
+      appendChild(child) {
+        child.parentElement = element
+        child.ownerDocument = document
+        element.children.push(child)
+        return child
+      },
+      remove() { element.parentElement?.removeChild?.(element) },
+      removeChild(child) {
+        element.children = element.children.filter((entry) => entry !== child)
+        child.parentElement = null
+        return child
+      },
+      contains(candidate) {
+        return candidate === element || element.children.some((child) => child.contains?.(candidate))
+      },
+      focus() { document.activeElement = element },
+      blur() { if (document.activeElement === element) document.activeElement = null },
+      querySelectorAll() {
+        const matches = []
+        const visit = (node) => {
+          for (const child of node.children || []) {
+            if (["BUTTON", "INPUT", "TEXTAREA", "SELECT", "DETAILS", "A"].includes(child.tagName)) matches.push(child)
+            visit(child)
+          }
+        }
+        visit(element)
+        return matches
+      },
+      querySelector(selector) {
+        const visit = (node) => {
+          for (const child of node.children || []) {
+            if (selector === "[data-autofocus]" && child.hasAttribute("data-autofocus")) return child
+            if (selector.includes("data-layer-close") && child.hasAttribute("data-layer-close")) return child
+            if (selector.includes("modal-backdrop") && child.classList.contains("modal-backdrop")) return child
+            const match = visit(child)
+            if (match) return match
+          }
+          return null
+        }
+        return visit(element)
+      },
+    }
+    Object.defineProperty(element, "className", {
+      get() { return [...element.classList.values].join(" ") },
+      set(value) {
+        element.classList.values.clear()
+        String(value || "").split(/\s+/).filter(Boolean).forEach((name) => element.classList.add(name))
+      },
+    })
+    return element
+  }
+
+  document.createElement = createElement
+  document.body = createElement("body")
+  const window = {
+    document,
+    scrollY: 0,
+    scrollTo() {},
+    setTimeout,
+    clearTimeout,
+    matchMedia: () => ({ matches: reducedMotion }),
+  }
+  window.window = window
+  const sandbox = {
+    window,
+    document,
+    navigator: { userAgent: "node", maxTouchPoints: 0 },
+    Blob,
+    URL,
+    console,
+    CustomEvent: class CustomEvent {
+      constructor(type, options = {}) {
+        this.type = type
+        this.cancelable = !!options.cancelable
+        this.detail = options.detail
+        this.defaultPrevented = false
+      }
+      preventDefault() { if (this.cancelable) this.defaultPrevented = true }
+    },
+  }
+  vm.createContext(sandbox)
+  vm.runInContext(layersCode, sandbox)
+  vm.runInContext(utilsCode, sandbox)
+  return { A4UI: window.A4UI, A4Utils: window.A4Utils, body: document.body, document }
+}
+
 const A4Utils = loadUtils()
 
 describe("A4Utils.sanitizeFilename", () => {
@@ -169,5 +338,38 @@ describe("A4Utils modal integration", () => {
     releaseClose()
     assert.equal(await result, false)
     assert.equal(body.children.length, 0)
+  })
+
+  it("settles and removes each real confirmation owner when the router closes all layers", async () => {
+    const { A4UI, A4Utils: utils, body, document } = loadUtilsWithRealLayers()
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const result = utils.showConfirmDialog(`确认 ${attempt}`)
+      assert.equal(document.getElementById("a4-confirm-title")?.textContent, "确认")
+      assert.equal(A4UI.closeAll({ immediate: true }), 1)
+      const settled = await Promise.race([
+        result,
+        new Promise((resolve) => setTimeout(() => resolve("timeout"), 50)),
+      ])
+      assert.equal(settled, false)
+      assert.equal(body.children.length, 0)
+      assert.equal(document.getElementById("a4-confirm-title"), null)
+      assert.equal(A4UI.hasOpenLayer(), false)
+    }
+  })
+
+  it("restores the trigger focus when Escape dismisses a real confirmation owner", async () => {
+    const { A4UI, A4Utils: utils, body, document } = loadUtilsWithRealLayers({ reducedMotion: true })
+    const trigger = document.createElement("button")
+    body.appendChild(trigger)
+    trigger.focus()
+
+    const result = utils.showConfirmDialog("确定继续吗？")
+    assert.notEqual(document.activeElement, trigger)
+    assert.equal(A4UI.requestTopLayerClose(), true)
+
+    assert.equal(await result, false)
+    assert.equal(document.activeElement, trigger)
+    assert.equal(body.children.length, 1)
   })
 })

@@ -157,6 +157,7 @@ describe("responsive application shell", () => {
     assert.match(appCode, /register\?\.\("study"[^]*exit:\s*persistNow/s)
     assert.match(settingsPageCode, /register\?\.\("settings"[^]*exit:\s*persist/s)
     assert.match(appCode, /themeMedia[^]*isActive\("study"\)/s)
+    assert.match(appCode, /enterStudyView[^]*syncStudySystemTheme\(/s)
     assert.match(recordsCode, /themeMedia[^]*isActive\("records"\)/s)
     assert.match(settingsPageCode, /onSystemThemeChange[^]*isActive\("settings"\)/s)
     assert.match(appCode, /function isAnyModalOpen\(\)[^]*A4UI\?\.hasOpenLayer[^]*A4UI\.hasOpenLayer\(\)/s)
@@ -220,14 +221,23 @@ describe("responsive application shell", () => {
 
   it("cache-busts every changed shell asset", () => {
     const styleRevision = "20260720-1"
-    const scriptRevision = "20260720-2"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${styleRevision}"`))
     }
-    for (const script of ["js/ui/layers.js", "js/ui/router.js", "js/lookup.js", "js/app.js", "js/records.js", "js/settings-page.js"]) {
+    const scriptRevisions = new Map([
+      ["js/core/common.js", "20260720-3"],
+      ["js/ui/layers.js", "20260720-3"],
+      ["js/ui/router.js", "20260720-2"],
+      ["js/utils.js", "20260720-3"],
+      ["js/lookup.js", "20260720-3"],
+      ["js/app.js", "20260720-3"],
+      ["js/records.js", "20260720-2"],
+      ["js/settings-page.js", "20260720-2"],
+    ])
+    for (const [script, revision] of scriptRevisions) {
       const escapedScript = script.replaceAll(".", "\\.")
-      assert.match(indexMarkup, new RegExp(`src="\\./${escapedScript}\\?v=${scriptRevision}"`))
+      assert.match(indexMarkup, new RegExp(`src="\\./${escapedScript}\\?v=${revision}"`))
     }
   })
 })

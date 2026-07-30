@@ -1413,7 +1413,14 @@
       if (q) runLookup(q)
     }
 
-    function close() {
+    function close({ immediate = false, restoreFocus = true } = {}) {
+      lastQueryId += 1
+      abortOnline?.abort?.()
+      abortOnline = null
+      if (window.A4UI?.closeLayer) {
+        window.A4UI.closeLayer(dom.modal, { immediate, restoreFocus })
+        return
+      }
       setModalVisible(dom.modal, false)
     }
 
@@ -1614,6 +1621,13 @@
     }
 
     function bind() {
+      dom.modal?.addEventListener("a4-layer-dismiss", (event) => {
+        event.preventDefault()
+        close({
+          immediate: !!event.detail?.immediate,
+          restoreFocus: event.detail?.reason !== "batch",
+        })
+      })
       dom.backdrop?.addEventListener("click", close)
       dom.closeBtn?.addEventListener("click", close)
       dom.searchBtn?.addEventListener("click", () => runLookup(dom.input?.value))

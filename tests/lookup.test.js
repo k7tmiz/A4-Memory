@@ -60,7 +60,7 @@ function createElement(id = "") {
   return element
 }
 
-function loadLookup({ AbortController: AbortControllerRef, fetch: fetchRef } = {}) {
+function loadLookup({ AbortController: AbortControllerRef, fetch: fetchRef, closeLayer: closeLayerSpy } = {}) {
   const controls = new Map([
     ["#lookupBackdrop", createElement("lookupBackdrop")],
     ["#closeLookupBtn", createElement("closeLookupBtn")],
@@ -103,6 +103,9 @@ function loadLookup({ AbortController: AbortControllerRef, fetch: fetchRef } = {
     },
     requestAnimationFrame(callback) { callback() },
   }
+  if (typeof closeLayerSpy === "function") {
+    window.A4UI = { closeLayer: closeLayerSpy }
+  }
   window.window = window
   const sandbox = {
     console,
@@ -117,7 +120,7 @@ function loadLookup({ AbortController: AbortControllerRef, fetch: fetchRef } = {
   if (fetchRef) sandbox.fetch = fetchRef
   vm.createContext(sandbox)
   vm.runInContext(lookupCode, sandbox)
-  return { A4Lookup: window.A4Lookup, controls }
+  return { A4Lookup: window.A4Lookup, controls, modal }
 }
 
 describe("A4Lookup shared shell controller", () => {
@@ -207,5 +210,57 @@ describe("A4Lookup shared shell controller", () => {
     records.open()
 
     assert.equal(abortCount, 1)
+  })
+
+  it("runs the active controller abort hook when the layer owner is batch-dismissed", () => {
+    let abortCount = 0
+    const closeCalls = []
+    class FakeAbortController {
+      constructor() { this.signal = { aborted: false } }
+      abort() { this.signal.aborted = true; abortCount += 1 }
+    }
+    const { A4Lookup, modal } = loadLookup({
+      AbortController: FakeAbortController,
+      fetch: () => new Promise(() => {}),
+      closeLayer: (layer, options) => closeCalls.push({ layer, options }),
+    })
+    const state = {
+      lookupOnlineEnabled: true,
+      lookupCacheEnabled: false,
+      lookupSpanishConjugationEnabled: false,
+      rounds: [],
+      customWordbooks: [],
+    }
+    const study = A4Lookup.createLookupModalController({ getState: () => state })
+    study.runLookup("memory")
+
+    let prevented = false
+    modal.dispatch("a4-layer-dismiss", {
+      detail: { immediate: true, reason: "batch" },
+      preventDefault() { prevented = true },
+    })
+
+    assert.equal(prevented, true)
+    assert.equal(abortCount, 1)
+    assert.equal(closeCalls.length, 1)
+    assert.equal(closeCalls[0].options.restoreFocus, false)
+  })
+
+  it("restores the trigger focus when Escape dismisses the lookup owner", () => {
+    const closeCalls = []
+    const { A4Lookup, modal } = loadLookup({
+      closeLayer: (layer, options) => closeCalls.push({ layer, options }),
+    })
+    A4Lookup.createLookupModalController({
+      getState: () => ({ rounds: [], customWordbooks: [] }),
+    })
+
+    modal.dispatch("a4-layer-dismiss", {
+      detail: { immediate: false, reason: "escape" },
+      preventDefault() {},
+    })
+
+    assert.equal(closeCalls.length, 1)
+    assert.equal(closeCalls[0].options.restoreFocus, true)
   })
 })

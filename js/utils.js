@@ -80,8 +80,8 @@
     modal.setAttribute("aria-hidden", visible ? "false" : "true")
   }
 
-  function closeUtilityLayer(modal) {
-    if (window.A4UI?.closeLayer) return window.A4UI.closeLayer(modal)
+  function closeUtilityLayer(modal, options = {}) {
+    if (window.A4UI?.closeLayer) return window.A4UI.closeLayer(modal, options)
     setUtilityLayerVisible(modal, false)
     return Promise.resolve(true)
   }
@@ -163,10 +163,10 @@
       document.body.appendChild(modal)
 
       let settled = false
-      const finish = (value) => {
+      const finish = (value, options = {}) => {
         if (settled) return
         settled = true
-        Promise.resolve(closeUtilityLayer(modal))
+        Promise.resolve(closeUtilityLayer(modal, options))
           .catch(() => false)
           .then(() => {
             if (modal.parentElement === document.body) document.body.removeChild(modal)
@@ -174,6 +174,13 @@
           })
       }
 
+      modal.addEventListener("a4-layer-dismiss", (event) => {
+        event.preventDefault()
+        finish(false, {
+          immediate: !!event.detail?.immediate,
+          restoreFocus: event.detail?.reason !== "batch",
+        })
+      })
       backdrop.addEventListener("click", () => finish(false))
       closeBtn.addEventListener("click", () => finish(false))
       cancelBtn.addEventListener("click", () => finish(false))

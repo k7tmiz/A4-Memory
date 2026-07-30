@@ -222,6 +222,19 @@
     return "auto"
   }
 
+  function syncSystemThemePreference({ state, matches, active = true, applyTheme } = {}) {
+    if (!state || typeof state !== "object") return false
+    state.systemPrefersDark = !!matches
+    if (
+      active &&
+      normalizeThemeMode(state.themeMode) === "auto" &&
+      typeof applyTheme === "function"
+    ) {
+      applyTheme()
+    }
+    return state.systemPrefersDark
+  }
+
   function normalizeThemePalette(value) {
     const v = String(value || "").trim().toLowerCase()
     if (v === "paper" || v === "ocean") return v
@@ -687,6 +700,7 @@
     getRoundItemsByPage,
     normalizeAiProvider,
     normalizeThemeMode,
+    syncSystemThemePreference,
     normalizeThemePalette,
     normalizeRoundCap,
     normalizeAccent,
