@@ -1352,6 +1352,12 @@ body.settings-page #settingsModal .settings-category-tabs {
   align-self: start;
 }
 
+@media (max-width: 759px) {
+  body.settings-page #settingsModal .settings-category-tabs {
+    align-self: stretch;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #settingsModal .settings-category-indicator {
     transition: none !important;

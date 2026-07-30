@@ -199,6 +199,17 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /prefers-reduced-motion[^]*\.settings-category-panel\.settings-panel-enter-forward[^}]*animation:\s*none\s*!important/s)
   })
 
+  it("spreads the five Settings categories across the phone track while retaining the desktop rail", () => {
+    assert.match(
+      shellStyle,
+      /@media \(max-width:\s*759px\)\s*\{[^]*?body\.settings-page #settingsModal \.settings-category-tabs\s*\{[^}]*align-self:\s*stretch/s
+    )
+    assert.match(
+      sharedStyle,
+      /@media \(min-width:\s*760px\)\s*\{[^]*?#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/s
+    )
+  })
+
   it("implements the approved no-header desktop A4 workspace", () => {
     assert.match(indexMarkup, /<body class="home-page"/)
     assert.doesNotMatch(indexMarkup, /<header class="app-header"/)
