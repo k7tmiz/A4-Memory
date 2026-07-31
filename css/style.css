@@ -28,6 +28,10 @@ html {
   --wordBorder: rgba(11, 18, 32, 0.06);
   --backdrop: rgba(15, 23, 42, 0.35);
   --paper: rgba(255, 255, 255, 0.9);
+  --motion-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --motion-duration-fast: 180ms;
+  --motion-duration-page: 300ms;
 }
 
 body {

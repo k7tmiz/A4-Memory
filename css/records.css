@@ -110,7 +110,7 @@ body.records-page .app.records {
   box-shadow: 0 18px 48px color-mix(in srgb, var(--text) 14%, transparent);
   color: var(--text);
   transform-origin: top right;
-  animation: records-menu-enter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: records-menu-enter var(--motion-duration-fast) var(--motion-ease-out) both;
   backdrop-filter: blur(22px) saturate(145%);
   -webkit-backdrop-filter: blur(22px) saturate(145%);
 }
@@ -159,7 +159,7 @@ body.records-page .app.records {
   background: var(--card);
   box-shadow: 0 4px 13px color-mix(in srgb, var(--text) 8%, transparent);
   transform: translate3d(calc(var(--records-view-index) * 100%), 0, 0);
-  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform var(--motion-duration-page) var(--motion-ease-out);
   will-change: transform;
 }
 
@@ -353,7 +353,7 @@ body.records-page .app.records {
   width: var(--records-goal-progress, 0%);
   border-radius: inherit;
   background: var(--accent);
-  transition: width 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width var(--motion-duration-page) var(--motion-ease-out);
 }
 
 .rounds {
@@ -367,9 +367,9 @@ body.records-page .app.records {
   background: var(--card);
   box-shadow: 0 6px 22px color-mix(in srgb, var(--text) 5%, transparent);
   transition:
-    border-color 220ms ease-out,
-    box-shadow 220ms ease-out,
-    transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    border-color var(--motion-duration-fast) ease-out,
+    box-shadow var(--motion-duration-fast) ease-out,
+    transform var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 .round-card.is-expanded {
@@ -526,7 +526,7 @@ body.records-page .app.records {
 .round-details {
   padding: 0 18px 18px;
   border-top: 1px solid var(--border2);
-  animation: records-details-enter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: records-details-enter var(--motion-duration-fast) var(--motion-ease-out) both;
 }
 
 .round-detail-tools {
@@ -669,7 +669,7 @@ body.records-page .app.records {
   text-align: center;
 }
 
-.empty {
+body.records-page .app.records .empty {
   padding: clamp(28px, 7vw, 56px) 20px;
   border: 1px dashed var(--border3);
   border-radius: 20px;

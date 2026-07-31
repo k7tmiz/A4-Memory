@@ -19,6 +19,7 @@ const lookupCode = fs.readFileSync(path.join(ROOT, "js", "lookup.js"), "utf8")
 const routerCode = fs.readFileSync(path.join(ROOT, "js", "ui", "router.js"), "utf8")
 const layersCode = fs.readFileSync(path.join(ROOT, "js", "ui", "layers.js"), "utf8")
 const sharedStyle = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
+const themeStyle = fs.readFileSync(path.join(ROOT, "css", "theme.css"), "utf8")
 const shellStyle = fs.readFileSync(path.join(ROOT, "css", "shell.css"), "utf8")
 const settingsStyle = readOptional("css/settings.css")
 const recordsStyle = readOptional("css/records.css")
@@ -124,8 +125,8 @@ describe("responsive application shell", () => {
 
   it("loads the isolated shell stylesheet after the shared theme tokens", () => {
     assert.match(indexMarkup, /theme\.css[^>]+>[\s\S]*shell\.css/)
-    assert.match(indexMarkup, /shell\.css[^>]+>[\s\S]*settings\.css/)
-    assert.match(indexMarkup, /settings\.css[^>]+>[\s\S]*records\.css/)
+    assert.match(indexMarkup, /shell\.css[^>]+>[\s\S]*records\.css/)
+    assert.match(indexMarkup, /records\.css[^>]+>[\s\S]*settings\.css/)
     assert.match(recordsMarkup, /theme\.css[^>]+>[\s\S]*shell\.css/)
     assert.match(shellStyle, /@media \(max-width:\s*700px\)/)
     assert.match(shellStyle, /\.app-dock-shell\s*\{/)
@@ -133,6 +134,16 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /@media \(prefers-reduced-motion:\s*reduce\)/)
     assert.match(settingsStyle, /body\.settings-page \.settings-page-main/)
     assert.match(recordsStyle, /body\.records-page \.app\.records/)
+  })
+
+  it("shares motion tokens and safe-area behavior across focused page styles", () => {
+    assert.match(sharedStyle, /--motion-ease-out:\s*cubic-bezier\(/)
+    assert.match(sharedStyle, /--motion-duration-page:\s*300ms/)
+    assert.match(settingsStyle, /prefers-reduced-motion[^]*\.settings-category-indicator[^}]*transition:\s*none\s*!important/s)
+    assert.match(recordsStyle, /prefers-reduced-motion[^]*\.records-view-indicator[^}]*transition:\s*none\s*!important/s)
+    assert.match(recordsStyle, /body\.records-page \.app\.records[^}]*env\(safe-area-inset-bottom\)/s)
+    assert.match(themeStyle, /body\.theme-palette-paper/)
+    assert.match(themeStyle, /body\.theme-palette-ocean/)
   })
 
   it("defines directional view motion while the dock remains mounted", () => {
@@ -264,20 +275,25 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20260720-1"
+    const styleRevision = "20260731-1"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
+      assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${styleRevision}"`))
     }
+    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260731-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260731-1"/)
     const scriptRevisions = new Map([
-      ["js/core/common.js", "20260720-3"],
-      ["js/ui/layers.js", "20260720-3"],
-      ["js/ui/router.js", "20260720-2"],
-      ["js/utils.js", "20260720-3"],
-      ["js/lookup.js", "20260720-3"],
-      ["js/app.js", "20260720-3"],
-      ["js/records.js", "20260720-2"],
-      ["js/settings-page.js", "20260720-2"],
+      ["js/core/common.js", "20260731-1"],
+      ["js/ui/layers.js", "20260731-1"],
+      ["js/ui/router.js", "20260731-1"],
+      ["js/utils.js", "20260731-1"],
+      ["js/updater.js", "20260731-1"],
+      ["js/settings.js", "20260731-1"],
+      ["js/lookup.js", "20260731-1"],
+      ["js/app.js", "20260731-1"],
+      ["js/records.js", "20260731-1"],
+      ["js/settings-page.js", "20260731-1"],
     ])
     for (const [script, revision] of scriptRevisions) {
       const escapedScript = script.replaceAll(".", "\\.")

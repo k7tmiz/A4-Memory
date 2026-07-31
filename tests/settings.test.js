@@ -567,7 +567,7 @@ describe("A4Settings responsive category navigation", () => {
       settingsStyle,
       /#settingsModal \.settings-category-tabs\s*\{[^}]*position:\s*relative[^}]*isolation:\s*isolate[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*background:\s*var\(--card2\)/s
     )
-    assert.match(settingsStyle, /#settingsModal \.settings-category-indicator\s*\{[^}]*--settings-indicator-width[^}]*--settings-indicator-height[^}]*--settings-indicator-x[^}]*--settings-indicator-y[^}]*transition:[^}]*transform\s+280ms[^}]*width\s+280ms[^}]*height\s+280ms/s)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-indicator\s*\{[^}]*--settings-indicator-width[^}]*--settings-indicator-height[^}]*--settings-indicator-x[^}]*--settings-indicator-y[^}]*transition:[^}]*transform\s+var\(--motion-duration-page\)\s+var\(--motion-ease-out\)[^}]*width\s+var\(--motion-duration-page\)[^}]*height\s+var\(--motion-duration-page\)/s)
     assert.match(settingsStyle, /#settingsModal \.settings-category-tab\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1[^}]*white-space:\s*nowrap/s)
 
     const selectedRule = settingsStyle.match(

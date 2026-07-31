@@ -158,10 +158,10 @@ body.settings-page #settingsModal .settings-category-tabs {
     0
   );
   transition:
-    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    width 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    height 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 120ms ease-out;
+    transform var(--motion-duration-page) var(--motion-ease-out),
+    width var(--motion-duration-page) var(--motion-ease-out),
+    height var(--motion-duration-page) var(--motion-ease-out),
+    opacity var(--motion-duration-fast) ease-out;
   will-change: transform, width, height;
 }
 
