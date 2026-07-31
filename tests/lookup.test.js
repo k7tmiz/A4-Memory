@@ -61,6 +61,7 @@ function createElement(id = "") {
 }
 
 function loadLookup({ AbortController: AbortControllerRef, fetch: fetchRef, closeLayer: closeLayerSpy } = {}) {
+  const openCalls = []
   const controls = new Map([
     ["#lookupBackdrop", createElement("lookupBackdrop")],
     ["#closeLookupBtn", createElement("closeLookupBtn")],
@@ -97,7 +98,8 @@ function loadLookup({ AbortController: AbortControllerRef, fetch: fetchRef, clos
       getWordbooksFromGlobal() { return [] },
       normalizeLangTag(value) { return { base: String(value || "").split(/[-_]/)[0].toLowerCase() } },
       clamp(value, min, max) { return Math.max(min, Math.min(max, value)) },
-      setModalVisible(layer, visible) {
+      setModalVisible(layer, visible, options = {}) {
+        if (visible) openCalls.push({ layer, options })
         layer.classList[visible ? "remove" : "add"]("hidden")
       },
     },
@@ -120,10 +122,25 @@ function loadLookup({ AbortController: AbortControllerRef, fetch: fetchRef, clos
   if (fetchRef) sandbox.fetch = fetchRef
   vm.createContext(sandbox)
   vm.runInContext(lookupCode, sandbox)
-  return { A4Lookup: window.A4Lookup, controls, modal }
+  return { A4Lookup: window.A4Lookup, controls, modal, openCalls }
 }
 
 describe("A4Lookup shared shell controller", () => {
+  it("opens the shared lookup layer from the control that requested it", () => {
+    const { A4Lookup, modal, openCalls } = loadLookup()
+    const trigger = createElement("recordsLookupBtn")
+    const controller = A4Lookup.createLookupModalController({
+      getState: () => ({ rounds: [], customWordbooks: [] }),
+    })
+
+    controller.open({ trigger })
+
+    assert.equal(openCalls.length, 1)
+    assert.equal(openCalls[0].layer, modal)
+    assert.equal(openCalls[0].options.trigger, trigger)
+    assert.equal(openCalls[0].options.motion, "origin")
+  })
+
   it("binds shared DOM once and switches every user action to the route that opened it", () => {
     const { A4Lookup, controls } = loadLookup()
     const studyPatches = []

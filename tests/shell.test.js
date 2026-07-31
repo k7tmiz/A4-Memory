@@ -175,7 +175,10 @@ describe("responsive application shell", () => {
     assert.doesNotMatch(recordsCode, /addWordToCurrentRound:/)
     assert.match(appCode, /a4-cloud-auth-changed[^]*isActive\("study"\)/s)
     assert.match(recordsCode, /a4-cloud-auth-changed[^]*isActive\("records"\)/s)
-    assert.match(recordsCode, /setModalVisible\(ensureAnnouncementModal\(\),\s*true\)/)
+    assert.match(
+      recordsCode,
+      /setModalVisible\(ensureAnnouncementModal\(\),\s*true,\s*\{ motion:\s*"neutral" \}\)/
+    )
   })
 
   it("cleans route-owned layers and the Records print preview during every router leave", () => {

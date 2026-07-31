@@ -1141,11 +1141,11 @@
     return modal
   }
 
-  function setModalVisible(modal, visible) {
+  function setModalVisible(modal, visible, options = {}) {
     if (!modal) return
     const sharedSetLayerVisible = window.A4UI?.setLayerVisible || window.A4Common?.setModalVisible
     if (sharedSetLayerVisible) {
-      sharedSetLayerVisible(modal, visible)
+      sharedSetLayerVisible(modal, visible, options)
       return
     }
     if (visible) {
@@ -2303,7 +2303,7 @@
       return content
     }
 
-    function open() {
+    function open({ trigger = document.activeElement || null } = {}) {
       settingsNavigation.activate(0)
       // Show version panel only in Tauri (desktop/Android), not on web
       if (dom.versionPanel) {
@@ -2317,7 +2317,7 @@
         dom.modal.classList.remove("hidden", "a4-layer-closing")
         dom.modal.setAttribute("aria-hidden", "false")
       } else {
-        setModalVisible(dom.modal, true)
+        setModalVisible(dom.modal, true, { trigger, motion: "origin" })
       }
       const refreshNavigationIndicator = () => settingsNavigation.refreshIndicator()
       if (typeof window.requestAnimationFrame === "function") {
@@ -2768,11 +2768,11 @@
       }
     }
 
-    function openAiPreviewModal({ book, meta }) {
+    function openAiPreviewModal({ book, meta, trigger = document.activeElement || null }) {
       lastPreviewWordCount = -1
       lastPreviewMeta = ""
       renderAiPreviewModal({ book, meta })
-      setModalVisible(aiDom.modal, true)
+      setModalVisible(aiDom.modal, true, { trigger, motion: "origin" })
     }
 
     function scheduleAiPreviewRender(meta) {
@@ -2797,7 +2797,7 @@
       setModalVisible(aiDom.modal, false)
     }
 
-    dom.aiGenerateBtn?.addEventListener("click", async () => {
+    dom.aiGenerateBtn?.addEventListener("click", async (event) => {
       setAiStatus("")
       const state = getStateSafe()
       const cfg = getAiConfigFromState(state)
@@ -2817,7 +2817,11 @@
       setAiPreviewConfirmEnabled(false)
       aiPreviewer = createAiStreamPreviewer()
       aiAbortController = new AbortController()
-      openAiPreviewModal({ book: aiPreviewer.getPartialBook(), meta: "生成中… · 已解析 0 个词条" })
+      openAiPreviewModal({
+        book: aiPreviewer.getPartialBook(),
+        meta: "生成中… · 已解析 0 个词条",
+        trigger: event.currentTarget,
+      })
 
       let content
       try {
@@ -3423,7 +3427,10 @@
         if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "请先登录"
         return
       }
-      const confirmed = await showConfirmDialog("恢复本机会用云端学习数据覆盖当前浏览器本地数据。建议先导出完整学习数据作为备份。确定继续吗？")
+      const confirmed = await showConfirmDialog({
+        message: "恢复本机会用云端学习数据覆盖当前浏览器本地数据。建议先导出完整学习数据作为备份。确定继续吗？",
+        trigger: dom.cloudDownloadBtn,
+      })
       if (confirmed !== true) return
       accountBusy.downloadState = true
       renderAccountActionButtons()

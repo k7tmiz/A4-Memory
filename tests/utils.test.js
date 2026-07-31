@@ -86,8 +86,8 @@ function loadUtilsWithLayerSpy({ deferClose = false } = {}) {
     document,
     matchMedia: () => ({ matches: false }),
     A4UI: {
-      setLayerVisible(modal, visible) {
-        layerCalls.push({ modal, visible })
+      setLayerVisible(modal, visible, options = {}) {
+        layerCalls.push({ modal, visible, options })
         modal.classList.toggle?.("hidden", !visible)
       },
       closeLayer: deferClose
@@ -312,10 +312,16 @@ describe("A4Utils.sanitizeFilename", () => {
 describe("A4Utils modal integration", () => {
   it("opens and closes confirmation dialogs through the shared layer manager", async () => {
     const { A4Utils: utils, body, layerCalls } = loadUtilsWithLayerSpy()
-    const result = utils.showConfirmDialog("确定继续吗？")
+    const trigger = { id: "delete-round" }
+    const result = utils.showConfirmDialog({
+      message: "确定继续吗？",
+      trigger,
+    })
 
     assert.equal(body.children.length, 1)
     assert.deepEqual(layerCalls.map(({ visible }) => visible), [true])
+    assert.equal(layerCalls[0].options.trigger, trigger)
+    assert.equal(layerCalls[0].options.motion, "origin")
 
     const modal = body.children[0]
     const closeButton = modal.children[1].children[0].children[1].children[0]

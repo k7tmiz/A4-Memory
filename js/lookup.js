@@ -1397,8 +1397,8 @@
       })
     }
 
-    function open({ preset } = {}) {
-      setModalVisible(dom.modal, true)
+    function open({ preset, trigger = document.activeElement || null } = {}) {
+      setModalVisible(dom.modal, true, { trigger, motion: "origin" })
       const state = getStateSafe()
       if (dom.langSelect) dom.langSelect.value = getLookupLangMode(state)
       const q = String(preset || "").trim()

@@ -402,7 +402,7 @@
     }
 
     if (window.A4Common && window.A4Common.setModalVisible) {
-      window.A4Common.setModalVisible(m, true)
+      window.A4Common.setModalVisible(m, true, { motion: "neutral" })
     } else {
       m.classList.remove("hidden")
       m.setAttribute("aria-hidden", "false")

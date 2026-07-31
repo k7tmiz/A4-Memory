@@ -477,10 +477,10 @@
     }
   }
 
-  function setModalVisible(modal, visible) {
+  function setModalVisible(modal, visible, options = {}) {
     if (!modal) return
     if (window.A4UI?.setLayerVisible) {
-      window.A4UI.setLayerVisible(modal, visible)
+      window.A4UI.setLayerVisible(modal, visible, options)
       return
     }
     if (visible) {

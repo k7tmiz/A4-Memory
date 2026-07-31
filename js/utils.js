@@ -69,11 +69,11 @@
     return typeof getTauriInvoke() === "function" && /Android/i.test(navigator.userAgent || "")
   }
 
-  function setUtilityLayerVisible(modal, visible) {
+  function setUtilityLayerVisible(modal, visible, options = {}) {
     if (!modal) return
     const sharedSetLayerVisible = window.A4UI?.setLayerVisible || window.A4Common?.setModalVisible
     if (sharedSetLayerVisible) {
-      sharedSetLayerVisible(modal, visible)
+      sharedSetLayerVisible(modal, visible, options)
       return
     }
     modal.classList.toggle("hidden", !visible)
@@ -95,6 +95,8 @@
       okText = "确定",
       cancelText = "取消",
       danger = false,
+      trigger = document.activeElement || null,
+      motion = "origin",
     } = opts
 
     return new Promise((resolve) => {
@@ -185,7 +187,7 @@
       closeBtn.addEventListener("click", () => finish(false))
       cancelBtn.addEventListener("click", () => finish(false))
       okBtn.addEventListener("click", () => finish(true))
-      setUtilityLayerVisible(modal, true)
+      setUtilityLayerVisible(modal, true, { trigger, motion })
     })
   }
 
@@ -334,7 +336,10 @@
       }
     }
 
-    setUtilityLayerVisible(modal, true)
+    setUtilityLayerVisible(modal, true, {
+      trigger: select.__a4AndroidSelectButton || document.activeElement || null,
+      motion: "sheet",
+    })
     select.__a4AndroidSelectButton?.setAttribute("aria-expanded", "true")
   }
 

@@ -161,7 +161,7 @@ describe("A4Settings compact account summary", () => {
     assert.match(settingsCode, /matchMedia\("\(min-width:\s*431px\)"\)/)
     assert.match(
       settingsCode,
-      /function open\(\)\s*\{[\s\S]*?setAccountStatsExpanded\(shouldExpandAccountStatsByDefault\(accountStatsWideQuery\)\)[\s\S]*?render\(\)/
+      /function open\([^)]*\)\s*\{[\s\S]*?setAccountStatsExpanded\(shouldExpandAccountStatsByDefault\(accountStatsWideQuery\)\)[\s\S]*?render\(\)/
     )
   })
 
@@ -535,7 +535,7 @@ describe("A4Settings responsive category navigation", () => {
   it("resets to Account every time the dialog opens without runtime panel reordering", () => {
     assert.match(
       settingsCode,
-      /function open\(\)\s*\{[\s\S]*?settingsNavigation\.activate\(0\)[\s\S]*?setModalVisible\(dom\.modal, true\)/
+      /function open\([^)]*\)\s*\{[\s\S]*?settingsNavigation\.activate\(0\)[\s\S]*?setModalVisible\(dom\.modal, true,\s*\{ trigger, motion: "origin" \}\)/
     )
     assert.doesNotMatch(settingsCode, /insertBefore\(accountPanel,\s*modalBody\.firstElementChild\)/)
   })

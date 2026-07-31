@@ -445,7 +445,7 @@
 
       const deleteBtn = el("button", "", "删除本轮")
       deleteBtn.addEventListener("click", () => {
-        if (typeof onDeleteRound === "function") onDeleteRound(r.id)
+        if (typeof onDeleteRound === "function") onDeleteRound(r.id, deleteBtn)
       })
       actions.appendChild(deleteBtn)
 
@@ -935,7 +935,7 @@
         if (!unreadIds.length) return
         announcementUnreadIds = unreadIds
         renderAnnouncementList(result.announcements || [])
-        setModalVisible(ensureAnnouncementModal(), true)
+        setModalVisible(ensureAnnouncementModal(), true, { motion: "neutral" })
       } catch { /* ignore */ }
     }
 
@@ -986,7 +986,7 @@
     const render = () => {
       renderRounds(rounds, {
         state,
-        onDeleteRound: async (roundId) => {
+        onDeleteRound: async (roundId, trigger) => {
           const idx = rounds.findIndex((r) => r.id === roundId)
           if (idx < 0) return
           const roundNo = idx + 1
@@ -996,6 +996,7 @@
             message: `确定删除第${roundNo}轮？删除后后续轮次会自动顺位前移。`,
             okText: "删除本轮",
             danger: true,
+            trigger,
           })
           if (ok !== true) return
 
@@ -1085,12 +1086,15 @@
       openPrintRoundsAsPdf(rounds.map((r, idx) => ({ round: r, roundNo: idx + 1 })))
     })
 
-    lookupBtn?.addEventListener("click", () => {
-      if (lookupController) lookupController.open()
+    lookupBtn?.addEventListener("click", (event) => {
+      if (lookupController) lookupController.open({ trigger: event.currentTarget })
     })
 
-    clearBtn.addEventListener("click", async () => {
-      const ok = await showConfirmDialog("确定清空所有学习记录？清空后无法恢复。")
+    clearBtn.addEventListener("click", async (event) => {
+      const ok = await showConfirmDialog({
+        message: "确定清空所有学习记录？清空后无法恢复。",
+        trigger: event.currentTarget,
+      })
       if (ok !== true) return
       const next = {
         ...state,

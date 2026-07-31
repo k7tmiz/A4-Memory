@@ -98,31 +98,34 @@ function buildWordElement(word) {
   return el
 }
 
-function openImportModal() {
+function openImportModal(trigger = document.activeElement || null) {
   renderCustomWordbooksManage()
-  setModalVisible(dom.importModal, true)
+  setModalVisible(dom.importModal, true, { trigger, motion: "origin" })
 }
 
 function closeImportModal() {
   setModalVisible(dom.importModal, false)
 }
 
-function openRemoteImportModal() {
-  setModalVisible(dom.remoteImportModal, true)
+function openRemoteImportModal(trigger = document.activeElement || null) {
+  setModalVisible(dom.remoteImportModal, true, { trigger, motion: "origin" })
 }
 
 function closeRemoteImportModal() {
   setModalVisible(dom.remoteImportModal, false)
 }
 
-function openIntroModal() {
+function openIntroModal(trigger = null) {
   // Show download block only on web, not in Tauri app
   const block = document.getElementById("introDownloadBlock")
   if (block) {
     const isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
     block.classList.toggle("hidden", isTauri)
   }
-  setModalVisible(dom.introModal, true)
+  setModalVisible(dom.introModal, true, {
+    trigger,
+    motion: trigger ? "origin" : "neutral",
+  })
 }
 
 function closeIntroModal() {
@@ -136,10 +139,10 @@ function shouldUseAndroidWordbookPicker() {
   return /Android/i.test(navigator.userAgent || "") && !!dom.wordbookPickerBtn && !!dom.wordbookPickerModal
 }
 
-function openWordbookPicker() {
+function openWordbookPicker(trigger = dom.wordbookPickerBtn) {
   renderWordbookPicker()
   if (dom.wordbookPickerBtn) dom.wordbookPickerBtn.setAttribute("aria-expanded", "true")
-  setModalVisible(dom.wordbookPickerModal, true)
+  setModalVisible(dom.wordbookPickerModal, true, { trigger, motion: "sheet" })
 }
 
 function closeWordbookPicker() {
@@ -239,7 +242,7 @@ async function checkAnnouncements() {
     if (!unreadIds.length) return
     announcementUnreadIds = unreadIds
     renderAnnouncementList(Array.isArray(result.announcements) ? result.announcements : [])
-    setModalVisible(ensureAnnouncementModal(), true)
+    setModalVisible(ensureAnnouncementModal(), true, { motion: "neutral" })
   } catch { /* ignore */ }
 }
 
@@ -258,9 +261,9 @@ function openSettingsModal() {
   window.location.assign(href)
 }
 
-function openLookupModal({ preset } = {}) {
+function openLookupModal({ preset, trigger = document.activeElement || null } = {}) {
   if (lookupController) {
-    lookupController.open({ preset })
+    lookupController.open({ preset, trigger })
     return
   }
   window.alert("查词模块未加载。")
@@ -1327,13 +1330,13 @@ function getSelectedRemoteImportItem() {
   return remoteImportAll.find((it) => it.branch === branch && it.path === path) || null
 }
 
-async function openRemoteImportPicker({ owner, repo, language, name } = {}) {
+async function openRemoteImportPicker({ owner, repo, language, name, trigger } = {}) {
   remoteImportCtx = { owner, repo, language, name }
   setRemoteImportBusy(true)
   setRemoteImportHint("")
   if (dom.remoteImportFilterInput) dom.remoteImportFilterInput.value = ""
   if (dom.remoteImportSelect) dom.remoteImportSelect.innerHTML = ""
-  openRemoteImportModal()
+  openRemoteImportModal(trigger)
   setRemoteImportMeta(`加载中… · ${owner}/${repo}`)
 
   let result
@@ -1855,7 +1858,7 @@ function renderReviewCard() {
 }
 
 // 手动入口：默认打乱顺序，不强制新词置顶。
-function openReviewModal() {
+function openReviewModal(trigger = document.activeElement || null) {
   appState.reviewPinnedRoundItem = null
   appState.reviewContinuousAction = "repeat_round"
   appState.reviewShuffled = true
@@ -1864,11 +1867,11 @@ function openReviewModal() {
   appState.reviewScopePageIndex = clamp(Math.floor(Number(appState.currentPageIndex) || 0), 0, 999)
   refreshReviewList({ scope: "round" })
   if (dom.reviewTitleEl) dom.reviewTitleEl.textContent = "复习轮"
-  setModalVisible(dom.reviewModal, true)
+  setModalVisible(dom.reviewModal, true, { trigger, motion: "origin" })
 }
 
 // 自动入口：用于“下一个单词”后的强制复习，新词置顶；旧词仍按当前复习顺序规则排列。
-function openAutoReviewModal(pinnedRoundItem) {
+function openAutoReviewModal(pinnedRoundItem, trigger = document.activeElement || null) {
   appState.reviewPinnedRoundItem = pinnedRoundItem || null
   appState.reviewContinuousAction = "next_word"
   appState.reviewShuffled =
@@ -1887,7 +1890,7 @@ function openAutoReviewModal(pinnedRoundItem) {
     refreshReviewList({ scope: "round" })
   }
   if (dom.reviewTitleEl) dom.reviewTitleEl.textContent = "学习轮"
-  setModalVisible(dom.reviewModal, true)
+  setModalVisible(dom.reviewModal, true, { trigger, motion: "origin" })
 }
 
 function closeReviewModal() {
@@ -1907,7 +1910,7 @@ function closeReviewModal() {
   document.body.classList.remove("no-select")
 }
 
-function openRoundFullModal() {
+function openRoundFullModal(trigger = document.activeElement || null) {
   ensureCurrentRound()
   const roundNo = getCurrentRoundIndex() + 1
   const cap = getCurrentRoundCap()
@@ -1922,7 +1925,7 @@ function openRoundFullModal() {
     type === ROUND_TYPE_NORMAL
       ? `第${roundNo}轮 · 第${pageNo}/${pageCount}张 A4 已写满 ${cap} 个单词（开始于 ${startedAt}）。可在本轮新增下一张 A4 继续学习，或复习本轮。`
       : `第${roundNo}轮已写满（开始于 ${startedAt}）。`
-  setModalVisible(dom.roundFullModal, true)
+  setModalVisible(dom.roundFullModal, true, { trigger, motion: "origin" })
 }
 
 function closeRoundFullModal() {
@@ -2678,8 +2681,8 @@ function addWordToCurrentRoundFromLookup(wordRaw) {
   openAutoReviewModal(roundItem)
 }
 
-function openReviewCurrentRound() {
-  openReviewModal()
+function openReviewCurrentRound(trigger = document.activeElement || null) {
+  openReviewModal(trigger)
 }
 
 // ===== 事件绑定（首页）=====
@@ -2687,8 +2690,8 @@ dom.nextBtn.addEventListener("click", () => {
   handleNextWord()
 })
 
-dom.reviewBtn.addEventListener("click", () => {
-  openReviewCurrentRound()
+dom.reviewBtn.addEventListener("click", (event) => {
+  openReviewCurrentRound(event.currentTarget)
 })
 
 dom.newRoundBtn.addEventListener("click", () => {
@@ -2706,7 +2709,9 @@ if (window.A4Lookup && typeof window.A4Lookup.createLookupModalController === "f
 }
 
 dom.dockNextBtn?.addEventListener("click", () => dom.nextBtn.click())
-dom.paperReviewBtn?.addEventListener("click", () => dom.reviewBtn.click())
+dom.paperReviewBtn?.addEventListener("click", (event) => {
+  openReviewCurrentRound(event.currentTarget)
+})
 dom.paperMeaningBtn?.addEventListener("click", () => dom.toggleMeaningBtn.click())
 
 function setDesktopToolsVisible(visible) {
@@ -2734,13 +2739,15 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") setDesktopToolsVisible(false)
 })
 
-function setMobileMoreVisible(visible) {
+function setMobileMoreVisible(visible, trigger = dom.mobileMoreBtn) {
   if (!dom.mobileMoreModal) return
-  setModalVisible(dom.mobileMoreModal, visible)
+  setModalVisible(dom.mobileMoreModal, visible, { trigger, motion: "sheet" })
   dom.mobileMoreBtn?.setAttribute("aria-expanded", visible ? "true" : "false")
 }
 
-dom.mobileMoreBtn?.addEventListener("click", () => setMobileMoreVisible(true))
+dom.mobileMoreBtn?.addEventListener("click", (event) => {
+  setMobileMoreVisible(true, event.currentTarget)
+})
 dom.mobileMoreBackdrop?.addEventListener("click", () => setMobileMoreVisible(false))
 dom.mobileMoreCloseBtn?.addEventListener("click", () => setMobileMoreVisible(false))
 dom.mobileMoreModal?.querySelectorAll("[data-action-target]").forEach((button) => {
@@ -2750,7 +2757,9 @@ dom.mobileMoreModal?.querySelectorAll("[data-action-target]").forEach((button) =
     target?.click?.()
   })
 })
-dom.lookupBtn?.addEventListener("click", () => openLookupModal())
+dom.lookupBtn?.addEventListener("click", (event) => {
+  openLookupModal({ trigger: event.currentTarget })
+})
 
 if (shouldUseAndroidWordbookPicker()) {
   document.body.classList.add("android-wordbook-picker")
@@ -2764,15 +2773,15 @@ dom.wordbookSelect.addEventListener("change", () => {
   applyWordbookSelection(dom.wordbookSelect.value)
 })
 
-dom.wordbookPickerBtn?.addEventListener("click", () => {
-  if (shouldUseAndroidWordbookPicker()) openWordbookPicker()
+dom.wordbookPickerBtn?.addEventListener("click", (event) => {
+  if (shouldUseAndroidWordbookPicker()) openWordbookPicker(event.currentTarget)
 })
 
 dom.wordbookPickerBackdrop?.addEventListener("click", () => closeWordbookPicker())
 dom.wordbookPickerCloseBtn?.addEventListener("click", () => closeWordbookPicker())
 
-dom.importWordbookBtn.addEventListener("click", () => {
-  openImportModal()
+dom.importWordbookBtn.addEventListener("click", (event) => {
+  openImportModal(event.currentTarget)
 })
 
 dom.importBackdrop.addEventListener("click", () => closeImportModal())
@@ -2822,7 +2831,7 @@ dom.confirmRemoteImportBtn?.addEventListener("click", async () => {
   }
 })
 
-dom.importCet4Btn.addEventListener("click", async () => {
+dom.importCet4Btn.addEventListener("click", async (event) => {
   try {
     closeImportModal()
     await openRemoteImportPicker({
@@ -2830,13 +2839,14 @@ dom.importCet4Btn.addEventListener("click", async () => {
       repo: "english-vocabulary",
       name: "英语词库（k7tmiz）",
       language: "en",
+      trigger: event.currentTarget,
     })
   } catch (e) {
     showToast(`在线词书加载失败：${e?.message || "无法获取文件列表"}`)
   }
 })
 
-dom.importCet6Btn.addEventListener("click", async () => {
+dom.importCet6Btn.addEventListener("click", async (event) => {
   try {
     closeImportModal()
     await openRemoteImportPicker({
@@ -2844,6 +2854,7 @@ dom.importCet6Btn.addEventListener("click", async () => {
       repo: "spanish-vocabulary",
       name: "西班牙语词库（k7tmiz）",
       language: "es",
+      trigger: event.currentTarget,
     })
   } catch (e) {
     showToast(`在线词书加载失败：${e?.message || "无法获取文件列表"}`)
@@ -2861,8 +2872,8 @@ dom.importFile.addEventListener("change", async () => {
   }
 })
 
-dom.introBtn.addEventListener("click", () => {
-  openIntroModal()
+dom.introBtn.addEventListener("click", (event) => {
+  openIntroModal(event.currentTarget)
 })
 
 dom.introBackdrop.addEventListener("click", () => closeIntroModal())
