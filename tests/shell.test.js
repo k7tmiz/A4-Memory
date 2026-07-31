@@ -72,6 +72,13 @@ describe("responsive application shell", () => {
     assert.match(indexMarkup, /data-a4-view="settings"[^]*id="settingsPageMount"/)
   })
 
+  it("suppresses the browser outline on programmatically focused route surfaces", () => {
+    assert.match(
+      shellStyle,
+      /\[data-a4-route-focus\]:focus\s*\{[^}]*outline:\s*none/s
+    )
+  })
+
   it("keeps every Records workflow inside the task-first page shell", () => {
     assert.match(indexMarkup, /class="records-page-intro"/)
     assert.match(indexMarkup, /id="recordsToolsBtn"/)

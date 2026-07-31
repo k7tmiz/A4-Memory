@@ -17,6 +17,12 @@ function loadUpdaterHelpers() {
   return window.A4Updater
 }
 
+describe("A4Updater application version", () => {
+  it("reports the coordinated interface release version", () => {
+    assert.equal(loadUpdaterHelpers().APP_VERSION, "2.1.0")
+  })
+})
+
 describe("A4Updater release-note normalization", () => {
   it("turns Markdown and HTML-looking release text into clean list items", () => {
     const updater = loadUpdaterHelpers()

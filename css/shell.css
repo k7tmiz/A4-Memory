@@ -202,6 +202,10 @@
   isolation: isolate;
 }
 
+[data-a4-route-focus]:focus {
+  outline: none;
+}
+
 .app-view[hidden] {
   display: none !important;
 }
