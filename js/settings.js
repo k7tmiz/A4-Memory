@@ -599,6 +599,17 @@
             <button class="ghost" id="closeSettingsBtn" type="button">关闭</button>
           </div>
         </div>
+        <div class="settings-page-intro">
+          <div class="settings-page-heading">
+            <div class="settings-page-kicker">偏好与同步</div>
+            <h1>设置</h1>
+            <p>管理学习节奏、发音、AI 与设备数据。</p>
+          </div>
+          <div class="settings-page-status" aria-live="polite">
+            <span class="settings-page-status-dot" aria-hidden="true"></span>
+            <span id="settingsPageStatusText">设置会自动保存在本机</span>
+          </div>
+        </div>
         <div class="settings-shell">
           <div class="settings-category-tabs" role="tablist" aria-label="设置类别">
             <span class="settings-category-indicator" aria-hidden="true"></span>
@@ -740,11 +751,23 @@
                       </div>
                       <div class="account-summary-session"><span>会话</span><strong id="cloudSessionText">刚刚开始</strong></div>
                     </div>
-                    <div class="account-summary-actions">
-                      <button class="primary" id="cloudUploadBtn" type="button">上传云端</button>
-                      <button class="ghost" id="cloudDownloadBtn" type="button">恢复本机</button>
-                      <button class="ghost" id="cloudLogoutBtn" type="button">退出登录</button>
+                    <div class="account-cloud-actions">
+                      <button class="account-cloud-action account-cloud-action-upload" id="cloudUploadBtn" type="button">
+                        <span class="account-cloud-action-icon" aria-hidden="true">↑</span>
+                        <span class="account-cloud-action-copy">
+                          <strong class="account-cloud-action-title" id="cloudUploadLabel">上传云端</strong>
+                          <small>用本机数据更新云备份</small>
+                        </span>
+                      </button>
+                      <button class="account-cloud-action account-cloud-action-restore" id="cloudDownloadBtn" type="button">
+                        <span class="account-cloud-action-icon" aria-hidden="true">↓</span>
+                        <span class="account-cloud-action-copy">
+                          <strong class="account-cloud-action-title" id="cloudDownloadLabel">恢复本机</strong>
+                          <small>用云备份覆盖当前设备</small>
+                        </span>
+                      </button>
                     </div>
+                    <button class="account-logout-action" id="cloudLogoutBtn" type="button">退出登录</button>
                     <div class="form-help account-sync-note" id="cloudSyncStatus"></div>
                   </div>
                 </div>
@@ -1269,7 +1292,9 @@
       cloudResetPasswordBtn: modal.querySelector("#cloudResetPasswordBtn"),
       cloudLogoutBtn: modal.querySelector("#cloudLogoutBtn"),
       cloudUploadBtn: modal.querySelector("#cloudUploadBtn"),
+      cloudUploadLabel: modal.querySelector("#cloudUploadLabel"),
       cloudDownloadBtn: modal.querySelector("#cloudDownloadBtn"),
+      cloudDownloadLabel: modal.querySelector("#cloudDownloadLabel"),
       accountLoggedOut: modal.querySelector("#accountLoggedOut"),
       accountLoggedIn: modal.querySelector("#accountLoggedIn"),
       accountStatsToggleBtn: modal.querySelector("#accountStatsToggleBtn"),
@@ -1618,11 +1643,11 @@
       const syncBusy = accountBusy.uploadState || accountBusy.downloadState
       if (dom.cloudUploadBtn) {
         dom.cloudUploadBtn.disabled = syncBusy
-        dom.cloudUploadBtn.textContent = accountBusy.uploadState ? "上传中…" : "上传云端"
+        if (dom.cloudUploadLabel) dom.cloudUploadLabel.textContent = accountBusy.uploadState ? "上传中…" : "上传云端"
       }
       if (dom.cloudDownloadBtn) {
         dom.cloudDownloadBtn.disabled = syncBusy
-        dom.cloudDownloadBtn.textContent = accountBusy.downloadState ? "恢复中…" : "恢复本机"
+        if (dom.cloudDownloadLabel) dom.cloudDownloadLabel.textContent = accountBusy.downloadState ? "恢复中…" : "恢复本机"
       }
     }
 
@@ -2019,7 +2044,10 @@
         dom.onlineTtsProviderRow.classList.toggle("hidden", ttsMode !== "online")
       if (dom.onlineTtsPrivacyHint)
         dom.onlineTtsPrivacyHint.classList.toggle("hidden", ttsMode !== "online")
-      if (dom.offlineTtsSection) dom.offlineTtsSection.classList.remove("hidden")
+      if (dom.offlineTtsSection) {
+        dom.offlineTtsSection.classList.remove("hidden")
+        dom.offlineTtsSection.classList.toggle("is-secondary", ttsMode !== "offline")
+      }
       if (dom.offlineTtsCard && ttsMode === "offline") dom.offlineTtsCard.open = true
       if (dom.offlineTtsHint) {
         dom.offlineTtsHint.textContent =

@@ -7,7 +7,8 @@ const assert = require("node:assert/strict")
 const ROOT = path.join(__dirname, "..")
 const commonCode = fs.readFileSync(path.join(ROOT, "js", "core", "common.js"), "utf8")
 const settingsCode = fs.readFileSync(path.join(ROOT, "js", "settings.js"), "utf8")
-const styleCode = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
+const settingsStylePath = path.join(ROOT, "css", "settings.css")
+const settingsStyle = fs.existsSync(settingsStylePath) ? fs.readFileSync(settingsStylePath, "utf8") : ""
 
 function loadSettingsHelpers({ wordbooks = [] } = {}) {
   const document = {
@@ -176,24 +177,24 @@ describe("A4Settings compact account summary", () => {
 
   it("uses a compact three-column mobile summary and exposes all details on larger screens", () => {
     assert.match(
-      styleCode,
+      settingsStyle,
       /\.account-summary-sync\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*auto\s+minmax\(0,\s*1fr\)/s
     )
     assert.match(
-      styleCode,
+      settingsStyle,
       /\.account-summary-key-stats,\s*\.account-summary-secondary-stats\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/s
     )
     assert.match(
-      styleCode,
+      settingsStyle,
       /\.account-summary-details-toggle\s*\{[^}]*width:\s*100%[^}]*justify-content:\s*space-between/s
     )
     assert.match(
-      styleCode,
+      settingsStyle,
       /@media \(min-width:\s*431px\)[\s\S]*?\.account-summary-details-toggle\s*\{[^}]*display:\s*none/s
     )
     assert.match(
-      styleCode,
-      /@media \(max-width:\s*430px\)[\s\S]*?\.account-summary-actions #cloudLogoutBtn\s*\{[^}]*border-color:\s*transparent/s
+      settingsStyle,
+      /\.account-logout-action\s*\{[^}]*border-color:\s*transparent/s
     )
   })
 
@@ -286,6 +287,7 @@ describe("A4Settings offline voice manager visibility", () => {
     assert.match(settingsCode, /class="form-row offline-tts-section" id="offlineTtsSection"/)
     assert.doesNotMatch(settingsCode, /offlineTtsSection\.classList\.toggle\("hidden",\s*ttsMode !== "offline"\)/)
     assert.match(settingsCode, /dom\.offlineTtsSection\.classList\.remove\("hidden"\)/)
+    assert.match(settingsCode, /dom\.offlineTtsSection\.classList\.toggle\("is-secondary",\s*ttsMode !== "offline"\)/)
     assert.match(settingsCode, /renderOfflineVoiceList\(\)/)
   })
 
@@ -357,6 +359,22 @@ describe("A4Settings responsive category navigation", () => {
     assert.equal(dialog.panel.getAttribute("aria-modal"), "true")
     assert.equal(dialog.panel.getAttribute("aria-labelledby"), "settingsTitle")
     assert.equal(dialog.header.removed, false)
+  })
+
+  it("renders a page introduction and two matched cloud actions without modal navigation chrome", () => {
+    assert.match(settingsCode, /class="settings-page-intro"/)
+    assert.match(settingsCode, /class="settings-page-kicker">偏好与同步</)
+    assert.match(settingsCode, /id="settingsPageStatusText">设置会自动保存在本机</)
+    assert.match(settingsCode, /class="account-cloud-actions"/)
+    assert.match(settingsCode, /class="account-cloud-action account-cloud-action-upload"/)
+    assert.match(settingsCode, /class="account-cloud-action account-cloud-action-restore"/)
+    assert.match(settingsCode, /id="cloudUploadLabel">上传云端</)
+    assert.match(settingsCode, /id="cloudDownloadLabel">恢复本机</)
+    assert.match(settingsCode, /cloudUploadLabel\.textContent = accountBusy\.uploadState/)
+    assert.match(settingsCode, /cloudDownloadLabel\.textContent = accountBusy\.downloadState/)
+    assert.doesNotMatch(settingsCode, /cloud(?:Upload|Download)Btn\.textContent/)
+    assert.doesNotMatch(settingsCode, /id="cloudUploadBtn"[^>]*class="primary/)
+    assert.doesNotMatch(settingsCode, /settings-page-(?:back|return)/)
   })
 
   it("renders five accessible top-level categories in the approved order", () => {
@@ -540,26 +558,26 @@ describe("A4Settings responsive category navigation", () => {
     assert.doesNotMatch(settingsCode, /insertBefore\(accountPanel,\s*modalBody\.firstElementChild\)/)
   })
 
-  it("uses a theme-aware shared-indicator phone track and a two-column desktop layout", () => {
+  it("uses a dedicated theme-aware phone track and desktop settings rail", () => {
     assert.match(
-      styleCode,
-      /#settingsModal \.modal-panel\s*\{[^}]*width:\s*min\(94vw,\s*560px\)[^}]*max-width:\s*100%/s
+      settingsStyle,
+      /body\.settings-page \.settings-page-main\s*\{[^}]*width:\s*min\(100%,\s*1120px\)[^}]*margin:\s*0 auto/s
     )
     assert.match(
-      styleCode,
+      settingsStyle,
       /#settingsModal \.settings-category-tabs\s*\{[^}]*position:\s*relative[^}]*isolation:\s*isolate[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*background:\s*var\(--card2\)/s
     )
-    assert.match(styleCode, /#settingsModal \.settings-category-indicator\s*\{[^}]*--settings-indicator-width[^}]*--settings-indicator-height[^}]*--settings-indicator-x[^}]*--settings-indicator-y[^}]*transition:[^}]*transform\s+280ms[^}]*width\s+280ms[^}]*height\s+280ms/s)
-    assert.match(styleCode, /#settingsModal \.settings-category-tab\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1[^}]*white-space:\s*nowrap/s)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-indicator\s*\{[^}]*--settings-indicator-width[^}]*--settings-indicator-height[^}]*--settings-indicator-x[^}]*--settings-indicator-y[^}]*transition:[^}]*transform\s+280ms[^}]*width\s+280ms[^}]*height\s+280ms/s)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-tab\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1[^}]*white-space:\s*nowrap/s)
 
-    const selectedRule = styleCode.match(
+    const selectedRule = settingsStyle.match(
       /#settingsModal \.settings-category-tab\[aria-selected="true"\]\s*\{([^}]*)\}/s
     )
     assert.ok(selectedRule)
     assert.match(selectedRule[1], /background:\s*transparent/)
     assert.doesNotMatch(selectedRule[1], /(?:#fff(?:fff)?|\bwhite\b)/i)
 
-    const focusRule = styleCode.match(
+    const focusRule = settingsStyle.match(
       /#settingsModal \.settings-category-tab:focus-visible\s*\{([^}]*)\}/s
     )
     assert.ok(focusRule)
@@ -568,8 +586,10 @@ describe("A4Settings responsive category navigation", () => {
     assert.doesNotMatch(focusRule[1], /box-shadow|(?:#fff(?:fff)?|\bwhite\b)/i)
 
     assert.match(
-      styleCode,
-      /@media \(min-width:\s*760px\)[\s\S]*?#settingsModal \.modal-panel\s*\{[^}]*width:\s*min\(94vw,\s*920px\)[^}]*max-width:\s*100%[^}]*\}[\s\S]*?#settingsModal \.settings-shell\s*\{[^}]*grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)[^}]*\}[\s\S]*?#settingsModal \.settings-accordion-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s
+      settingsStyle,
+      /@media \(min-width:\s*760px\)[\s\S]*?#settingsModal \.settings-shell\s*\{[^}]*grid-template-columns:\s*180px\s+minmax\(0,\s*1fr\)[^}]*\}[\s\S]*?#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/s
     )
+    assert.match(settingsStyle, /\.account-cloud-action\s*\{[^}]*background:\s*color-mix\([^;]*var\(--card\)[^;]*\)[^}]*border:\s*1px solid var\(--border\)/s)
+    assert.match(settingsStyle, /\.account-cloud-action-upload\s*\{[^}]*color:\s*var\(--primary\)/s)
   })
 })

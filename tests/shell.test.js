@@ -20,6 +20,7 @@ const routerCode = fs.readFileSync(path.join(ROOT, "js", "ui", "router.js"), "ut
 const layersCode = fs.readFileSync(path.join(ROOT, "js", "ui", "layers.js"), "utf8")
 const sharedStyle = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
 const shellStyle = fs.readFileSync(path.join(ROOT, "css", "shell.css"), "utf8")
+const settingsStyle = readOptional("css/settings.css")
 const buildCode = fs.readFileSync(path.join(ROOT, "scripts", "build.mjs"), "utf8")
 
 describe("responsive application shell", () => {
@@ -100,11 +101,13 @@ describe("responsive application shell", () => {
 
   it("loads the isolated shell stylesheet after the shared theme tokens", () => {
     assert.match(indexMarkup, /theme\.css[^>]+>[\s\S]*shell\.css/)
+    assert.match(indexMarkup, /shell\.css[^>]+>[\s\S]*settings\.css/)
     assert.match(recordsMarkup, /theme\.css[^>]+>[\s\S]*shell\.css/)
     assert.match(shellStyle, /@media \(max-width:\s*700px\)/)
     assert.match(shellStyle, /\.app-dock-shell\s*\{/)
     assert.match(shellStyle, /\.mobile-more-panel\s*\{/)
     assert.match(shellStyle, /@media \(prefers-reduced-motion:\s*reduce\)/)
+    assert.match(settingsStyle, /body\.settings-page \.settings-page-main/)
   })
 
   it("defines directional view motion while the dock remains mounted", () => {
@@ -197,8 +200,8 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-initial\s*\{[^}]*settings-panel-enter-initial/s)
     assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-forward\s*\{[^}]*settings-panel-enter-forward/s)
     assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-back\s*\{[^}]*settings-panel-enter-back/s)
-    assert.doesNotMatch(shellStyle, /body\.settings-page #settingsModal \.modal-header/)
-    assert.match(shellStyle, /body\.settings-page #settingsModal \.settings-category-tabs\s*\{[^}]*top:\s*0/s)
+    assert.doesNotMatch(settingsStyle, /body\.settings-page #settingsModal \.modal-header/)
+    assert.match(settingsStyle, /body\.settings-page #settingsModal \.settings-category-tabs\s*\{[^}]*top:\s*0/s)
     assert.match(shellStyle, /prefers-reduced-motion[^]*animation-duration:\s*1ms/s)
     assert.match(shellStyle, /prefers-reduced-motion[^]*\.settings-category-indicator\s*\{[^}]*transition:\s*none\s*!important/s)
     assert.match(shellStyle, /prefers-reduced-motion[^]*\.settings-category-panel\.settings-panel-enter-forward[^}]*animation:\s*none\s*!important/s)
@@ -206,11 +209,11 @@ describe("responsive application shell", () => {
 
   it("spreads the five Settings categories across the phone track while retaining the desktop rail", () => {
     assert.match(
-      shellStyle,
+      settingsStyle,
       /@media \(max-width:\s*759px\)\s*\{[^]*?body\.settings-page #settingsModal \.settings-category-tabs\s*\{[^}]*align-self:\s*stretch/s
     )
     assert.match(
-      sharedStyle,
+      settingsStyle,
       /@media \(min-width:\s*760px\)\s*\{[^]*?#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/s
     )
   })

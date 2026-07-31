@@ -1,0 +1,845 @@
+body.settings-page {
+  min-height: 100dvh;
+}
+
+body.settings-page .settings-page-main {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding:
+    clamp(22px, 4vw, 54px)
+    max(clamp(16px, 4vw, 44px), env(safe-area-inset-right))
+    calc(124px + env(safe-area-inset-bottom))
+    max(clamp(16px, 4vw, 44px), env(safe-area-inset-left));
+}
+
+#settingsModal {
+  --primary: var(--accent);
+  --success: #0f6b44;
+  --shadow-sm: 0 8px 24px color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--text);
+}
+
+body.theme-dark #settingsModal {
+  --success: #7ee2b8;
+}
+
+body.settings-page #settingsModal.settings-page-root {
+  position: static;
+  display: block;
+  padding: 0;
+}
+
+body.settings-page #settingsModal .modal-backdrop {
+  display: none;
+}
+
+body.settings-page #settingsModal .modal-panel {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+.settings-page-intro {
+  min-width: 0;
+  margin-bottom: clamp(18px, 3vw, 30px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  color: var(--text);
+}
+
+.settings-page-heading {
+  min-width: 0;
+}
+
+.settings-page-kicker {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+}
+
+.settings-page-intro h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.settings-page-intro p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.settings-page-status {
+  min-height: 36px;
+  padding: 8px 12px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.settings-page-status-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--success) 13%, transparent);
+}
+
+#settingsModal .settings-shell {
+  min-height: 0;
+  flex: 0 0 auto;
+  display: grid;
+  align-content: start;
+  gap: clamp(14px, 2.5vw, 24px);
+}
+
+#settingsModal .settings-category-tabs {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: var(--card2);
+  box-shadow: 0 7px 22px color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+body.settings-page #settingsModal .settings-category-tabs {
+  position: sticky;
+  z-index: 18;
+  top: 0;
+  align-self: stretch;
+}
+
+#settingsModal .settings-category-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  width: var(--settings-indicator-width, 0px);
+  height: var(--settings-indicator-height, 0px);
+  border: 1px solid color-mix(in srgb, var(--text) 10%, var(--border));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--card) 96%, var(--primary) 4%);
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--text) 8%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(
+    var(--settings-indicator-x, 0px),
+    var(--settings-indicator-y, 0px),
+    0
+  );
+  transition:
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 120ms ease-out;
+  will-change: transform, width, height;
+}
+
+#settingsModal .settings-category-tabs.is-indicator-ready .settings-category-indicator {
+  opacity: 1;
+}
+
+#settingsModal .settings-category-tab {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 5px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 760;
+  white-space: nowrap;
+  transition: color 180ms ease, transform 140ms ease, background 180ms ease;
+}
+
+#settingsModal .settings-category-tab:hover {
+  background: var(--surfaceHover);
+  color: var(--text);
+}
+
+#settingsModal .settings-category-tab:active {
+  transform: scale(0.97);
+}
+
+#settingsModal .settings-category-tab[aria-selected="true"] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+}
+
+#settingsModal .settings-category-tab:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+#settingsModal .modal-body {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+#settingsModal .settings-category-panel {
+  min-width: 0;
+}
+
+#settingsModal .settings-category-panel[hidden] {
+  display: none;
+}
+
+#settingsModal .settings-accordion-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+#settingsModal .settings-category-panel > .panel,
+#settingsModal .settings-accordion-card {
+  color: var(--text);
+}
+
+#settingsModal .settings-category-panel > .panel {
+  margin: 0;
+  padding: clamp(16px, 2.5vw, 24px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+#settingsModal .settings-category-panel > .panel .section-title {
+  margin-bottom: 14px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+#settingsModal .settings-accordion-card {
+  min-width: 0;
+  align-self: start;
+  overflow: clip;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+#settingsModal .settings-accordion-card > summary {
+  position: relative;
+  min-height: 54px;
+  padding: 15px 46px 15px 17px;
+  display: flex;
+  align-items: center;
+  color: var(--text);
+  background: color-mix(in srgb, var(--card2) 92%, transparent);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 820;
+  list-style: none;
+  transition: background 160ms ease;
+}
+
+#settingsModal .settings-accordion-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+#settingsModal .settings-accordion-card > summary::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 19px;
+  width: 8px;
+  height: 8px;
+  border-right: 1.6px solid var(--muted);
+  border-bottom: 1.6px solid var(--muted);
+  transform: translateY(-70%) rotate(45deg);
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#settingsModal .settings-accordion-card[open] > summary {
+  border-bottom: 1px solid var(--border2);
+}
+
+#settingsModal .settings-accordion-card[open] > summary::after {
+  transform: translateY(-30%) rotate(225deg);
+}
+
+#settingsModal .settings-accordion-card > summary:hover {
+  background: var(--surfaceHover);
+}
+
+#settingsModal .settings-accordion-content {
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  background: color-mix(in srgb, var(--card) 96%, transparent);
+}
+
+#settingsModal #settingsPanelAccount .account-panel {
+  width: 100%;
+}
+
+.account-tabs {
+  margin-top: 8px;
+}
+
+.account-panel {
+  scroll-margin-top: 84px;
+}
+
+.account-section {
+  margin-top: 14px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--card2) 88%, transparent);
+}
+
+.account-section-title {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 780;
+}
+
+.account-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.account-summary {
+  margin-top: 4px;
+  padding: clamp(14px, 2.2vw, 20px);
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 19px;
+  background: color-mix(in srgb, var(--card2) 82%, transparent);
+}
+
+.account-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.account-summary-identity {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.account-summary-title {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.account-summary-subtitle {
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.account-badge {
+  padding: 6px 10px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--success) 14%, var(--card));
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.account-summary-sync {
+  min-width: 0;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+}
+
+.account-summary-sync-state,
+.account-summary-sync-latest {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.account-summary-sync-latest {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.account-summary-sync span {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.account-summary-sync strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.account-summary-key-stats,
+.account-summary-secondary-stats {
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+}
+
+.account-summary-stat {
+  min-width: 0;
+  padding: 10px 6px;
+  display: grid;
+  gap: 3px;
+  border-right: 1px solid var(--border2);
+  text-align: center;
+}
+
+.account-summary-stat:last-child {
+  border-right: 0;
+}
+
+.account-summary-stat span {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.account-summary-stat strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.account-summary-details-toggle {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-color: var(--border2);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: left;
+}
+
+.account-summary-details-toggle::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 180ms ease;
+}
+
+.account-summary-details-toggle.is-expanded::after {
+  transform: rotate(225deg) translate(-1px, -1px);
+}
+
+.account-summary-details {
+  display: grid;
+  gap: 9px;
+}
+
+.account-summary-session {
+  min-width: 0;
+  padding: 9px 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--border2);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--card) 82%, transparent);
+}
+
+.account-summary-session span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.account-summary-session strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 12px;
+  text-align: right;
+}
+
+.account-cloud-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.account-cloud-action {
+  min-width: 0;
+  min-height: 74px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  background: color-mix(in srgb, var(--card) 94%, var(--primary) 6%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 140ms ease;
+}
+
+.account-cloud-action:hover {
+  background: color-mix(in srgb, var(--card) 88%, var(--primary) 12%);
+  box-shadow: 0 11px 28px color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.account-cloud-action:active {
+  transform: scale(0.985);
+}
+
+.account-cloud-action:disabled {
+  cursor: wait;
+  opacity: 0.62;
+  transform: none;
+}
+
+.account-cloud-action-upload {
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  color: var(--primary);
+}
+
+.account-cloud-action-restore {
+  color: var(--text);
+}
+
+.account-cloud-action-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, currentColor 17%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.account-cloud-action-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.account-cloud-action-copy strong,
+.account-cloud-action-copy small {
+  overflow-wrap: anywhere;
+}
+
+.account-cloud-action-copy strong {
+  color: currentColor;
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.account-cloud-action-copy small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 560;
+  line-height: 1.35;
+}
+
+.account-logout-action {
+  justify-self: center;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  box-shadow: none;
+}
+
+.account-logout-action:hover {
+  border-color: color-mix(in srgb, #b42318 18%, transparent);
+  background: color-mix(in srgb, #b42318 7%, transparent);
+  color: #b42318;
+}
+
+.account-sync-note {
+  margin-top: 0;
+}
+
+.account-status {
+  margin-top: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  background: var(--card2);
+}
+
+.account-status.is-info {
+  border-color: var(--border3);
+  color: var(--text);
+}
+
+.account-status.is-success {
+  border-color: color-mix(in srgb, var(--success) 24%, transparent);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+  color: var(--success);
+}
+
+.account-status.is-error {
+  border-color: color-mix(in srgb, #b42318 24%, transparent);
+  background: color-mix(in srgb, #b42318 8%, transparent);
+  color: #b42318;
+}
+
+.offline-tts-section {
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+
+.offline-tts-section.is-secondary {
+  opacity: 0.82;
+}
+
+.offline-tts-section.is-secondary .offline-tts-hint {
+  color: var(--muted);
+}
+
+@media (min-width: 431px) {
+  .account-summary-details-toggle {
+    display: none;
+  }
+
+  .account-summary-details {
+    grid-template-columns: minmax(0, 3fr) minmax(140px, 1fr);
+  }
+}
+
+@media (min-width: 760px) {
+  #settingsModal .settings-shell {
+    grid-template-columns: 180px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  #settingsModal .settings-category-tabs {
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 20px;
+  }
+
+  #settingsModal .settings-category-tab {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    text-align: left;
+  }
+
+  #settingsModal .settings-accordion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #settingsModal .settings-accordion-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 759px) {
+  body.settings-page .settings-page-main {
+    padding:
+      max(18px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      calc(112px + env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+  }
+
+  .settings-page-intro {
+    margin-bottom: 16px;
+    padding: 0 4px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .settings-page-intro h1 {
+    font-size: 30px;
+  }
+
+  .settings-page-status {
+    min-height: 32px;
+    padding: 6px 10px;
+    box-shadow: none;
+  }
+
+  body.settings-page #settingsModal .settings-category-tabs {
+    top: max(8px, env(safe-area-inset-top));
+    align-self: stretch;
+    margin: 0 -2px;
+    background: color-mix(in srgb, var(--card2) 92%, transparent);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+  }
+
+  #settingsModal .modal-body {
+    padding-top: 14px;
+  }
+
+  #settingsModal .settings-category-panel > .panel {
+    padding: 15px;
+    border-radius: 21px;
+  }
+
+  #settingsModal .settings-accordion-card {
+    border-radius: 18px;
+  }
+
+  .account-panel .form-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 7px;
+  }
+
+  .view-tabs.account-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .view-tabs.account-tabs button {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+
+  .account-summary {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .account-summary-sync {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .account-summary-sync-latest {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .account-cloud-action {
+    min-height: 70px;
+    padding: 10px;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .account-cloud-action-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 370px) {
+  body.settings-page .settings-page-main {
+    padding-inline: max(8px, env(safe-area-inset-left));
+  }
+
+  #settingsModal .settings-category-tabs {
+    gap: 1px;
+    padding: 3px;
+  }
+
+  #settingsModal .settings-category-tab {
+    min-height: 42px;
+    padding-inline: 2px;
+    font-size: 12px;
+  }
+
+  .account-cloud-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #settingsModal .settings-category-indicator,
+  #settingsModal .settings-category-tab,
+  #settingsModal .settings-accordion-card > summary::after,
+  .account-cloud-action,
+  .offline-tts-section {
+    transition: none !important;
+  }
+}
