@@ -188,6 +188,27 @@ describe("A4Router persistent application shell", () => {
     assert.equal(historyCall[2], "./records.html")
   })
 
+  it("keeps Study, Records, and Settings on one horizontal route axis", async () => {
+    const harness = loadRouter()
+    harness.A4Router.start()
+
+    assert.equal(harness.A4Router.navigate("settings", { exitMs: 0, enterMs: 12 }), true)
+    assert.equal(harness.views[2].classList.contains("a4-view-entering-forward"), true)
+    await new Promise((resolve) => setTimeout(resolve, 16))
+
+    assert.equal(harness.A4Router.navigate("records", { exitMs: 0, enterMs: 12 }), true)
+    assert.equal(harness.views[1].classList.contains("a4-view-entering-back"), true)
+    await new Promise((resolve) => setTimeout(resolve, 16))
+
+    assert.equal(harness.A4Router.navigate("study", { exitMs: 12, enterMs: 0 }), true)
+    assert.equal(harness.views[1].classList.contains("a4-view-leaving-back"), true)
+    await new Promise((resolve) => setTimeout(resolve, 16))
+
+    assert.equal(harness.A4Router.navigate("records", { exitMs: 12, enterMs: 0 }), true)
+    assert.equal(harness.views[0].classList.contains("a4-view-leaving-forward"), true)
+    await new Promise((resolve) => setTimeout(resolve, 16))
+  })
+
   it("uses popstate without adding a second history entry", async () => {
     const harness = loadRouter()
     harness.A4Router.start()

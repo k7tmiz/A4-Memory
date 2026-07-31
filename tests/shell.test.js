@@ -188,9 +188,11 @@ describe("responsive application shell", () => {
     assert.match(recordsCode, /activePrintPreviewTeardown/)
   })
 
-  it("uses directional Settings panel motion while preserving records animation and reduced-motion safety", () => {
-    assert.match(shellStyle, /@keyframes a4-content-enter/)
-    assert.match(shellStyle, /\.rounds:not\(\.hidden\)[^}]*a4-content-enter/s)
+  it("uses horizontal page and Settings panel motion without replaying a vertical Records entrance", () => {
+    assert.doesNotMatch(shellStyle, /@keyframes a4-content-enter/)
+    assert.doesNotMatch(shellStyle, /\.rounds:not\(\.hidden\)[^}]*animation/s)
+    assert.match(shellStyle, /@keyframes a4-view-enter-forward[^}]*translate3d\(22px,\s*0,\s*0\)/s)
+    assert.match(shellStyle, /@keyframes a4-view-enter-back[^}]*translate3d\(-22px,\s*0,\s*0\)/s)
     assert.match(shellStyle, /@keyframes settings-panel-enter-initial/)
     assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-initial\s*\{[^}]*settings-panel-enter-initial/s)
     assert.match(shellStyle, /\.settings-category-panel\.settings-panel-enter-forward\s*\{[^}]*settings-panel-enter-forward/s)
