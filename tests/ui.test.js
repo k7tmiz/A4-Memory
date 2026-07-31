@@ -19,7 +19,13 @@ function createClassList(initial = []) {
   }
 }
 
-function createElement({ id = "", classes = [], tagName = "DIV", focusable = false } = {}) {
+function createElement({
+  id = "",
+  classes = [],
+  tagName = "DIV",
+  focusable = false,
+  rect = { left: 0, top: 0, width: 0, height: 0 },
+} = {}) {
   const attributes = new Map()
   const listeners = new Map()
   const element = {
@@ -35,6 +41,8 @@ function createElement({ id = "", classes = [], tagName = "DIV", focusable = fal
     parentElement: null,
     focusCount: 0,
     clickCount: 0,
+    rect: { ...rect },
+    animations: [],
     setAttribute(name, value) { attributes.set(name, String(value)) },
     getAttribute(name) { return attributes.get(name) ?? null },
     hasAttribute(name) { return attributes.has(name) },
@@ -60,6 +68,21 @@ function createElement({ id = "", classes = [], tagName = "DIV", focusable = fal
       if (element.ownerDocument.activeElement === element) element.ownerDocument.activeElement = null
     },
     click() { element.clickCount += 1 },
+    getBoundingClientRect() {
+      const { left, top, width, height } = element.rect
+      return { left, top, width, height, right: left + width, bottom: top + height }
+    },
+    animate(keyframes, options) {
+      const animation = {
+        keyframes,
+        options,
+        canceled: false,
+        finished: Promise.resolve(),
+        cancel() { animation.canceled = true },
+      }
+      element.animations.push(animation)
+      return animation
+    },
     contains(candidate) {
       if (candidate === element) return true
       return element.children.some((child) => child.contains(candidate))
@@ -71,8 +94,18 @@ function createElement({ id = "", classes = [], tagName = "DIV", focusable = fal
       return child
     },
     querySelectorAll(selector) {
+      const descendants = []
+      const visit = (node) => {
+        for (const child of node.children) {
+          descendants.push(child)
+          visit(child)
+        }
+      }
+      visit(element)
       if (selector.includes("button")) {
-        return element.children.filter((child) => child.offsetParent !== null)
+        return descendants.filter(
+          (child) => child.tagName === "BUTTON" && child.offsetParent !== null
+        )
       }
       return []
     },
@@ -83,13 +116,16 @@ function createElement({ id = "", classes = [], tagName = "DIV", focusable = fal
       if (selector.includes("modal-backdrop")) {
         return element.children.find((child) => child.classList.contains("modal-backdrop")) || null
       }
+      if (selector.includes(".modal-panel")) {
+        return element.children.find((child) => child.classList.contains("modal-panel")) || null
+      }
       return null
     },
   }
   return element
 }
 
-function loadUi({ motion = false } = {}) {
+function loadUi({ motion = false, reducedMotion = false } = {}) {
   const code = fs.readFileSync(path.join(__dirname, "..", "js", "ui", "layers.js"), "utf8")
   const documentListeners = new Map()
   const body = createElement({ tagName: "BODY" })
@@ -108,7 +144,7 @@ function loadUi({ motion = false } = {}) {
     document,
     scrollY: 137,
     scrollTo(x, y) { scrollCalls.push([x, y]) },
-    matchMedia: motion ? () => ({ matches: false }) : undefined,
+    matchMedia: motion || reducedMotion ? () => ({ matches: reducedMotion }) : undefined,
     setTimeout,
     clearTimeout,
   }
@@ -146,12 +182,18 @@ function loadUi({ motion = false } = {}) {
 function createLayer(id) {
   const layer = createElement({ id, classes: ["modal", "hidden"] })
   const backdrop = createElement({ classes: ["modal-backdrop"], focusable: false })
+  const panel = createElement({
+    classes: ["modal-panel"],
+    rect: { left: 200, top: 300, width: 320, height: 240 },
+  })
   const firstButton = createElement({ id: `${id}-first`, tagName: "BUTTON", focusable: true })
   const closeButton = createElement({ id: `${id}-close`, tagName: "BUTTON", focusable: true })
+  closeButton.setAttribute("data-layer-close", "")
   layer.appendChild(backdrop)
-  layer.appendChild(firstButton)
-  layer.appendChild(closeButton)
-  return { layer, backdrop, firstButton, closeButton }
+  panel.appendChild(firstButton)
+  panel.appendChild(closeButton)
+  layer.appendChild(panel)
+  return { layer, backdrop, panel, firstButton, closeButton }
 }
 
 describe("A4UI layer manager", () => {
@@ -227,6 +269,69 @@ describe("A4UI layer manager", () => {
 
     assert.equal(inner.backdrop.clickCount, 1)
     assert.equal(outer.backdrop.clickCount, 0)
+  })
+
+  it("opens from the clicked control and closes back to the same saved origin", async () => {
+    const { A4UI, attach, document } = loadUi({ motion: true })
+    const trigger = attach(createElement({
+      id: "open-settings",
+      tagName: "BUTTON",
+      focusable: true,
+      rect: { left: 20, top: 40, width: 80, height: 40 },
+    }))
+    const { layer, panel } = createLayer("originModal")
+    attach(layer)
+    document.activeElement = trigger
+
+    A4UI.setLayerVisible(layer, true, { trigger, motion: "origin" })
+
+    assert.equal(panel.animations.length, 1)
+    assert.equal(
+      panel.animations[0].keyframes[0].transform,
+      "translate3d(-300px, -360px, 0) scale(0.72)"
+    )
+    assert.equal(
+      panel.animations[0].keyframes.at(-1).transform,
+      "translate3d(0, 0, 0) scale(1)"
+    )
+
+    const closed = A4UI.closeLayer(layer)
+    assert.equal(
+      panel.animations.at(-1).keyframes.at(-1).transform,
+      "translate3d(-300px, -360px, 0) scale(0.72)"
+    )
+    await closed
+  })
+
+  it("uses a neutral fallback when no user trigger exists", () => {
+    const { A4UI, attach } = loadUi({ motion: true })
+    const { layer, panel } = createLayer("automaticModal")
+    attach(layer)
+
+    A4UI.setLayerVisible(layer, true, { motion: "neutral" })
+
+    assert.equal(
+      panel.animations[0].keyframes[0].transform,
+      "translate3d(0, 10px, 0) scale(0.97)"
+    )
+  })
+
+  it("removes spatial animations when reduced motion is requested", async () => {
+    const { A4UI, attach } = loadUi({ reducedMotion: true })
+    const trigger = attach(createElement({
+      id: "reduced-trigger",
+      tagName: "BUTTON",
+      focusable: true,
+      rect: { left: 20, top: 40, width: 80, height: 40 },
+    }))
+    const { layer, panel, backdrop } = createLayer("reducedModal")
+    attach(layer)
+
+    A4UI.setLayerVisible(layer, true, { trigger, motion: "origin" })
+    await A4UI.closeLayer(layer)
+
+    assert.equal(panel.animations.length, 0)
+    assert.equal(backdrop.animations.length, 0)
   })
 
   it("keeps the page locked while a layer performs its exit animation", async () => {

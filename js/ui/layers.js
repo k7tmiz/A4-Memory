@@ -3,13 +3,147 @@
   const closingLayers = new Map()
   const previousFocus = new WeakMap()
   const layerOpenOrder = new WeakMap()
+  const layerMotion = new WeakMap()
   const isolatedBodyChildren = new Map()
-  const LAYER_EXIT_MS = 180
+  const LAYER_ENTER_MS = 300
+  const LAYER_EXIT_MS = 210
   let savedScrollY = 0
   let savedBodyTop = ""
   let keydownHandler = null
   let batchClosing = false
   let nextLayerOrder = 0
+
+  function prefersReducedMotion() {
+    if (typeof window.matchMedia !== "function") return true
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  }
+
+  function readRect(element) {
+    if (!element || typeof element.getBoundingClientRect !== "function") return null
+    const rect = element.getBoundingClientRect()
+    const width = Number(rect?.width) || 0
+    const height = Number(rect?.height) || 0
+    if (width <= 0 || height <= 0) return null
+    return {
+      left: Number(rect?.left) || 0,
+      top: Number(rect?.top) || 0,
+      width,
+      height,
+    }
+  }
+
+  function resolveLayerPanel(layer) {
+    return (
+      layer?.querySelector?.(
+        "[data-a4-layer-panel], .modal-panel, .mobile-more-panel, .android-select-picker-panel"
+      ) || layer
+    )
+  }
+
+  function resolveLayerBackdrop(layer) {
+    return layer?.querySelector?.(".modal-backdrop") || null
+  }
+
+  function getOriginTransform(sourceRect, panelRect, motion) {
+    if (motion === "neutral" || !sourceRect || !panelRect) {
+      return "translate3d(0, 10px, 0) scale(0.97)"
+    }
+    const sourceX = sourceRect.left + sourceRect.width / 2
+    const sourceY = sourceRect.top + sourceRect.height / 2
+    const panelX = panelRect.left + panelRect.width / 2
+    const panelY = panelRect.top + panelRect.height / 2
+    const rawScale = sourceRect.width / panelRect.width
+    const scale = Math.max(0.72, Math.min(0.94, Number.isFinite(rawScale) ? rawScale : 0.82))
+    return `translate3d(${Math.round(sourceX - panelX)}px, ${Math.round(
+      sourceY - panelY
+    )}px, 0) scale(${scale})`
+  }
+
+  function cancelLayerAnimations(layer) {
+    const context = layerMotion.get(layer)
+    for (const animation of context?.animations || []) {
+      try {
+        animation?.cancel?.()
+      } catch {
+        // Ignore engines that reject cancellation after an animation has already settled.
+      }
+    }
+    if (context) context.animations = []
+  }
+
+  function readVisualFrame(element) {
+    if (!element || typeof window.getComputedStyle !== "function") {
+      return { transform: "translate3d(0, 0, 0) scale(1)", opacity: 1 }
+    }
+    const computed = window.getComputedStyle(element)
+    const transform =
+      computed?.transform && computed.transform !== "none"
+        ? computed.transform
+        : "translate3d(0, 0, 0) scale(1)"
+    const parsedOpacity = Number.parseFloat(computed?.opacity)
+    return {
+      transform,
+      opacity: Number.isFinite(parsedOpacity) ? parsedOpacity : 1,
+    }
+  }
+
+  function animateLayerElement(element, keyframes, options, context) {
+    if (!element || typeof element.animate !== "function") return null
+    try {
+      const animation = element.animate(keyframes, options)
+      context.animations.push(animation)
+      return animation
+    } catch {
+      return null
+    }
+  }
+
+  function waitForAnimations(animations) {
+    const promises = animations
+      .map((animation) => animation?.finished)
+      .filter((finished) => finished && typeof finished.then === "function")
+      .map((finished) => Promise.resolve(finished).catch(() => false))
+    return promises.length ? Promise.all(promises) : null
+  }
+
+  function runLayerAnimation(layer, phase) {
+    const context = layerMotion.get(layer)
+    if (!context || prefersReducedMotion()) return null
+    cancelLayerAnimations(layer)
+
+    const entering = phase === "enter"
+    const origin = getOriginTransform(context.sourceRect, context.panelRect, context.motion)
+    const current = entering
+      ? { transform: origin, opacity: 0.2 }
+      : readVisualFrame(context.panel)
+    const target = entering
+      ? { transform: "translate3d(0, 0, 0) scale(1)", opacity: 1 }
+      : { transform: origin, opacity: 0 }
+    const duration = entering ? LAYER_ENTER_MS : LAYER_EXIT_MS
+    const easing = entering
+      ? "cubic-bezier(0.2, 0.8, 0.2, 1)"
+      : "cubic-bezier(0.4, 0, 1, 1)"
+
+    const panelAnimation = animateLayerElement(
+      context.panel,
+      [current, target],
+      { duration, easing, fill: "both" },
+      context
+    )
+    const backdropCurrent = entering
+      ? { opacity: 0 }
+      : { opacity: readVisualFrame(context.backdrop).opacity }
+    const backdropTarget = entering ? { opacity: 1 } : { opacity: 0 }
+    const backdropAnimation = animateLayerElement(
+      context.backdrop,
+      [backdropCurrent, backdropTarget],
+      { duration, easing, fill: "both" },
+      context
+    )
+
+    const animations = [panelAnimation, backdropAnimation].filter(Boolean)
+    return waitForAnimations(animations)
+  }
 
   function getFocusableElements(root) {
     if (!root || typeof root.querySelectorAll !== "function") return []
@@ -143,8 +277,7 @@
   }
 
   function shouldAnimateLayerExit() {
-    if (typeof window.matchMedia !== "function") return false
-    return !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    return !prefersReducedMotion()
   }
 
   function restoreLayerFocus(layer) {
@@ -167,7 +300,9 @@
     if (pending?.timer) window.clearTimeout?.(pending.timer)
     closingLayers.delete(layer)
     layerOpenOrder.delete(layer)
-    layer.classList?.remove("a4-layer-closing")
+    cancelLayerAnimations(layer)
+    layerMotion.delete(layer)
+    layer.classList?.remove("a4-layer-entering", "a4-layer-closing", "a4-layer-css-motion")
     layer.classList?.add("hidden")
     layer.setAttribute?.("aria-hidden", "true")
     if (restoreFocus && !batchClosing) restoreLayerFocus(layer)
@@ -182,7 +317,8 @@
     if (!pending) return false
     if (pending.timer) window.clearTimeout?.(pending.timer)
     closingLayers.delete(layer)
-    layer.classList?.remove("a4-layer-closing")
+    cancelLayerAnimations(layer)
+    layer.classList?.remove("a4-layer-closing", "a4-layer-css-motion")
     pending.resolve?.(false)
     return true
   }
@@ -213,6 +349,7 @@
       return Promise.resolve(true)
     }
 
+    layer.classList?.remove("a4-layer-entering", "a4-layer-css-motion")
     layer.classList?.add("a4-layer-closing")
     let resolveClose
     const promise = new Promise((resolve) => { resolveClose = resolve })
@@ -222,29 +359,61 @@
       timer: null,
       restoreFocus: restoreFocus !== false,
     }
+    closingLayers.set(layer, pendingClose)
+    const animationFinished = runLayerAnimation(layer, "exit")
+    if (!animationFinished) layer.classList?.add("a4-layer-css-motion")
     pendingClose.timer = window.setTimeout?.(
       () => finishLayerClose(layer, true, { restoreFocus: pendingClose.restoreFocus }),
       LAYER_EXIT_MS
     )
-    closingLayers.set(layer, pendingClose)
+    animationFinished?.then?.(() => {
+      if (closingLayers.get(layer) !== pendingClose) return
+      finishLayerClose(layer, true, { restoreFocus: pendingClose.restoreFocus })
+    })
     return promise
   }
 
-  function setLayerVisible(layer, visible) {
+  function setLayerVisible(layer, visible, options = {}) {
     if (!layer) return false
     if (visible) {
       const pageWasLocked = openLayers.length > 0 || closingLayers.size > 0
-      cancelLayerClose(layer)
+      const existingMotion = layerMotion.get(layer)
+      const wasClosing = cancelLayerClose(layer)
       const openIndex = openLayers.indexOf(layer)
       if (openIndex >= 0) return false
-      previousFocus.set(layer, document.activeElement || null)
+      const trigger = options.trigger || existingMotion?.trigger || document.activeElement || null
+      const sourceRect = readRect(trigger) || existingMotion?.sourceRect || null
+      if (!wasClosing) previousFocus.set(layer, document.activeElement || null)
       layerOpenOrder.set(layer, nextLayerOrder++)
-      layer.classList?.remove("a4-layer-closing")
+      layer.classList?.remove("a4-layer-entering", "a4-layer-closing", "a4-layer-css-motion")
       layer.classList?.remove("hidden")
       layer.setAttribute?.("aria-hidden", "false")
       layer.setAttribute?.("data-a4-layer", "")
+      const panel = resolveLayerPanel(layer)
+      const backdrop = resolveLayerBackdrop(layer)
+      const panelRect = readRect(panel) || existingMotion?.panelRect || null
+      layerMotion.set(layer, {
+        trigger,
+        sourceRect,
+        panel,
+        backdrop,
+        panelRect,
+        motion: options.motion || existingMotion?.motion || (sourceRect ? "origin" : "neutral"),
+        animations: [],
+      })
       if (!pageWasLocked) lockPage()
       openLayers.push(layer)
+      if (!prefersReducedMotion()) {
+        layer.classList?.add("a4-layer-entering")
+        const context = layerMotion.get(layer)
+        const animationFinished = runLayerAnimation(layer, "enter")
+        if (!animationFinished) layer.classList?.add("a4-layer-css-motion")
+        animationFinished?.then?.(() => {
+          if (layerMotion.get(layer) !== context || closingLayers.has(layer)) return
+          cancelLayerAnimations(layer)
+          layer.classList?.remove("a4-layer-entering")
+        })
+      }
       focusLayer(layer)
       return true
     }
