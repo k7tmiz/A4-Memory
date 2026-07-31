@@ -1,5 +1,7 @@
 # 前端架构文档
 
+当前发布基线为 `2.1.0`。应用版本由 `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json` 与 `js/updater.js` 共同声明，发版前必须保持一致。
+
 ## 1. 项目结构
 
 ```
