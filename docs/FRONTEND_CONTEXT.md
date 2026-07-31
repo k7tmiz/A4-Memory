@@ -1,6 +1,6 @@
 # 前端架构文档
 
-当前发布基线为 `2.1.0`。应用版本由 `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json` 与 `js/updater.js` 共同声明，发版前必须保持一致。
+当前发布基线为 `2.2.0`。应用版本由 `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json` 与 `js/updater.js` 共同声明，发版前必须保持一致。
 
 ## 1. 项目结构
 
@@ -100,7 +100,7 @@ A4-Memory/
 
 App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
-学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，学习视图采用左侧词书/工具、中央 A4 和右侧轮次进度的工作区布局，低频工具通过 `data-action-target` 触发 `js/app.js` 中的真实按钮。
+学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，A4 纸面在视口水平居中；左侧词书/工具与右侧轮次进度相对纸面两侧固定排布。手机端低频工具收在 `.mobile-more-tools` 下拉菜单（与记录页 `.records-tools` 同构），桌面端使用 `.desktop-tools-popover`；两者与记录工具菜单共用 `a4-menu-enter` 弹出动效。查词弹窗由 `js/lookup.js` 构建为 `.lookup-modal`，采用圆形关闭钮与搜索行布局；词书选择底部面板为 `.wordbook-picker-panel`。
 
 ### App Shell（index.html）
 
@@ -148,7 +148,7 @@ index.html
 - 词库/单词归一化（`getWordsFromGlobal`、`getWordbooksFromGlobal`、`normalizeWordObject`）
 
 ### `js/ui/layers.js`
-共享弹层控制器，暴露 `window.A4UI`。标准入口为 `setLayerVisible(layer, visible, { trigger, motion })`：`trigger` 保存实际触发元素与可用矩形，`motion: "origin"` 从来源控件展开并在关闭时按同一路径返回，`"sheet"` 用于底部面板，`"neutral"` 用于没有用户来源的自动弹层。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。动画可被快速反向、中断或立即清理，并在来源消失、Web Animations API 不可用或系统要求减少动态效果时安全降级。首页弹窗、设置页内的确认/预览弹层、确认框、公告和 Android 下拉面板均通过该入口管理。路由切换按从顶层到底层的顺序向弹层所有者发送 `a4-layer-dismiss`，由所有者执行取消、请求中止、Promise 收敛和 DOM 清理，再同步收尾所有已打开或正在退出的共享弹层；批量收尾不恢复旧焦点，由目标视图独占最终焦点。
+共享弹层控制器，暴露 `window.A4UI`。标准入口为 `setLayerVisible(layer, visible, { trigger, motion })`：`trigger` 保存实际触发元素与可用矩形；`motion: "origin"` 从来源控件展开并在关闭时按同一路径返回，`"sheet"` 自面板高度方向滑入（用于词书选择等底部面板，不从顶部触发点飞入），`"neutral"` 用于没有用户来源的自动弹层。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。动画可被快速反向、中断或立即清理，并在来源消失、Web Animations API 不可用或系统要求减少动态效果时安全降级。首页弹窗、查词、设置页内确认/预览、确认框、公告和 Android 下拉面板均通过该入口管理。学习页手机「更多工具」与记录页工具菜单使用页面内 `details` 下拉，不进入弹层栈。路由切换按从顶层到底层的顺序向弹层所有者发送 `a4-layer-dismiss`，由所有者执行取消、请求中止、Promise 收敛和 DOM 清理，再同步收尾所有已打开或正在退出的共享弹层；批量收尾不恢复旧焦点，由目标视图独占最终焦点。
 
 ### `js/ui/router.js`
 持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
@@ -255,7 +255,7 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 - 词书导入、词书 JSON 导出与在线词书导入
 - 轮次推进与状态写回
 
-宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在底部更多面板；宽度达到 701px 时，学习视图使用左侧词书/工具、中央 A4、右侧轮次进度的无顶栏工作区，低频入口集中在左侧工具菜单。两种布局共用纸面复习/释义操作和悬浮底栏；「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
+宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在词书行旁的 `.mobile-more-tools` 下拉菜单；宽度达到 701px 时，A4 在视口居中，词书/工具与进度卡分居两侧，低频入口在左侧 `.desktop-tools-popover`。两种布局共用纸面复习/释义操作和悬浮底栏；「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
 
 ### `js/records.js`
 记录视图控制器（UI 层）。进入视图时重新读取存储并刷新统计与列表，离开后仍保持控制器和 DOM 挂载。负责：

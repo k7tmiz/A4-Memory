@@ -11,7 +11,7 @@
 
 Demo：https://k7tmiz.com/words
 
-当前稳定版本：[v2.1.0](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.1.0)
+当前稳定版本：[v2.2.0](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.2.0)
 
 一个纯前端背单词工具：把单词随机排在 A4 纸上作为学习载体，核心目标是打破列表式的背书模式。每新增 1 个单词都会自动打开复习弹窗；普通学习轮在多页时默认只复习当前页，只有主动点击"复习本轮"时才复习整轮全部页。项目支持学习记录、状态聚合、词书导入、查词、发音、导出与 AI 生成词书。
 
@@ -27,7 +27,7 @@ Demo：https://k7tmiz.com/words
 - 词书：内置 CET4 / CET6 / 西班牙语示例，支持 TXT/CSV/JSON 导入、JSON 导出和 GitHub 在线导入
 - 查词：本地优先、联网补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充
 - 发音：Web 端使用 SpeechSynthesis；Android Tauri 端通过原生 TextToSpeech 桥接发音，支持 en/es/ja/ko/pt/fr/de/it/eo；在线模式支持 Microsoft Edge / Google 翻译，浏览器直连优先，未及时开始播放时尝试同源代理、另一在线源、已安装离线语音和系统语音；设置页始终展示离线语音包管理，桌面端和 Android 应用可按需下载英语/西语模型（Sherpa-ONNX），Web 端会明确提示平台限制
-- 外观：学习、记录、设置常驻同一个无顶栏 App Shell，通过 History API 按底栏顺序横向切换；悬浮底栏使用滑动选中胶囊，离开学习视图时平滑收起「下一个单词」；设置采用账号、学习、发音、AI、更多五分类页面式仪表盘，记录突出今日任务与学习进度；桌面首页以中央 A4、左侧词书/工具和右侧进度组成工作区，手机首页使用紧凑词书状态与纸面快捷操作；支持释义显示/隐藏、沉浸模式、减少动态效果、auto/light/dark 主题，以及经典、纸张绿、海蓝三套配色
+- 外观：学习、记录、设置常驻同一个无顶栏 App Shell，通过 History API 按底栏顺序横向切换；悬浮底栏使用滑动选中胶囊，离开学习视图时平滑收起「下一个单词」；设置采用账号、学习、发音、AI、更多五分类页面式仪表盘，记录突出今日任务与学习进度；桌面学习页 A4 水平居中，词书/工具与进度分居两侧；手机使用紧凑词书状态、纸面操作与下拉「更多工具」菜单（与记录页工具菜单同构）；支持释义显示/隐藏、沉浸模式、减少动态效果、auto/light/dark 主题，以及经典、纸张绿、海蓝三套配色
 - 备份：完整 JSON 导入/导出
 - AI 生成词书：OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
 - 版本更新检测：自动检测 GitHub Release 新版本，桌面端会打开对应平台安装包，Android 端打开 Release 页面并提示点击 APK 文件

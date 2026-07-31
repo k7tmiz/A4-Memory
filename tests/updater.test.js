@@ -19,7 +19,7 @@ function loadUpdaterHelpers() {
 
 describe("A4Updater application version", () => {
   it("reports the coordinated interface release version", () => {
-    assert.equal(loadUpdaterHelpers().APP_VERSION, "2.1.0")
+    assert.equal(loadUpdaterHelpers().APP_VERSION, "2.2.0")
   })
 })
 

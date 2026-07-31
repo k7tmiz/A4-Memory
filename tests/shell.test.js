@@ -46,12 +46,15 @@ describe("responsive application shell", () => {
     assert.doesNotMatch(shellStyle, /\.app-dock-shell\.is-secondary/)
   })
 
-  it("moves lower-frequency study actions into one dismissible mobile sheet", () => {
-    assert.match(indexMarkup, /id="mobileMoreModal"[^>]*aria-hidden="true"/)
+  it("moves lower-frequency study actions into one dismissible mobile menu", () => {
+    assert.match(indexMarkup, /id="mobileMoreTools"/)
+    assert.match(indexMarkup, /id="mobileMoreMenu"/)
+    assert.match(indexMarkup, /class="mobile-more-tools mobile-only"/)
     for (const target of ["newRoundBtn", "lookupBtn", "importWordbookBtn", "toggleImmersiveBtn", "introBtn"]) {
       assert.match(indexMarkup, new RegExp(`data-action-target="${target}"`))
     }
-    assert.match(indexMarkup, /id="mobileMoreBackdrop"/)
+    assert.match(shellStyle, /\.mobile-more-menu\s*\{[^}]*animation:\s*a4-menu-enter/s)
+    assert.match(shellStyle, /\.desktop-tools-popover\s*\{[^}]*animation:\s*a4-menu-enter/s)
   })
 
   it("places Review and Meaning in a shared paper toolbar while keeping real action targets", () => {
@@ -137,7 +140,7 @@ describe("responsive application shell", () => {
     assert.match(recordsMarkup, /theme\.css[^>]+>[\s\S]*shell\.css/)
     assert.match(shellStyle, /@media \(max-width:\s*700px\)/)
     assert.match(shellStyle, /\.app-dock-shell\s*\{/)
-    assert.match(shellStyle, /\.mobile-more-panel\s*\{/)
+    assert.match(shellStyle, /\.mobile-more-menu\s*\{/)
     assert.match(shellStyle, /@media \(prefers-reduced-motion:\s*reduce\)/)
     assert.match(settingsStyle, /body\.settings-page \.settings-page-main/)
     assert.match(recordsStyle, /body\.records-page \.app\.records/)
@@ -267,7 +270,8 @@ describe("responsive application shell", () => {
     assert.match(indexMarkup, /class="desktop-status-stack"/)
     assert.match(indexMarkup, /id="desktopToolsBtn"[^>]*aria-expanded="false"/)
     assert.match(indexMarkup, /id="desktopToolsPopover"/)
-    assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.home-page \.app\s*\{[^}]*grid-template-columns:\s*220px\s+minmax\(440px,\s*520px\)/s)
+    assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.home-page \.app\s*\{[^}]*justify-items:\s*center/s)
+    assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.home-page \.home-controls\s*\{[^}]*position:\s*fixed/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*\.desktop-status-stack\s*\{[^}]*position:\s*fixed/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*\.paper-toolbar\s*\{[^}]*display:\s*flex/s)
     assert.match(shellStyle, /body\.home-page \.paper\s*\{[^}]*width:\s*456px[^}]*max-width:\s*100%[^}]*aspect-ratio:\s*210 \/ 297/s)

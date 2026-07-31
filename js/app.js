@@ -142,7 +142,7 @@ function shouldUseAndroidWordbookPicker() {
 function openWordbookPicker(trigger = dom.wordbookPickerBtn) {
   renderWordbookPicker()
   if (dom.wordbookPickerBtn) dom.wordbookPickerBtn.setAttribute("aria-expanded", "true")
-  setModalVisible(dom.wordbookPickerModal, true, { trigger, motion: "sheet" })
+  setModalVisible(dom.wordbookPickerModal, true, { trigger, motion: "origin" })
 }
 
 function closeWordbookPicker() {
@@ -295,9 +295,8 @@ const dom = {
   mobileRoundBadge: document.getElementById("mobileRoundBadge"),
   paperMeta: document.getElementById("paperMeta"),
   mobileMoreBtn: document.getElementById("mobileMoreBtn"),
-  mobileMoreModal: document.getElementById("mobileMoreModal"),
-  mobileMoreBackdrop: document.getElementById("mobileMoreBackdrop"),
-  mobileMoreCloseBtn: document.getElementById("mobileMoreCloseBtn"),
+  mobileMoreTools: document.getElementById("mobileMoreTools"),
+  mobileMoreMenu: document.getElementById("mobileMoreMenu"),
   paperReviewBtn: document.getElementById("paperReviewBtn"),
   paperMeaningBtn: document.getElementById("paperMeaningBtn"),
   paperMeaningLabel: document.getElementById("paperMeaningLabel"),
@@ -2734,29 +2733,35 @@ dom.desktopToolsPopover?.querySelectorAll("[data-action-target]").forEach((butto
   })
 })
 
-document.addEventListener("click", () => setDesktopToolsVisible(false))
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") setDesktopToolsVisible(false)
-})
-
-function setMobileMoreVisible(visible, trigger = dom.mobileMoreBtn) {
-  if (!dom.mobileMoreModal) return
-  setModalVisible(dom.mobileMoreModal, visible, { trigger, motion: "sheet" })
-  dom.mobileMoreBtn?.setAttribute("aria-expanded", visible ? "true" : "false")
+function setMobileMoreVisible(visible) {
+  if (!dom.mobileMoreTools) return
+  dom.mobileMoreTools.open = !!visible
 }
 
-dom.mobileMoreBtn?.addEventListener("click", (event) => {
-  setMobileMoreVisible(true, event.currentTarget)
+dom.mobileMoreTools?.addEventListener("toggle", () => {
+  dom.mobileMoreBtn?.setAttribute("aria-expanded", dom.mobileMoreTools.open ? "true" : "false")
 })
-dom.mobileMoreBackdrop?.addEventListener("click", () => setMobileMoreVisible(false))
-dom.mobileMoreCloseBtn?.addEventListener("click", () => setMobileMoreVisible(false))
-dom.mobileMoreModal?.querySelectorAll("[data-action-target]").forEach((button) => {
+dom.mobileMoreMenu?.addEventListener("click", (event) => event.stopPropagation())
+dom.mobileMoreMenu?.querySelectorAll("[data-action-target]").forEach((button) => {
   button.addEventListener("click", () => {
     const target = document.getElementById(button.dataset.actionTarget || "")
     setMobileMoreVisible(false)
     target?.click?.()
   })
 })
+
+document.addEventListener("click", (event) => {
+  setDesktopToolsVisible(false)
+  if (dom.mobileMoreTools?.open && !dom.mobileMoreTools.contains(event.target)) {
+    setMobileMoreVisible(false)
+  }
+})
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return
+  setDesktopToolsVisible(false)
+  setMobileMoreVisible(false)
+})
+
 dom.lookupBtn?.addEventListener("click", (event) => {
   openLookupModal({ trigger: event.currentTarget })
 })

@@ -57,38 +57,35 @@
     modal.className = "modal hidden"
     modal.id = "lookupModal"
     modal.setAttribute("aria-hidden", "true")
+    modal.classList.add("lookup-modal")
     modal.innerHTML = `
       <div class="modal-backdrop" id="lookupBackdrop"></div>
-      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="lookupTitle">
-        <div class="modal-header">
-          <h2 id="lookupTitle">查单词</h2>
+      <div class="modal-panel lookup-panel" role="dialog" aria-modal="true" aria-labelledby="lookupTitle">
+        <div class="modal-header lookup-header">
+          <div class="lookup-heading">
+            <div class="lookup-kicker">LOOKUP</div>
+            <h2 id="lookupTitle">查单词</h2>
+          </div>
           <div class="modal-actions">
-            <button class="ghost" id="closeLookupBtn" type="button">关闭</button>
+            <button class="ghost lookup-close-btn" id="closeLookupBtn" type="button" aria-label="关闭" data-layer-close>×</button>
           </div>
         </div>
-        <div class="modal-body">
-          <div class="form-row">
-            <div class="form-label">输入</div>
-            <div class="form-control">
-              <input id="lookupInput" class="text-input" type="text" placeholder="输入单词或释义关键词（忽略大小写）" />
-            </div>
+        <div class="modal-body lookup-body">
+          <div class="lookup-search-row">
+            <input id="lookupInput" class="text-input lookup-input" type="text" placeholder="单词或释义关键词" autocomplete="off" spellcheck="false" />
+            <button class="primary lookup-search-btn" id="lookupSearchBtn" type="button">查词</button>
           </div>
-          <div class="form-row">
-            <div class="form-label">语言</div>
-            <div class="form-control">
-              <select id="lookupLangSelect" aria-label="查词语言">
-                <option value="auto">自动</option>
-                <option value="en">英语（en）</option>
-                <option value="es">西班牙语（es）</option>
-              </select>
-            </div>
-          </div>
-          <div class="stack">
-            <button class="primary full" id="lookupSearchBtn" type="button">查词</button>
+          <div class="lookup-lang-row">
+            <label class="lookup-lang-label" for="lookupLangSelect">语言</label>
+            <select id="lookupLangSelect" class="lookup-lang-select" aria-label="查词语言">
+              <option value="auto">自动</option>
+              <option value="en">英语</option>
+              <option value="es">西班牙语</option>
+            </select>
           </div>
           <div class="form-help" id="lookupHint"></div>
           <div class="toast hidden" id="lookupToast" role="status" aria-live="polite"></div>
-          <div id="lookupResults"></div>
+          <div class="lookup-results" id="lookupResults"></div>
         </div>
       </div>
     `

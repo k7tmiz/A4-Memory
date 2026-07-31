@@ -69,9 +69,18 @@
           </div>
           <button id="importWordbookBtn" type="button">导入词书</button>
           <span class="mobile-round-chip mobile-only" id="mobileRoundBadge">0 / 30</span>
-          <button class="mobile-more-button mobile-only" id="mobileMoreBtn" type="button" aria-label="更多学习工具" aria-haspopup="dialog" aria-expanded="false">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.4"></circle><circle cx="10" cy="10" r="1.4"></circle><circle cx="16" cy="10" r="1.4"></circle></svg>
-          </button>
+          <details class="mobile-more-tools mobile-only" id="mobileMoreTools">
+            <summary class="mobile-more-button" id="mobileMoreBtn" aria-label="更多学习工具">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.4"></circle><circle cx="10" cy="10" r="1.4"></circle><circle cx="16" cy="10" r="1.4"></circle></svg>
+            </summary>
+            <div class="mobile-more-menu" id="mobileMoreMenu">
+              <button data-action-target="newRoundBtn" type="button">新建一轮</button>
+              <button data-action-target="lookupBtn" type="button">查词</button>
+              <button data-action-target="importWordbookBtn" type="button">导入词书</button>
+              <button data-action-target="toggleImmersiveBtn" type="button">沉浸模式</button>
+              <button data-action-target="introBtn" type="button">用法介绍</button>
+            </div>
+          </details>
           <input id="importFile" type="file" accept=".csv,.txt,.json" hidden />
         </div>
         <div class="controls-row controls-row-toggles">
@@ -427,32 +436,18 @@ ability,n.,能力</pre>
     <div class="modal hidden wordbook-picker-modal" id="wordbookPickerModal" aria-hidden="true">
       <div class="modal-backdrop" id="wordbookPickerBackdrop"></div>
       <div class="modal-panel wordbook-picker-panel" role="dialog" aria-modal="true" aria-labelledby="wordbookPickerTitle">
-        <div class="modal-header">
-          <h2 id="wordbookPickerTitle">选择词书</h2>
+        <div class="mobile-sheet-grab" aria-hidden="true"></div>
+        <div class="modal-header wordbook-picker-header">
+          <div class="wordbook-picker-heading">
+            <div class="wordbook-picker-kicker">WORDBOOK</div>
+            <h2 id="wordbookPickerTitle">选择词书</h2>
+          </div>
           <div class="modal-actions">
-            <button class="ghost" id="wordbookPickerCloseBtn" type="button">关闭</button>
+            <button class="ghost wordbook-picker-close" id="wordbookPickerCloseBtn" type="button" aria-label="关闭" data-layer-close>×</button>
           </div>
         </div>
         <div class="wordbook-picker-list" id="wordbookPickerList"></div>
       </div>
-    </div>
-
-    <div class="modal mobile-more-modal hidden" id="mobileMoreModal" aria-hidden="true">
-      <div class="modal-backdrop" id="mobileMoreBackdrop"></div>
-      <section class="modal-panel mobile-more-panel" role="dialog" aria-modal="true" aria-labelledby="mobileMoreTitle">
-        <div class="mobile-sheet-grab" aria-hidden="true"></div>
-        <div class="mobile-more-header">
-          <h2 id="mobileMoreTitle">更多学习工具</h2>
-          <button class="mobile-sheet-close" id="mobileMoreCloseBtn" data-layer-close type="button" aria-label="关闭">×</button>
-        </div>
-        <div class="mobile-more-grid">
-          <button class="mobile-more-action" data-action-target="newRoundBtn" type="button"><span class="mobile-more-icon">＋</span><span><strong>新建一轮</strong><small>结束当前学习进度</small></span></button>
-          <button class="mobile-more-action" data-action-target="lookupBtn" type="button"><span class="mobile-more-icon">⌕</span><span><strong>查词</strong><small>查询并加入本轮</small></span></button>
-          <button class="mobile-more-action" data-action-target="importWordbookBtn" type="button"><span class="mobile-more-icon">⇧</span><span><strong>导入词书</strong><small>TXT / CSV / JSON</small></span></button>
-          <button class="mobile-more-action" data-action-target="toggleImmersiveBtn" type="button"><span class="mobile-more-icon">◫</span><span><strong>沉浸模式</strong><small>隐藏辅助控件</small></span></button>
-          <button class="mobile-more-action" data-action-target="introBtn" type="button"><span class="mobile-more-icon">?</span><span><strong>用法介绍</strong><small>查看完整说明</small></span></button>
-        </div>
-      </section>
     </div>
 
     <div class="toast hidden" id="appToast" role="status" aria-live="polite"></div>

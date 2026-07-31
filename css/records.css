@@ -102,7 +102,7 @@ body.records-page .app.records {
   right: 0;
   width: min(220px, calc(100vw - 32px));
   padding: 7px;
-  display: grid;
+  display: none;
   gap: 3px;
   border: 1px solid var(--border);
   border-radius: 17px;
@@ -110,9 +110,13 @@ body.records-page .app.records {
   box-shadow: 0 18px 48px color-mix(in srgb, var(--text) 14%, transparent);
   color: var(--text);
   transform-origin: top right;
-  animation: records-menu-enter var(--motion-duration-fast) var(--motion-ease-out) both;
   backdrop-filter: blur(22px) saturate(145%);
   -webkit-backdrop-filter: blur(22px) saturate(145%);
+}
+
+.records-tools[open] .records-tools-menu {
+  display: grid;
+  animation: a4-menu-enter var(--motion-duration-fast) var(--motion-ease-out) both;
 }
 
 .records-tools-menu button {
@@ -675,17 +679,6 @@ body.records-page .app.records .empty {
   border-radius: 20px;
   background: color-mix(in srgb, var(--card) 72%, transparent);
   text-align: center;
-}
-
-@keyframes records-menu-enter {
-  from {
-    opacity: 0;
-    transform: translate3d(0, -5px, 0) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
 }
 
 @keyframes records-details-enter {

@@ -35,7 +35,7 @@
   function resolveLayerPanel(layer) {
     return (
       layer?.querySelector?.(
-        "[data-a4-layer-panel], .modal-panel, .mobile-more-panel, .android-select-picker-panel"
+        "[data-a4-layer-panel], .modal-panel, .android-select-picker-panel"
       ) || layer
     )
   }
@@ -45,6 +45,10 @@
   }
 
   function getOriginTransform(sourceRect, panelRect, motion) {
+    if (motion === "sheet") {
+      const distance = Math.max(160, Math.round(Number(panelRect?.height) || 320))
+      return `translate3d(0, ${distance}px, 0)`
+    }
     if (motion === "neutral" || !sourceRect || !panelRect) {
       return "translate3d(0, 10px, 0) scale(0.97)"
     }

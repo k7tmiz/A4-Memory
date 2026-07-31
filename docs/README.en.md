@@ -10,7 +10,7 @@
 
 Demo: https://k7tmiz.com/words
 
-Current stable release: [v2.1.0](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.1.0)
+Current stable release: [v2.2.0](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.2.0)
 
 A pure front-end vocabulary tool built around randomly placing words on A4 pages, breaking away from list-based memorization. Each new word auto-opens the review modal; in a multi-page normal round, auto review is scoped to the current page, while "Review this round" reviews all pages. Includes learning records, status aggregation, wordbook import, lookup, pronunciation, export, and AI wordbook generation.
 
@@ -26,7 +26,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 - Wordbooks: built-in CET4 / CET6 / Spanish samples, TXT/CSV/JSON import, JSON export, GitHub online import
 - Lookup: local-first, online supplement (MyMemory + dictionaryapi.dev), Spanish conjugation, AI supplement
 - Pronunciation: SpeechSynthesis on Web; Android Tauri uses the native TextToSpeech bridge for en/es/ja/ko/pt/fr/de/it/eo; online mode supports Microsoft Edge and Google Translate, preferring direct browser playback and falling back to the same-provider proxy, the other online provider, an installed offline voice, and then the system voice; Settings always exposes offline voice management, desktop and Android builds can download English/Spanish Sherpa-ONNX packs, and Web clearly reports the platform limitation
-- Appearance: Study, Records, and Settings stay mounted in one headerless App Shell and move horizontally in dock order through the History API; the floating dock uses a sliding active indicator and smoothly collapses “Next Word” away from Study; Settings uses a five-category page dashboard for Account, Study, Pronunciation, AI, and More, while Records emphasizes today’s tasks and learning progress; the desktop workspace places the A4 sheet in the center with wordbook/tools on the left and progress on the right, while phones use a compact wordbook status and paper actions; includes meaning toggle, immersive mode, reduced-motion support, auto/light/dark theme, and Classic, Paper Green, and Ocean palettes
+- Appearance: Study, Records, and Settings stay mounted in one headerless App Shell and move horizontally in dock order through the History API; the floating dock uses a sliding active indicator and smoothly collapses “Next Word” away from Study; Settings uses a five-category page dashboard for Account, Study, Pronunciation, AI, and More, while Records emphasizes today’s tasks and learning progress; on desktop the A4 sheet is horizontally centered with wordbook/tools and progress fixed on either side; phones use a compact wordbook row, paper actions, and a dropdown “more tools” menu matching the Records tools menu; includes meaning toggle, immersive mode, reduced-motion support, auto/light/dark theme, and Classic, Paper Green, and Ocean palettes
 - Backup: full JSON import/export
 - AI wordbook generator: OpenAI / Gemini / DeepSeek / SiliconCloud / Custom
 - Version update check: auto-detects new GitHub Releases, opens the platform-specific desktop installer, and opens the Release page on Android with the APK filename highlighted
