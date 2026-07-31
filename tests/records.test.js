@@ -29,7 +29,7 @@ function loadRecordsInternals({ document: documentRef } = {}) {
   vm.runInContext(sanitizeCode, sandbox)
   const instrumented = recordsCode.replace(
     /\n  main\(\)\n\}\)\(\)\s*$/,
-    "\n  window.__recordsInternals = { normalizeState, buildCsv, computeRecordsSummary, closePrintPreview: typeof closePrintPreview === \"function\" ? closePrintPreview : undefined }\n})()"
+    "\n  window.__recordsInternals = { normalizeState, buildCsv, buildRoundCardModel, computeRecordsSummary, closePrintPreview: typeof closePrintPreview === \"function\" ? closePrintPreview : undefined }\n})()"
   )
   assert.notEqual(instrumented, recordsCode, "records test instrumentation must replace main()")
   vm.runInContext(instrumented, sandbox)
@@ -107,8 +107,53 @@ describe("records summary cards", () => {
     assert.equal(summary.todayWords, 2)
     assert.equal(summary.dueWords, 1)
     assert.equal(summary.streak, 1)
+    assert.equal(summary.goalCurrent, 2)
+    assert.equal(summary.goalTarget, 5)
+    assert.equal(summary.goalPercent, 40)
     assert.equal(summary.goalText, "每日目标：2/5 个词 · 未达成")
     assert.equal(summary.totalText, "累计 2 个词 · 完成 1 轮")
+  })
+})
+
+describe("records round presentation model", () => {
+  it("summarizes one round without building its heavy detail DOM", () => {
+    const { buildRoundCardModel } = loadRecordsInternals()
+    const statuses = [
+      ...Array.from({ length: 5 }, () => "mastered"),
+      ...Array.from({ length: 4 }, () => "learning"),
+      ...Array.from({ length: 4 }, () => "unknown"),
+    ]
+    const items = statuses.map((status, index) => ({
+      word: { term: `word-${index}` },
+      status,
+      pageIndex: 0,
+    }))
+    const latestStatusMap = new Map(
+      statuses.map((status, index) => [`word-${index}`, { status }])
+    )
+
+    const model = buildRoundCardModel(
+      { type: "normal", finishedAt: "", items },
+      {
+        roundNo: 4,
+        cap: 30,
+        latestStatusMap,
+        dueKeySet: new Set(["word-0", "word-7"]),
+      }
+    )
+
+    assert.deepEqual(JSON.parse(JSON.stringify(model)), {
+      roundNo: 4,
+      wordCount: 13,
+      cap: 30,
+      pageCount: 1,
+      due: 2,
+      mastered: 5,
+      learning: 4,
+      unknown: 4,
+      completed: false,
+      typeLabel: "普通",
+    })
   })
 })
 

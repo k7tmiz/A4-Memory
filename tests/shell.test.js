@@ -21,6 +21,7 @@ const layersCode = fs.readFileSync(path.join(ROOT, "js", "ui", "layers.js"), "ut
 const sharedStyle = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
 const shellStyle = fs.readFileSync(path.join(ROOT, "css", "shell.css"), "utf8")
 const settingsStyle = readOptional("css/settings.css")
+const recordsStyle = readOptional("css/records.css")
 const buildCode = fs.readFileSync(path.join(ROOT, "scripts", "build.mjs"), "utf8")
 
 describe("responsive application shell", () => {
@@ -70,6 +71,28 @@ describe("responsive application shell", () => {
     assert.match(indexMarkup, /data-a4-view="settings"[^]*id="settingsPageMount"/)
   })
 
+  it("keeps every Records workflow inside the task-first page shell", () => {
+    assert.match(indexMarkup, /class="records-page-intro"/)
+    assert.match(indexMarkup, /id="recordsToolsBtn"/)
+    assert.match(indexMarkup, /id="recordsToolsMenu"/)
+    assert.match(indexMarkup, /class="records-view-switch"/)
+    assert.match(indexMarkup, /class="records-view-indicator"/)
+    for (const id of [
+      "recordsFocus",
+      "viewRoundsBtn",
+      "viewStatusBtn",
+      "recordsLookupBtn",
+      "exportCsvBtn",
+      "printPdfBtn",
+      "clearBtn",
+      "rounds",
+      "statusView",
+    ]) {
+      assert.match(indexMarkup, new RegExp(`id="${id}"`))
+    }
+    assert.doesNotMatch(indexMarkup, /records-controls-top/)
+  })
+
   it("routes every Settings entry to a dedicated route view instead of opening a modal", () => {
     assert.match(indexMarkup, /id="dockSettingsNav"/)
     assert.match(indexMarkup, /data-a4-route="settings"/)
@@ -102,12 +125,14 @@ describe("responsive application shell", () => {
   it("loads the isolated shell stylesheet after the shared theme tokens", () => {
     assert.match(indexMarkup, /theme\.css[^>]+>[\s\S]*shell\.css/)
     assert.match(indexMarkup, /shell\.css[^>]+>[\s\S]*settings\.css/)
+    assert.match(indexMarkup, /settings\.css[^>]+>[\s\S]*records\.css/)
     assert.match(recordsMarkup, /theme\.css[^>]+>[\s\S]*shell\.css/)
     assert.match(shellStyle, /@media \(max-width:\s*700px\)/)
     assert.match(shellStyle, /\.app-dock-shell\s*\{/)
     assert.match(shellStyle, /\.mobile-more-panel\s*\{/)
     assert.match(shellStyle, /@media \(prefers-reduced-motion:\s*reduce\)/)
     assert.match(settingsStyle, /body\.settings-page \.settings-page-main/)
+    assert.match(recordsStyle, /body\.records-page \.app\.records/)
   })
 
   it("defines directional view motion while the dock remains mounted", () => {
@@ -232,9 +257,9 @@ describe("responsive application shell", () => {
 
   it("renders Records and Settings as desktop page surfaces above the shared dock", () => {
     assert.doesNotMatch(indexMarkup, /<header class="app-header"/)
-    assert.match(indexMarkup, /data-a4-view="records"[^]*class="page-heading"/)
+    assert.match(indexMarkup, /data-a4-view="records"[^]*class="records-page-intro"/)
     assert.match(indexMarkup, /id="recordsLookupBtn"[^>]*>查词<\/button>/)
-    assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.records-page \.app\.records\s*\{[^}]*border-radius:\s*26px/s)
+    assert.match(recordsStyle, /body\.records-page \.app\.records\s*\{[^}]*width:\s*min\(100%,\s*1120px\)/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.settings-page \.settings-page-main\s*\{[^}]*padding-bottom:\s*96px/s)
   })
 

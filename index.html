@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="./css/theme.css?v=20260719-1" />
     <link rel="stylesheet" href="./css/shell.css?v=20260720-1" />
     <link rel="stylesheet" href="./css/settings.css?v=20260731-2" />
+    <link rel="stylesheet" href="./css/records.css?v=20260731-1" />
   </head>
   <body class="home-page" data-a4-current-view="study">
     <div class="app-view-stage" id="appViewStage">
@@ -121,25 +122,29 @@
 
       <section class="app-view" data-a4-view="records" aria-hidden="true" hidden>
         <main class="app records" data-a4-route-focus tabindex="-1">
-          <div class="page-heading">
-            <h1>学习记录</h1>
-            <p>回看轮次、状态与待复习内容</p>
+          <div class="records-page-intro">
+            <div>
+              <div class="records-page-kicker">学习轨迹</div>
+              <h1>学习记录</h1>
+              <p>先处理今天，再回看每一轮。</p>
+            </div>
+            <details class="records-tools no-print">
+              <summary id="recordsToolsBtn" aria-label="记录工具">•••</summary>
+              <div class="records-tools-menu" id="recordsToolsMenu">
+                <button id="recordsLookupBtn" type="button">查词</button>
+                <button id="exportCsvBtn" type="button">导出全部 CSV</button>
+                <button id="printPdfBtn" type="button">导出全部 PDF</button>
+                <button id="clearBtn" type="button">清空记录</button>
+              </div>
+            </details>
           </div>
-          <section class="controls no-print records-controls-top" aria-label="视图与导出">
-            <div class="view-tabs" role="tablist" aria-label="记录视图">
-              <button class="ghost active" id="viewRoundsBtn" type="button" role="tab" aria-selected="true">
-                轮次视图
-              </button>
-              <button class="ghost" id="viewStatusBtn" type="button" role="tab" aria-selected="false">状态视图</button>
-            </div>
-            <div class="records-controls-actions">
-              <button class="ghost" id="recordsLookupBtn" type="button">查词</button>
-              <button class="primary" id="exportCsvBtn" type="button">导出 CSV</button>
-              <button id="printPdfBtn" type="button">导出 PDF</button>
-              <button class="ghost" id="clearBtn" type="button">清空记录</button>
-            </div>
-          </section>
-          <div class="records-stats no-print" id="recordsStats"></div>
+          <div class="records-view-switch" role="tablist" aria-label="记录视图">
+            <span class="records-view-indicator" aria-hidden="true"></span>
+            <button class="active" id="viewRoundsBtn" type="button" role="tab" aria-selected="true">轮次</button>
+            <button id="viewStatusBtn" type="button" role="tab" aria-selected="false">状态</button>
+          </div>
+          <section class="records-overview no-print" id="recordsStats"></section>
+          <section class="records-focus no-print" id="recordsFocus"></section>
 
           <div class="empty hidden" id="emptyState">
             <div class="empty-title">还没有学习记录</div>

@@ -256,6 +256,29 @@
     return { mastered, learning, unknown, due }
   }
 
+  function getCompactRoundTypeLabel(type) {
+    const label = getRoundTypeLabel(type)
+    if (label === "普通学习轮") return "普通"
+    return String(label || "").replace(/复习轮$/, "复习")
+  }
+
+  function buildRoundCardModel(round, { roundNo, cap, latestStatusMap, dueKeySet } = {}) {
+    const items = Array.isArray(round?.items) ? round.items : []
+    const counts = computeStatusCounts(items, latestStatusMap, dueKeySet)
+    return {
+      roundNo: Number(roundNo) || 0,
+      wordCount: items.length,
+      cap: normalizeRoundCap(cap),
+      pageCount: getRoundPageCount(round),
+      due: counts.due,
+      mastered: counts.mastered,
+      learning: counts.learning,
+      unknown: counts.unknown,
+      completed: !!round?.finishedAt,
+      typeLabel: getCompactRoundTypeLabel(round?.type),
+    }
+  }
+
 
   function buildStatusViewGroups({ rounds, state }) {
     const nowMs = Date.now()
@@ -387,105 +410,163 @@
     for (let i = rounds.length - 1; i >= 0; i--) {
       const r = rounds[i]
       const roundNo = i + 1
-      const card = el("article", "round-card")
-      card.dataset.roundId = r.id
-
-      const head = el("div", "round-head")
-      const headMain = el("div", "round-head-main")
-      const titleRow = el("div", "round-title-row")
-      const title = el("div", "round-title", `第${roundNo}轮`)
       const cap = typeof getRoundCap === "function" ? getRoundCap(r) : 30
-      const roundTypeLabel = getRoundTypeLabel(r?.type)
-      const pageCount = getRoundPageCount(r)
-      const statusCounts = computeStatusCounts(Array.isArray(r.items) ? r.items : [], latestStatusMap, dueKeySet)
-      const typeTag = el("span", "round-tag", roundTypeLabel)
-      titleRow.appendChild(title)
-      titleRow.appendChild(typeTag)
-      const typeMeta = el("div", "round-meta", `本轮共 ${pageCount} 页 A4`)
-      const meta = el(
-        "div",
-        "round-meta",
-        `单词：${Array.isArray(r.items) ? r.items.length : 0}/${cap}  ·  待复习：${statusCounts.due}  ·  开始：${formatDateTime(
-          r.startedAt
-        )}  ·  完成：${r.finishedAt ? formatDateTime(r.finishedAt) : "未完成"}`
+      const model = buildRoundCardModel(r, { roundNo, cap, latestStatusMap, dueKeySet })
+      const card = el("article", "round-card")
+      card.dataset.roundId = String(r?.id || "")
+
+      const summary = el("div", "round-summary")
+      const summaryMain = el("div", "round-summary-main")
+      const titleRow = el("div", "round-title-row")
+      titleRow.appendChild(el("h2", "round-title", `第 ${model.roundNo} 轮`))
+      titleRow.appendChild(el("span", "round-tag", model.typeLabel))
+      if (model.completed) titleRow.appendChild(el("span", "round-state is-complete", "已完成"))
+      else titleRow.appendChild(el("span", "round-state", "进行中"))
+      summaryMain.appendChild(titleRow)
+      summaryMain.appendChild(
+        el(
+          "div",
+          "round-time",
+          `${formatDateTime(r.startedAt)} · ${model.pageCount} 页 A4${r.finishedAt ? ` · ${formatDateTime(r.finishedAt)} 完成` : ""}`
+        )
       )
-      const statusMeta = el(
-        "div",
-        "round-meta",
-        `已掌握：${statusCounts.mastered} · 学习中：${statusCounts.learning} · 不会：${statusCounts.unknown}`
-      )
-      headMain.appendChild(titleRow)
-      headMain.appendChild(typeMeta)
-      headMain.appendChild(meta)
-      headMain.appendChild(statusMeta)
 
-      const actions = el("div", "round-actions no-print")
-      const exportRoundCsvBtn = el("button", "", "导出 CSV")
-      exportRoundCsvBtn.addEventListener("click", () => {
-        const csv = buildCsv([r])
-        downloadTextFile({
-          filename: `a4-memory-round-${roundNo}-${Date.now()}.csv`,
-          mime: "text/csv;charset=utf-8",
-          content: csv,
-        })
-      })
-      actions.appendChild(exportRoundCsvBtn)
+      const count = el("div", "round-count")
+      count.appendChild(el("strong", "", String(model.wordCount)))
+      count.appendChild(el("span", "", `/ ${model.cap} 词`))
+      summary.appendChild(summaryMain)
+      summary.appendChild(count)
+      card.appendChild(summary)
 
-      const exportRoundPdfBtn = el("button", "", "导出 PDF")
-      exportRoundPdfBtn.addEventListener("click", () => {
-        openPrintRoundsAsPdf([{ round: r, roundNo }])
-      })
-      actions.appendChild(exportRoundPdfBtn)
+      const progress = el("div", "round-progress")
+      const progressValue =
+        model.cap > 0 ? Math.max(0, Math.min(100, Math.round((model.wordCount / model.cap) * 100))) : 0
+      progress.setAttribute("role", "progressbar")
+      progress.setAttribute("aria-label", `第 ${model.roundNo} 轮学习进度`)
+      progress.setAttribute("aria-valuemin", "0")
+      progress.setAttribute("aria-valuemax", String(model.cap))
+      progress.setAttribute("aria-valuenow", String(model.wordCount))
+      progress.style.setProperty("--round-progress", `${progressValue}%`)
+      card.appendChild(progress)
 
-      const reviewBtn = el("button", "", "复习本轮")
+      const statusLine = el("div", "round-status-line")
+      const statusItems = [
+        ["is-mastered", "已掌握", model.mastered],
+        ["is-learning", "学习中", model.learning],
+        ["is-unknown", "不会", model.unknown],
+      ]
+      if (model.due > 0) statusItems.unshift(["is-due", "待复习", model.due])
+      for (const [className, label, value] of statusItems) {
+        const item = el("span", `round-status-item ${className}`)
+        item.appendChild(el("i", ""))
+        item.appendChild(document.createTextNode(`${label} ${value}`))
+        statusLine.appendChild(item)
+      }
+      card.appendChild(statusLine)
+
+      const primaryActions = el("div", "round-primary-actions no-print")
+
+      const reviewBtn = el("button", "round-review-action", "复习本轮")
       reviewBtn.addEventListener("click", () => {
         if (typeof onReviewRound === "function") onReviewRound(r.id)
       })
-      actions.appendChild(reviewBtn)
+      primaryActions.appendChild(reviewBtn)
 
-      const deleteBtn = el("button", "", "删除本轮")
-      deleteBtn.addEventListener("click", () => {
-        if (typeof onDeleteRound === "function") onDeleteRound(r.id, deleteBtn)
-      })
-      actions.appendChild(deleteBtn)
+      const detailsId = `round-details-${roundNo}`
+      const details = el("div", "round-details hidden")
+      details.id = detailsId
+      let detailsBuilt = false
 
-      head.appendChild(headMain)
-      head.appendChild(actions)
-      card.appendChild(head)
+      const ensureDetails = () => {
+        if (detailsBuilt) return
+        detailsBuilt = true
 
-      const grid = el("div", "round-grid")
-      grid.appendChild(buildRoundPreview(r, { roundNo, initialPageIndex: 0 }))
+        const detailTools = el("div", "round-detail-tools no-print")
+        const previewToggle = el("button", "round-preview-toggle", "查看 A4 排版")
+        previewToggle.type = "button"
+        previewToggle.setAttribute("aria-expanded", "false")
+        const previewHost = el("div", "round-preview-host hidden")
+        previewToggle.addEventListener("click", () => {
+          const expanded = previewToggle.getAttribute("aria-expanded") === "true"
+          previewToggle.setAttribute("aria-expanded", String(!expanded))
+          previewToggle.textContent = expanded ? "查看 A4 排版" : "收起 A4 排版"
+          previewHost.classList.toggle("hidden", expanded)
+          if (!expanded && !previewHost.firstChild) {
+            previewHost.appendChild(buildRoundPreview(r, { initialPageIndex: 0 }))
+          }
+        })
+        detailTools.appendChild(previewToggle)
 
-      const listWrap = el("div", "round-words")
-      const listTitle = el("div", "section-title", "单词列表")
-      listWrap.appendChild(listTitle)
+        const secondaryActions = el("div", "round-secondary-actions")
+        const exportRoundCsvBtn = el("button", "", "导出 CSV")
+        exportRoundCsvBtn.addEventListener("click", () => {
+          const csv = buildCsv([r])
+          downloadTextFile({
+            filename: `a4-memory-round-${roundNo}-${Date.now()}.csv`,
+            mime: "text/csv;charset=utf-8",
+            content: csv,
+          })
+        })
+        secondaryActions.appendChild(exportRoundCsvBtn)
 
-      const list = el("div", "words-list")
-      const items = Array.isArray(r.items) ? r.items : []
-      for (const it of items) {
-        const word = it?.word
-        const row = el("div", "word-row")
-        const w = el("div", "w")
-        w.textContent = word?.term || ""
-        const termKey = getWordKey ? getWordKey(word) : String(word?.term || "").trim().toLowerCase()
-        const currentStatus =
-        termKey && latestStatusMap.get(termKey) ? latestStatusMap.get(termKey).status : it?.status
-        const status = el(
-          "span",
-          `word-status word-status-${normalizeStatus(currentStatus)}`,
-          ` ${getStatusLabel(currentStatus)}`
-        )
-        w.appendChild(status)
-        row.appendChild(w)
-        row.appendChild(el("div", "m", formatMeaning(word)))
-        list.appendChild(row)
+        const exportRoundPdfBtn = el("button", "", "导出 PDF")
+        exportRoundPdfBtn.addEventListener("click", () => {
+          openPrintRoundsAsPdf([{ round: r, roundNo }])
+        })
+        secondaryActions.appendChild(exportRoundPdfBtn)
+
+        const deleteBtn = el("button", "round-delete-action", "删除本轮")
+        deleteBtn.addEventListener("click", () => {
+          if (typeof onDeleteRound === "function") onDeleteRound(r.id, deleteBtn)
+        })
+        secondaryActions.appendChild(deleteBtn)
+        detailTools.appendChild(secondaryActions)
+        details.appendChild(detailTools)
+        details.appendChild(previewHost)
+
+        const listWrap = el("div", "round-words")
+        listWrap.appendChild(el("div", "section-title", "本轮单词"))
+        const list = el("div", "words-list")
+        const items = Array.isArray(r.items) ? r.items : []
+        for (const it of items) {
+          const word = it?.word
+          const row = el("div", "word-row")
+          const w = el("div", "w")
+          w.textContent = word?.term || ""
+          const termKey = getWordKey ? getWordKey(word) : String(word?.term || "").trim().toLowerCase()
+          const currentStatus =
+            termKey && latestStatusMap.get(termKey) ? latestStatusMap.get(termKey).status : it?.status
+          w.appendChild(
+            el(
+              "span",
+              `word-status word-status-${normalizeStatus(currentStatus)}`,
+              ` ${getStatusLabel(currentStatus)}`
+            )
+          )
+          row.appendChild(w)
+          row.appendChild(el("div", "m", formatMeaning(word)))
+          list.appendChild(row)
+        }
+        if (!items.length) list.appendChild(el("div", "words-empty", "本轮暂无单词"))
+        listWrap.appendChild(list)
+        details.appendChild(listWrap)
       }
-      if (!items.length) list.appendChild(el("div", "words-empty", "本轮暂无单词"))
 
-      listWrap.appendChild(list)
-      grid.appendChild(listWrap)
-
-      card.appendChild(grid)
+      const expandBtn = el("button", "round-expand-action", "查看详情")
+      expandBtn.type = "button"
+      expandBtn.setAttribute("aria-expanded", "false")
+      expandBtn.setAttribute("aria-controls", detailsId)
+      expandBtn.addEventListener("click", () => {
+        const expanded = expandBtn.getAttribute("aria-expanded") === "true"
+        if (!expanded) ensureDetails()
+        expandBtn.setAttribute("aria-expanded", String(!expanded))
+        expandBtn.textContent = expanded ? "查看详情" : "收起详情"
+        details.classList.toggle("hidden", expanded)
+        card.classList.toggle("is-expanded", !expanded)
+      })
+      primaryActions.appendChild(expandBtn)
+      card.appendChild(primaryActions)
+      card.appendChild(details)
       roundsEl.appendChild(card)
     }
   }
@@ -498,30 +579,24 @@
     const { groups } = buildStatusViewGroups({ rounds, state })
 
     for (const g of groups) {
-      const card = el("article", "round-card")
-      const head = el("div", "round-head")
-      const title = el("div", "round-title", g.title)
-      const meta = el("div", "round-meta", `共 ${g.items.length} 个`)
-      const actions = el("div", "round-actions no-print")
+      const card = el("article", "round-card status-card")
+      const head = el("div", "status-card-head")
+      const heading = el("div", "status-card-heading")
+      heading.appendChild(el("h2", "status-card-title", g.title))
+      heading.appendChild(el("span", "status-card-count", `${g.items.length} 个`))
+      head.appendChild(heading)
+
       if (g.items.length) {
-        const genBtn = el("button", "", "生成一轮")
+        const genBtn = el("button", "status-generate-action no-print", "生成一轮")
         genBtn.addEventListener("click", () => {
           const kind = g.id === "due" ? "due" : g.id
           const next = { ...state, rounds, pendingGenerateStatusKind: kind }
           saveState(next)
           navigateToStudy()
         })
-        actions.appendChild(genBtn)
+        head.appendChild(genBtn)
       }
-      head.appendChild(title)
-      head.appendChild(meta)
-      head.appendChild(actions)
       card.appendChild(head)
-
-      const grid = el("div", "round-grid round-grid-single status-grid")
-      const listWrap = el("div", "round-words")
-      const listTitle = el("div", "section-title", "单词列表")
-      listWrap.appendChild(listTitle)
 
       const list = el("div", "words-list")
       for (const it of g.items) {
@@ -550,11 +625,8 @@
 
         list.appendChild(row)
       }
-      if (!g.items.length) list.appendChild(el("div", "words-empty", "暂无记录"))
-
-      listWrap.appendChild(list)
-      grid.appendChild(listWrap)
-      card.appendChild(grid)
+      if (!g.items.length) list.appendChild(el("div", "status-empty", "暂无记录"))
+      card.appendChild(list)
       container.appendChild(card)
     }
   }
@@ -653,6 +725,10 @@
     const goalDone =
       (goalRounds > 0 && stats.todayCompletedRounds >= goalRounds) ||
       (goalWords > 0 && stats.todayWords >= goalWords)
+    const goalTarget = goalWords > 0 ? goalWords : goalRounds
+    const goalCurrent = goalWords > 0 ? stats.todayWords : goalRounds > 0 ? stats.todayCompletedRounds : 0
+    const goalPercent =
+      goalTarget > 0 ? Math.max(0, Math.min(100, Math.round((goalCurrent / goalTarget) * 100))) : 0
     const goalText = goalParts.length
       ? `每日目标：${goalParts.join(" · ")} · ${goalDone ? "已达成" : "未达成"}`
       : "每日目标：未设置"
@@ -661,6 +737,9 @@
       todayWords: stats.todayWords,
       dueWords,
       streak: stats.streak,
+      goalCurrent,
+      goalTarget,
+      goalPercent,
       goalText,
       totalText: `累计 ${stats.totalWords} 个词 · 完成 ${stats.completedRounds} 轮`,
     }
@@ -833,10 +912,13 @@
     const statusView = document.getElementById("statusView")
     const lookupBtn = document.getElementById("recordsLookupBtn")
     const clearBtn = document.getElementById("clearBtn")
+    const viewSwitch = document.querySelector(".records-view-switch")
+    const recordsTools = document.querySelector(".records-tools")
 
     let state = normalizeState(loadState())
     let rounds = Array.isArray(state.rounds) ? state.rounds : []
     const recordsStats = document.getElementById("recordsStats")
+    const recordsFocus = document.getElementById("recordsFocus")
 
     const getResolvedDark = () => {
       if (state.themeMode === "dark") return true
@@ -981,6 +1063,10 @@
       if (viewStatusBtn) viewStatusBtn.classList.toggle("active", !roundsActive)
       if (viewRoundsBtn) viewRoundsBtn.setAttribute("aria-selected", roundsActive ? "true" : "false")
       if (viewStatusBtn) viewStatusBtn.setAttribute("aria-selected", roundsActive ? "false" : "true")
+      if (viewSwitch) {
+        viewSwitch.dataset.activeView = currentView
+        viewSwitch.style.setProperty("--records-view-index", roundsActive ? "0" : "1")
+      }
     }
 
     const render = () => {
@@ -1025,7 +1111,7 @@
       const grid = document.createElement("div")
       grid.className = "records-stat-grid"
       const cards = [
-        ["今日新增", String(summary.todayWords)],
+        ["今日单词", String(summary.todayWords)],
         ["待复习", String(summary.dueWords)],
         ["连续学习", `${summary.streak} 天`],
       ]
@@ -1043,10 +1129,66 @@
       detail.className = "records-stat-detail"
       const total = document.createElement("span")
       total.textContent = summary.totalText
-      const goal = document.createElement("span")
-      goal.textContent = summary.goalText
-      detail.append(total, goal)
+      detail.appendChild(total)
       recordsStats.replaceChildren(grid, detail)
+
+      if (!recordsFocus) return
+      const focusCopy = document.createElement("div")
+      focusCopy.className = "records-focus-copy"
+      const kicker = document.createElement("span")
+      kicker.className = "records-focus-kicker"
+      kicker.textContent = "今日复习"
+      const title = document.createElement("h2")
+      title.textContent = summary.dueWords > 0 ? `${summary.dueWords} 个单词等你复习` : "今天的复习已经完成"
+      const description = document.createElement("p")
+      description.textContent =
+        summary.dueWords > 0 ? `${summary.goalText}。趁记忆还热，完成今天最重要的一组。` : summary.goalText
+      focusCopy.append(kicker, title, description)
+
+      const goal = document.createElement("div")
+      goal.className = "records-goal"
+      const goalLabel = document.createElement("div")
+      goalLabel.className = "records-goal-label"
+      const goalText = document.createElement("span")
+      goalText.textContent = summary.goalTarget > 0 ? "今日目标" : "学习概览"
+      const goalValue = document.createElement("strong")
+      goalValue.textContent =
+        summary.goalTarget > 0 ? `${summary.goalCurrent} / ${summary.goalTarget}` : `${summary.todayWords} 个词`
+      goalLabel.append(goalText, goalValue)
+
+      const progress = document.createElement("div")
+      progress.className = "records-goal-progress"
+      progress.setAttribute("role", "progressbar")
+      progress.setAttribute("aria-label", "今日学习目标进度")
+      progress.setAttribute("aria-valuemin", "0")
+      progress.setAttribute("aria-valuemax", String(summary.goalTarget || 0))
+      progress.setAttribute("aria-valuenow", String(summary.goalCurrent || 0))
+      progress.style.setProperty("--records-goal-progress", `${summary.goalPercent}%`)
+      goal.append(goalLabel, progress)
+
+      const focusActions = document.createElement("div")
+      focusActions.className = "records-focus-actions"
+      if (summary.dueWords > 0) {
+        const reviewDueBtn = document.createElement("button")
+        reviewDueBtn.className = "records-focus-action"
+        reviewDueBtn.type = "button"
+        reviewDueBtn.textContent = "开始复习"
+        reviewDueBtn.addEventListener("click", () => {
+          saveState({ ...state, rounds, pendingGenerateStatusKind: "due" })
+          navigateToStudy()
+        })
+        focusActions.appendChild(reviewDueBtn)
+      } else {
+        const done = document.createElement("span")
+        done.className = "records-focus-done"
+        done.textContent = "保持得很好"
+        focusActions.appendChild(done)
+      }
+
+      const focusMain = document.createElement("div")
+      focusMain.className = "records-focus-main"
+      focusMain.append(focusCopy, focusActions)
+      recordsFocus.replaceChildren(focusMain, goal)
     }
 
     const refresh = ({ checkUnread = false } = {}) => {
@@ -1080,9 +1222,11 @@
         mime: "text/csv;charset=utf-8",
         content: csv,
       })
+      if (recordsTools) recordsTools.open = false
     })
 
     printBtn.addEventListener("click", () => {
+      if (recordsTools) recordsTools.open = false
       openPrintRoundsAsPdf(rounds.map((r, idx) => ({ round: r, roundNo: idx + 1 })))
     })
 
@@ -1107,6 +1251,7 @@
       rounds = []
       render()
       renderStats()
+      if (recordsTools) recordsTools.open = false
     })
 
     const recordsRouteRegistered = window.A4Router?.register?.("records", {

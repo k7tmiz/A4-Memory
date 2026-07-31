@@ -251,55 +251,6 @@
   animation: settings-panel-enter-back 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.records-stats {
-  padding: 0;
-  white-space: normal;
-}
-
-.records-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.records-stat-card {
-  min-width: 0;
-  padding: 11px 12px;
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  background: var(--card);
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--text) 4%, transparent);
-}
-
-.records-stat-card span,
-.records-stat-card strong {
-  display: block;
-}
-
-.records-stat-card span {
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.records-stat-card strong {
-  margin-top: 4px;
-  color: var(--text);
-  font-size: 20px;
-}
-
-.records-stat-detail {
-  margin-top: 8px;
-  padding: 0 4px;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
 .paper-toolbar {
   position: absolute;
   z-index: 12;
@@ -509,22 +460,6 @@
 
 .app-next-action:active {
   transform: scale(0.97);
-}
-
-.page-heading {
-  margin: 0 0 18px;
-}
-
-.page-heading h1 {
-  margin: 0;
-  font-size: 30px;
-  letter-spacing: -0.04em;
-}
-
-.page-heading p {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 13px;
 }
 
 @media (min-width: 701px) {
@@ -780,19 +715,6 @@
     margin-top: 10px;
     text-align: left;
     line-height: 1.55;
-  }
-
-  body.records-page .app.records {
-    width: min(calc(100% - 48px), 1040px);
-    min-height: calc(100dvh - 132px);
-    margin: 24px auto 108px;
-    padding: 26px;
-    border: 1px solid var(--border);
-    border-radius: 26px;
-    background: color-mix(in srgb, var(--card) 88%, transparent);
-    box-shadow: 0 18px 54px color-mix(in srgb, var(--text) 8%, transparent);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
   }
 
   body.settings-page .settings-page-main {
@@ -1226,42 +1148,6 @@
     background: color-mix(in srgb, var(--accent) 9%, transparent);
     color: var(--accent);
     font-size: 16px;
-  }
-
-  .page-heading {
-    margin: 0 0 14px;
-    display: block;
-  }
-
-  .page-heading h1 {
-    margin: 0;
-    font-size: 26px;
-    letter-spacing: -0.035em;
-  }
-
-  .page-heading p {
-    margin: 5px 0 0;
-    color: var(--muted);
-    font-size: 12px;
-  }
-
-  body.records-page .app.records {
-    padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
-      calc(84px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
-  }
-
-  .records-stat-card {
-    padding: 10px 9px;
-  }
-
-  .records-stat-card strong {
-    font-size: 19px;
-  }
-
-  .records-stat-detail {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 3px;
   }
 
 }
