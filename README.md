@@ -11,7 +11,7 @@
 
 Demo：https://k7tmiz.com/words
 
-当前稳定版本：[v2.2.0](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.2.0)
+当前稳定版本：[v2.2.1](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.2.1)
 
 一个纯前端背单词工具：把单词随机排在 A4 纸上作为学习载体，核心目标是打破列表式的背书模式。每新增 1 个单词都会自动打开复习弹窗；普通学习轮在多页时默认只复习当前页，只有主动点击"复习本轮"时才复习整轮全部页。项目支持学习记录、状态聚合、词书导入、查词、发音、导出与 AI 生成词书。
 

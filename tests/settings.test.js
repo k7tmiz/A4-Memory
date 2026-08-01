@@ -593,3 +593,15 @@ describe("A4Settings responsive category navigation", () => {
     assert.match(settingsStyle, /\.account-cloud-action-upload\s*\{[^}]*color:\s*var\(--primary\)/s)
   })
 })
+
+describe("A4Settings Google sign-in placeholder", () => {
+  it("keeps the Google entry presentation-only until the private auth release is approved", () => {
+    assert.match(settingsCode, /id="cloudGoogleLoginBtn"[^>]*type="button"/)
+    assert.match(settingsStyle, /\.account-oauth-btn\s*\{[^}]*width:\s*100%[^}]*min-height:\s*46px/s)
+    assert.match(
+      settingsCode,
+      /cloudGoogleLoginBtn\?\.addEventListener\("click",\s*\(\)\s*=>\s*\{[^}]*setAccountStatus\("Google 登录暂未接入，后续版本开放",\s*"info"\)/s
+    )
+    assert.doesNotMatch(settingsCode, /A4Cloud\??\.loginWithGoogle|loginWithGoogle\s*\(/)
+  })
+})

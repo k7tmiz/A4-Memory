@@ -1,6 +1,6 @@
 # 前端架构文档
 
-当前发布基线为 `2.2.0`。应用版本由 `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json` 与 `js/updater.js` 共同声明，发版前必须保持一致。
+当前发布基线为 `2.2.1`。应用版本由 `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json` 与 `js/updater.js` 共同声明，发版前必须保持一致。
 
 ## 1. 项目结构
 
@@ -229,7 +229,7 @@ window.A4Speech = {
 ```
 
 ### `js/settings.js`
-设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。AI 模型输入支持自由填写，当前服务商的常用模型通过应用内选择面板填入，不依赖 WebView 原生 `datalist` 候选界面：
+设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口为界面占位，点击只显示暂未接入提示，不调用私有登录桥接。AI 模型输入支持自由填写，当前服务商的常用模型通过应用内选择面板填入，不依赖 WebView 原生 `datalist` 候选界面：
 ```javascript
 window.A4Settings = {
   createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation }),

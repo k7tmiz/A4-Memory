@@ -304,26 +304,26 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20260801-1"
+    const styleRevision = "20260802-1"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${styleRevision}"`))
     }
-    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260801-1"/)
-    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260801-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260802-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260802-1"/)
     const scriptRevisions = new Map([
-      ["js/core/common.js", "20260801-1"],
-      ["js/ui/layers.js", "20260801-1"],
-      ["js/ui/router.js", "20260801-1"],
-      ["js/utils.js", "20260801-1"],
-      ["js/speech.js", "20260801-1"],
-      ["js/updater.js", "20260801-1"],
-      ["js/settings.js", "20260801-1"],
-      ["js/lookup.js", "20260801-1"],
-      ["js/app.js", "20260801-1"],
-      ["js/records.js", "20260801-1"],
-      ["js/settings-page.js", "20260801-1"],
+      ["js/core/common.js", "20260802-1"],
+      ["js/ui/layers.js", "20260802-1"],
+      ["js/ui/router.js", "20260802-1"],
+      ["js/utils.js", "20260802-1"],
+      ["js/speech.js", "20260802-1"],
+      ["js/updater.js", "20260802-1"],
+      ["js/settings.js", "20260802-1"],
+      ["js/lookup.js", "20260802-1"],
+      ["js/app.js", "20260802-1"],
+      ["js/records.js", "20260802-1"],
+      ["js/settings-page.js", "20260802-1"],
     ])
     for (const [script, revision] of scriptRevisions) {
       const escapedScript = script.replaceAll(".", "\\.")

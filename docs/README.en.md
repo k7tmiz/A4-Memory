@@ -10,7 +10,7 @@
 
 Demo: https://k7tmiz.com/words
 
-Current stable release: [v2.2.0](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.2.0)
+Current stable release: [v2.2.1](https://github.com/k7tmiz/A4-Memory/releases/tag/v2.2.1)
 
 A pure front-end vocabulary tool built around randomly placing words on A4 pages, breaking away from list-based memorization. Each new word auto-opens the review modal; in a multi-page normal round, auto review is scoped to the current page, while "Review this round" reviews all pages. Includes learning records, status aggregation, wordbook import, lookup, pronunciation, export, and AI wordbook generation.
 
