@@ -15,7 +15,11 @@
     window.location.assign("./index.html")
   }
 
-  const { downloadTextFile, showConfirmDialog } = window.A4Utils || {}
+  const {
+    downloadTextFile,
+    showConfirmDialog,
+    showNoticeDialog = () => Promise.resolve(false),
+  } = window.A4Utils || {}
 
   const {
     STATUS_MASTERED,
@@ -123,7 +127,7 @@
   function printCurrentDocument() {
     if (isAndroidTauri()) {
       window.A4Utils.getTauriInvoke()("a4_android_print").catch(() => {
-        window.alert("无法调用 Android 打印系统。请确认当前 Android 版本已包含原生打印支持。")
+        showNoticeDialog({ title: "打印不可用", message: "无法调用 Android 打印系统。请确认当前 Android 版本已包含原生打印支持。" })
       })
       return
     }
@@ -132,11 +136,11 @@
       const result = window.print()
       if (result && typeof result.catch === "function") {
         result.catch(() => {
-          window.alert("无法调用系统打印。请确认当前桌面/Android 版本已包含打印权限。")
+          showNoticeDialog({ title: "打印不可用", message: "无法调用系统打印。请确认当前桌面/Android 版本已包含打印权限。" })
         })
       }
     } catch {
-      window.alert("无法调用系统打印。请确认当前桌面/Android 版本已包含打印权限。")
+      showNoticeDialog({ title: "打印不可用", message: "无法调用系统打印。请确认当前桌面/Android 版本已包含打印权限。" })
     }
   }
 

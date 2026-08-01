@@ -40,7 +40,13 @@ const {
   normalizeVoiceMode = (v) => (v === "manual" || v === "auto" ? v : "auto"),
   normalizePronunciationLang = (v) => String(v || "").trim().toLowerCase() || "auto",
 } = settings
-const { sanitizeFilename = (v) => String(v || ""), downloadJsonFile = () => {}, showConfirmDialog = () => Promise.resolve(false) } = utils
+const {
+  sanitizeFilename = (v) => String(v || ""),
+  downloadJsonFile = () => {},
+  showConfirmDialog = () => Promise.resolve(false),
+  showNoticeDialog = () => Promise.resolve(false),
+  showToast = () => null,
+} = utils
 
 function makeId() {
   return `${Date.now()}-${window.A4Common.makeUuid()}`
@@ -266,7 +272,7 @@ function openLookupModal({ preset, trigger = document.activeElement || null } = 
     lookupController.open({ preset, trigger })
     return
   }
-  window.alert("查词模块未加载。")
+  showNoticeDialog({ title: "查词不可用", message: "查词模块未加载。", trigger })
 }
 
 function saveState(state) {
@@ -300,6 +306,7 @@ const dom = {
   paperReviewBtn: document.getElementById("paperReviewBtn"),
   paperMeaningBtn: document.getElementById("paperMeaningBtn"),
   paperMeaningLabel: document.getElementById("paperMeaningLabel"),
+  paperImmersiveExitBtn: document.getElementById("paperImmersiveExitBtn"),
   dockNextBtn: document.getElementById("dockNextBtn"),
   desktopToolsBtn: document.getElementById("desktopToolsBtn"),
   desktopToolsPopover: document.getElementById("desktopToolsPopover"),
@@ -387,18 +394,6 @@ const dom = {
   aiPreviewMeta: document.getElementById("aiPreviewMeta"),
   aiPreviewList: document.getElementById("aiPreviewList"),
   aiConfirmBtn: document.getElementById("aiConfirmBtn"),
-  appToast: document.getElementById("appToast"),
-}
-
-let appToastTimer = null
-function showToast(message) {
-  if (!dom.appToast) return
-  if (appToastTimer) window.clearTimeout(appToastTimer)
-  dom.appToast.textContent = String(message || "")
-  dom.appToast.classList.remove("hidden")
-  appToastTimer = window.setTimeout(() => {
-    dom.appToast?.classList.add("hidden")
-  }, 3000)
 }
 
 const appState = {
@@ -527,9 +522,12 @@ function updatePageNav() {
 }
 
 function updateImmersiveToggle() {
-  dom.toggleImmersiveBtn.textContent = `沉浸模式：${appState.immersiveMode ? "开" : "关"}`
-  if (appState.immersiveMode) document.body.classList.add("immersive")
-  else document.body.classList.remove("immersive")
+  if (dom.toggleImmersiveBtn) {
+    dom.toggleImmersiveBtn.textContent = `沉浸模式：${appState.immersiveMode ? "开" : "关"}`
+    dom.toggleImmersiveBtn.setAttribute("aria-pressed", appState.immersiveMode ? "true" : "false")
+  }
+  dom.paperImmersiveExitBtn?.classList.toggle("hidden", !appState.immersiveMode)
+  document.body.classList.toggle("immersive", appState.immersiveMode)
 }
 
 function getResolvedDarkMode() {
@@ -1286,6 +1284,7 @@ function setRemoteImportBusy(busy) {
   if (dom.confirmRemoteImportBtn) dom.confirmRemoteImportBtn.disabled = !!busy
   if (dom.remoteImportSelect) dom.remoteImportSelect.disabled = !!busy
   if (dom.remoteImportFilterInput) dom.remoteImportFilterInput.disabled = !!busy
+  window.A4Utils?.refreshAndroidSelectPickers?.(dom.remoteImportModal)
 }
 
 function buildRemoteOptionLabel(item) {
@@ -1316,6 +1315,7 @@ function renderRemoteImportOptions({ keyword } = {}) {
 
   if (remoteImportView.length) sel.value = `${remoteImportView[0].branch}:${remoteImportView[0].path}`
   setRemoteImportHint(remoteImportView.length ? "已加载：请选择一个 JSON 文件后导入。" : "没有找到匹配的 JSON。")
+  window.A4Utils?.refreshAndroidSelectPickers?.(dom.remoteImportModal)
 }
 
 function getSelectedRemoteImportItem() {
@@ -1949,7 +1949,7 @@ function generateStatusRound(kind) {
   if (kind === "due") {
     title = "生成待复习一轮"
     if (!appState.reviewSystemEnabled) {
-      window.alert("当前未启用轻量复习系统，无法生成待复习一轮。")
+      showNoticeDialog({ title: "无法生成", message: "当前未启用轻量复习系统，无法生成待复习一轮。" })
       return
     }
     list = getDueTerms(nowMs)
@@ -1969,13 +1969,13 @@ function generateStatusRound(kind) {
 
   const total = list.length
   if (!total) {
-    window.alert("没有可用单词可以生成。")
+    showNoticeDialog({ title: "无法生成", message: "没有可用单词可以生成。" })
     return
   }
 
   const pages = Math.max(1, Math.ceil(total / cap))
-  if (total <= cap) window.alert(`${title}：共 ${total} 个，已生成 1 页 A4。`)
-  else window.alert(`${title}：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
+  if (total <= cap) showToast(`${title}：共 ${total} 个，已生成 1 页 A4。`)
+  else showToast(`${title}：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
 
   startNextRound()
   const round = getCurrentRound()
@@ -2023,7 +2023,7 @@ function generateStatusRound(kind) {
 function generateWordbookRound(wordbookId) {
   const book = appState.customWordbooks.find((b) => b.id === wordbookId)
   if (!book) {
-    window.alert("词书不存在。")
+    showNoticeDialog({ title: "无法生成", message: "词书不存在。" })
     return
   }
 
@@ -2032,7 +2032,7 @@ function generateWordbookRound(wordbookId) {
   const total = words.length
 
   if (!total) {
-    window.alert(`词书「${book.name}」中没有可用单词。`)
+    showNoticeDialog({ title: "无法生成", message: `词书「${book.name}」中没有可用单词。` })
     return
   }
 
@@ -2040,9 +2040,9 @@ function generateWordbookRound(wordbookId) {
   const pages = Math.max(1, Math.ceil(total / cap))
 
   if (total <= cap) {
-    window.alert(`词书「${book.name}」：共 ${total} 个，已生成 1 页 A4。`)
+    showToast(`词书「${book.name}」：共 ${total} 个，已生成 1 页 A4。`)
   } else {
-    window.alert(`词书「${book.name}」：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
+    showToast(`词书「${book.name}」：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
   }
 
   ensureCurrentRound()
@@ -2549,7 +2549,7 @@ function addNextWordToCurrentRound({ preferUnseenFirst } = {}) {
     ? pickNextWordPreferUnseenFirst({ globalSeenSet: buildAllRoundsWordKeySet({ excludeRoundId: appState.currentRoundId }) })
     : pickNextWord()
   if (!word) {
-    window.alert("当前词书没有更多可用词条（已自动去重本轮同词同义）。")
+    showToast("当前词书没有更多可用词条（已自动去重本轮同词同义）。")
     return null
   }
 
@@ -2674,7 +2674,7 @@ function addWordToCurrentRoundFromLookup(wordRaw) {
   }
   const roundItem = addSpecificWordToCurrentRound(wordRaw)
   if (!roundItem) {
-    window.alert("未加入：本轮已存在该词条或词条不合法。")
+    showToast("未加入：本轮已存在该词条或词条不合法。")
     return
   }
   openAutoReviewModal(roundItem)
@@ -2773,6 +2773,8 @@ if (shouldUseAndroidWordbookPicker()) {
   dom.wordbookSelect?.setAttribute("tabindex", "-1")
   updateWordbookPickerButton()
 }
+
+window.A4Utils?.installAndroidSelectPicker?.(document, "#remoteImportSelect")
 
 dom.wordbookSelect.addEventListener("change", () => {
   applyWordbookSelection(dom.wordbookSelect.value)
@@ -2907,11 +2909,14 @@ dom.paperInner.addEventListener("click", (e) => {
   else itemEl.classList.toggle("reveal")
 })
 
-dom.toggleImmersiveBtn.addEventListener("click", () => {
+function toggleImmersiveMode() {
   appState.immersiveMode = !appState.immersiveMode
   updateImmersiveToggle()
   persist()
-})
+}
+
+dom.toggleImmersiveBtn?.addEventListener("click", toggleImmersiveMode)
+dom.paperImmersiveExitBtn?.addEventListener("click", toggleImmersiveMode)
 
 dom.reviewBackdrop.addEventListener("click", () => closeReviewModal())
 dom.closeReviewBtn.addEventListener("click", () => closeReviewModal())
@@ -3458,7 +3463,7 @@ dom.continueRoundBtn.addEventListener("click", () => {
     pendingAddWordAfterRoundFull = null
     const roundItem = addSpecificWordToCurrentRound(w)
     if (roundItem) openAutoReviewModal(roundItem)
-    else window.alert("未加入：本轮已存在该词条或词条不合法。")
+    else showToast("未加入：本轮已存在该词条或词条不合法。")
   }
 })
 dom.reviewFromFullBtn.addEventListener("click", () => {

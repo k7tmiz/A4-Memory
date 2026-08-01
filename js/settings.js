@@ -1,7 +1,12 @@
 ;(function () {
   const clamp = window.A4Common?.clamp
 
-  const { showConfirmDialog } = window.A4Utils || {}
+  const {
+    showConfirmDialog = () => Promise.resolve(false),
+    showNoticeDialog = () => Promise.resolve(false),
+    showChoiceDialog = () => Promise.resolve(null),
+    showToast: showAppToast = () => null,
+  } = window.A4Utils || {}
 
   const normalizeThemeMode = window.A4Common?.normalizeThemeMode
   const normalizeThemePalette = window.A4Common?.normalizeThemePalette || (() => "classic")
@@ -1015,8 +1020,10 @@
               <div class="form-row">
                 <div class="form-label">Model</div>
                 <div class="form-control">
-                  <input id="aiModelInput" class="text-input" type="text" list="aiModelDatalist" placeholder="可直接输入或选常用模型" />
-                  <datalist id="aiModelDatalist"></datalist>
+                  <div class="ai-model-control">
+                    <input id="aiModelInput" class="text-input" type="text" placeholder="可直接输入模型名称" />
+                    <button id="aiModelPickerBtn" class="ghost ai-model-picker-btn" type="button" aria-haspopup="dialog">常用模型</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1317,7 +1324,7 @@
       aiBaseUrlInput: modal.querySelector("#aiBaseUrlInput"),
       aiApiKeyInput: modal.querySelector("#aiApiKeyInput"),
       aiModelInput: modal.querySelector("#aiModelInput"),
-      aiModelDatalist: modal.querySelector("#aiModelDatalist"),
+      aiModelPickerBtn: modal.querySelector("#aiModelPickerBtn"),
       aiTypeSelect: modal.querySelector("#aiTypeSelect"),
       aiCustomTopicInput: modal.querySelector("#aiCustomTopicInput"),
       aiCountInput: modal.querySelector("#aiCountInput"),
@@ -2137,14 +2144,7 @@
       if (dom.aiProviderSelect) dom.aiProviderSelect.value = cfg.provider
       if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.placeholder = preset.baseUrl || "https://api.example.com/v1"
       if (dom.aiModelInput) dom.aiModelInput.placeholder = preset.defaultModel || "可直接输入或选常用模型"
-      if (dom.aiModelDatalist) {
-        dom.aiModelDatalist.innerHTML = ""
-        for (const m of preset.models || []) {
-          const opt = document.createElement("option")
-          opt.value = m
-          dom.aiModelDatalist.appendChild(opt)
-        }
-      }
+      if (dom.aiModelPickerBtn) dom.aiModelPickerBtn.disabled = !(preset.models || []).length
     }
 
     function setAiStatus(text) {
@@ -2747,6 +2747,25 @@
       render()
     })
 
+    dom.aiModelPickerBtn?.addEventListener("click", async (event) => {
+      const cfg = getAiConfigFromState(getStateSafe())
+      const models = getAiPreset(cfg.provider).models || []
+      if (!models.length) {
+        showAppToast({ message: "当前提供商没有预设模型，请直接输入模型名称。", duration: 4200 })
+        return
+      }
+      const selected = await showChoiceDialog({
+        title: "选择常用模型",
+        options: models.map((model) => ({ value: model, label: model })),
+        value: String(dom.aiModelInput?.value || cfg.model || ""),
+        trigger: event.currentTarget,
+      })
+      if (selected == null) return
+      if (dom.aiModelInput) dom.aiModelInput.value = selected
+      patchAiConfig({ model: selected })
+      render()
+    })
+
     dom.aiProviderSelect?.addEventListener("change", () => {
       const state = getStateSafe()
       const prev = getAiConfigFromState(state)
@@ -2943,14 +2962,14 @@
       pendingAiBook = null
       closeAiPreviewModal()
       close()
-      window.alert("已保存到本地词书。")
+      showAppToast({ message: "已保存到本地词书。", kind: "success" })
     })
 
     dom.exportBackupBtn?.addEventListener("click", () => {
       persistSafe()
       const state = window.A4Storage?.readStateRaw?.()
       if (!state) {
-        window.alert("导出失败：没有可用数据。")
+        showNoticeDialog({ title: "导出失败", message: "没有可用数据。" })
         return
       }
       const payload = { exportedAt: new Date().toISOString(), state }
@@ -2998,35 +3017,35 @@
       if (!file) return
       const MAX_SIZE = 10 * 1024 * 1024
       if (file.size > MAX_SIZE) {
-        window.alert("导入失败：文件过大（上限 10 MB）。")
+        await showNoticeDialog({ title: "导入失败", message: "文件过大（上限 10 MB）。" })
         return
       }
       let rawText
       try {
         rawText = await file.text()
       } catch {
-        window.alert("导入失败：无法读取文件。")
+        await showNoticeDialog({ title: "导入失败", message: "无法读取文件。" })
         return
       }
       let parsed
       try {
         parsed = JSON.parse(rawText)
       } catch {
-        window.alert("导入失败：不是合法 JSON。")
+        await showNoticeDialog({ title: "导入失败", message: "不是合法 JSON。" })
         return
       }
       const extracted = parsed && typeof parsed === "object" && parsed.state && typeof parsed.state === "object" ? parsed.state : parsed
       const normalized = normalizeImportedState(extracted)
       if (!normalized) {
-        window.alert("导入失败：数据结构不正确。")
+        await showNoticeDialog({ title: "导入失败", message: "数据结构不正确。" })
         return
       }
       const ok = window.A4Storage?.writeStateRaw?.(normalized)
       if (!ok) {
-        window.alert("导入失败：保存到本地失败。")
+        await showNoticeDialog({ title: "导入失败", message: "保存到本地失败。" })
         return
       }
-      window.alert("导入成功：学习记录与设置已恢复。")
+      await showNoticeDialog({ title: "导入成功", message: "学习记录与设置已恢复。" })
       window.location.reload()
     })
 

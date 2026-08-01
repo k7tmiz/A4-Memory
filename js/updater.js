@@ -156,7 +156,10 @@
       return tauriInvoke("a4_open_external", { url: target }).then(function () {
         return true
       }).catch(function () {
-        window.alert("无法打开系统浏览器，请手动复制下载地址。")
+        window.A4Utils?.showNoticeDialog?.({
+          title: "无法打开浏览器",
+          message: "请手动复制下载地址后重试。",
+        })
         return false
       })
     }

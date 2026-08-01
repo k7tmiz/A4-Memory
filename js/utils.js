@@ -1,4 +1,11 @@
 ;(function () {
+  let utilityLayerSequence = 0
+
+  function nextUtilityLayerId(prefix) {
+    utilityLayerSequence += 1
+    return `${prefix}-${utilityLayerSequence}`
+  }
+
   function isEditableTarget(target) {
     return !!(
       target &&
@@ -191,6 +198,234 @@
     })
   }
 
+  function showNoticeDialog(messageOrOpts) {
+    const opts = typeof messageOrOpts === "string" ? { message: messageOrOpts } : messageOrOpts || {}
+    const {
+      message = "",
+      title = "提示",
+      okText = "知道了",
+      trigger = document.activeElement || null,
+      motion = "origin",
+    } = opts
+
+    return new Promise((resolve) => {
+      const titleId = nextUtilityLayerId("a4-notice-title")
+      const bodyId = nextUtilityLayerId("a4-notice-body")
+      const backdrop = document.createElement("div")
+      backdrop.className = "modal-backdrop"
+      const panel = document.createElement("div")
+      panel.className = "modal-panel records-confirm-panel"
+      panel.setAttribute("role", "alertdialog")
+      panel.setAttribute("aria-modal", "true")
+      panel.setAttribute("aria-labelledby", titleId)
+      panel.setAttribute("aria-describedby", bodyId)
+
+      const header = document.createElement("div")
+      header.className = "modal-header"
+      const titleEl = document.createElement("h2")
+      titleEl.id = titleId
+      titleEl.className = "records-confirm-title"
+      titleEl.textContent = String(title || "提示")
+      header.appendChild(titleEl)
+
+      const body = document.createElement("div")
+      body.id = bodyId
+      body.className = "modal-body"
+      body.textContent = String(message || "")
+
+      const actions = document.createElement("div")
+      actions.className = "modal-actions records-confirm-actions"
+      const okBtn = document.createElement("button")
+      okBtn.className = "primary"
+      okBtn.type = "button"
+      okBtn.textContent = String(okText || "知道了")
+      okBtn.setAttribute("data-layer-close", "")
+      actions.appendChild(okBtn)
+
+      panel.appendChild(header)
+      panel.appendChild(body)
+      panel.appendChild(actions)
+
+      const modal = document.createElement("div")
+      modal.className = "modal hidden"
+      modal.setAttribute("aria-hidden", "true")
+      modal.appendChild(backdrop)
+      modal.appendChild(panel)
+      document.body.appendChild(modal)
+
+      let settled = false
+      const finish = (value, options = {}) => {
+        if (settled) return
+        settled = true
+        Promise.resolve(closeUtilityLayer(modal, options))
+          .catch(() => false)
+          .then(() => {
+            if (modal.parentElement === document.body) document.body.removeChild(modal)
+            resolve(value)
+          })
+      }
+
+      modal.addEventListener("a4-layer-dismiss", (event) => {
+        event.preventDefault()
+        finish(false, {
+          immediate: !!event.detail?.immediate,
+          restoreFocus: event.detail?.reason !== "batch",
+        })
+      })
+      backdrop.addEventListener("click", () => finish(false))
+      okBtn.addEventListener("click", () => finish(true))
+      setUtilityLayerVisible(modal, true, { trigger, motion })
+    })
+  }
+
+  function showChoiceDialog(options = {}) {
+    const {
+      title = "请选择",
+      options: rawOptions = [],
+      value: selectedValue = "",
+      trigger = document.activeElement || null,
+      motion = "sheet",
+    } = options || {}
+    const choices = Array.isArray(rawOptions) ? rawOptions : []
+
+    return new Promise((resolve) => {
+      const titleId = nextUtilityLayerId("a4-choice-title")
+      const backdrop = document.createElement("div")
+      backdrop.className = "modal-backdrop"
+
+      const panel = document.createElement("div")
+      panel.className = "modal-panel android-select-picker-panel"
+      panel.setAttribute("role", "dialog")
+      panel.setAttribute("aria-modal", "true")
+      panel.setAttribute("aria-labelledby", titleId)
+
+      const header = document.createElement("div")
+      header.className = "modal-header wordbook-picker-header"
+      const titleEl = document.createElement("h2")
+      titleEl.id = titleId
+      titleEl.textContent = String(title || "请选择")
+      header.appendChild(titleEl)
+      const headerActions = document.createElement("div")
+      headerActions.className = "modal-actions"
+      const closeBtn = document.createElement("button")
+      closeBtn.className = "ghost wordbook-picker-close"
+      closeBtn.type = "button"
+      closeBtn.textContent = "×"
+      closeBtn.setAttribute("aria-label", "关闭")
+      closeBtn.setAttribute("data-layer-close", "")
+      headerActions.appendChild(closeBtn)
+      header.appendChild(headerActions)
+
+      const list = document.createElement("div")
+      list.className = "android-select-picker-list"
+      list.setAttribute("role", "listbox")
+
+      const modal = document.createElement("div")
+      modal.className = "modal hidden android-select-picker-modal"
+      modal.setAttribute("aria-hidden", "true")
+      panel.appendChild(header)
+      panel.appendChild(list)
+      modal.appendChild(backdrop)
+      modal.appendChild(panel)
+      document.body.appendChild(modal)
+
+      let settled = false
+      const finish = (result, closeOptions = {}) => {
+        if (settled) return
+        settled = true
+        Promise.resolve(closeUtilityLayer(modal, closeOptions))
+          .catch(() => false)
+          .then(() => {
+            if (modal.parentElement === document.body) document.body.removeChild(modal)
+            resolve(result)
+          })
+      }
+
+      let previousGroup = null
+      for (const rawChoice of choices) {
+        const choice = rawChoice && typeof rawChoice === "object"
+          ? rawChoice
+          : { value: rawChoice, label: rawChoice }
+        const group = String(choice.group || "").trim()
+        if (group && group !== previousGroup) {
+          const groupTitle = document.createElement("div")
+          groupTitle.className = "android-select-picker-group-title"
+          groupTitle.textContent = group
+          list.appendChild(groupTitle)
+          previousGroup = group
+        }
+
+        const option = document.createElement("button")
+        const optionValue = String(choice.value ?? "")
+        option.type = "button"
+        option.className = "android-select-picker-option"
+        option.textContent = String(choice.label ?? optionValue).trim() || optionValue
+        option.disabled = !!choice.disabled
+        option.setAttribute("role", "option")
+        option.setAttribute("aria-selected", optionValue === String(selectedValue ?? "") ? "true" : "false")
+        if (optionValue === String(selectedValue ?? "")) option.classList.add("active")
+        option.addEventListener("click", () => {
+          if (!option.disabled) finish(optionValue)
+        })
+        list.appendChild(option)
+      }
+
+      if (!list.children.length) {
+        const empty = document.createElement("div")
+        empty.className = "form-help"
+        empty.textContent = "暂无可选项"
+        list.appendChild(empty)
+      }
+
+      modal.addEventListener("a4-layer-dismiss", (event) => {
+        event.preventDefault()
+        finish(null, {
+          immediate: !!event.detail?.immediate,
+          restoreFocus: event.detail?.reason !== "batch",
+        })
+      })
+      backdrop.addEventListener("click", () => finish(null))
+      closeBtn.addEventListener("click", () => finish(null))
+      setUtilityLayerVisible(modal, true, { trigger, motion })
+    })
+  }
+
+  function showToast(messageOrOpts) {
+    const opts = typeof messageOrOpts === "string" ? { message: messageOrOpts } : messageOrOpts || {}
+    const message = String(opts.message || "").trim()
+    if (!message || typeof document === "undefined" || !document.body) return null
+
+    let toast = document.getElementById("a4GlobalToast")
+    if (!toast) {
+      toast = document.createElement("div")
+      toast.id = "a4GlobalToast"
+      toast.className = "toast a4-global-toast hidden"
+      toast.setAttribute("role", "status")
+      toast.setAttribute("aria-live", "polite")
+      document.body.appendChild(toast)
+    }
+
+    const clearTimer = window.clearTimeout || clearTimeout
+    const setTimer = window.setTimeout || setTimeout
+    if (toast.__a4ToastTimer) clearTimer(toast.__a4ToastTimer)
+    toast.textContent = message
+    toast.classList.remove("hidden", "is-info", "is-success", "is-error")
+    const kind = opts.kind === "success" || opts.kind === "error" ? opts.kind : "info"
+    toast.classList.add(`is-${kind}`)
+    toast.setAttribute("role", kind === "error" ? "alert" : "status")
+    toast.setAttribute("aria-live", kind === "error" ? "assertive" : "polite")
+
+    const requestedDuration = Number(opts.duration)
+    const duration = Number.isFinite(requestedDuration) ? Math.max(0, requestedDuration) : 3000
+    if (duration > 0) {
+      toast.__a4ToastTimer = setTimer(() => {
+        toast.classList.add("hidden")
+        toast.__a4ToastTimer = null
+      }, duration)
+    }
+    return toast
+  }
+
   function downloadBlobInBrowser({ filename, blob }) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -209,12 +444,18 @@
       filename: String(filename || "a4-memory-export.txt"),
       mime: String(mime || "text/plain;charset=utf-8"),
       content: String(content ?? ""),
-    }).catch(() => {
-      downloadBlobInBrowser({
-        filename,
-        blob: new Blob([content], { type: mime }),
-      })
     })
+      .then(() => {
+        const savedName = sanitizeFilename(filename) || "a4-memory-export.txt"
+        showToast({ message: `已导出到下载目录：${savedName}`, kind: "success", duration: 4200 })
+      })
+      .catch(() => {
+        showToast({ message: "原生导出失败，已改用浏览器下载。", kind: "error", duration: 4200 })
+        downloadBlobInBrowser({
+          filename,
+          blob: new Blob([content], { type: mime }),
+        })
+      })
     return true
   }
 
@@ -375,6 +616,9 @@
     downloadJsonFile,
     downloadBlob,
     showConfirmDialog,
+    showNoticeDialog,
+    showChoiceDialog,
+    showToast,
     getTauriInvoke,
     installMobileTapGuard,
     installAndroidSelectPicker,

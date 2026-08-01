@@ -1064,6 +1064,7 @@
       toast: modal.querySelector("#lookupToast"),
       results: modal.querySelector("#lookupResults"),
     }
+    window.A4Utils?.installAndroidSelectPicker?.(modal, "#lookupLangSelect")
 
     let lastQueryId = 0
     let abortOnline = null
@@ -1398,6 +1399,7 @@
       setModalVisible(dom.modal, true, { trigger, motion: "origin" })
       const state = getStateSafe()
       if (dom.langSelect) dom.langSelect.value = getLookupLangMode(state)
+      window.A4Utils?.refreshAndroidSelectPickers?.(dom.modal)
       const q = String(preset || "").trim()
       if (q && dom.input) dom.input.value = q
       requestAnimationFrame(() => {

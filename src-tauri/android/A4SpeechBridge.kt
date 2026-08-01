@@ -10,7 +10,6 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.widget.Toast
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
@@ -71,9 +70,6 @@ object A4SpeechBridge {
             File(dir, safeName).writeBytes(bytes)
         }
 
-        mainHandler.post {
-            Toast.makeText(activity.applicationContext, "已导出到下载目录：$safeName", Toast.LENGTH_LONG).show()
-        }
         return "saved"
     }
 

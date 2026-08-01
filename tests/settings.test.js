@@ -446,7 +446,7 @@ describe("A4Settings responsive category navigation", () => {
 
     for (const id of [
       "aiCustomConfigPanel", "aiProviderSelect", "aiBaseUrlInput", "aiApiKeyInput", "aiModelInput",
-      "aiModelDatalist", "aiTypeSelect", "aiCustomTopicInput", "aiCountInput", "aiGenerateBtn", "aiStatus",
+      "aiModelPickerBtn", "aiTypeSelect", "aiCustomTopicInput", "aiCountInput", "aiGenerateBtn", "aiStatus",
     ]) assert.match(ai, new RegExp(`id="${id}"`), `${id} should be in AI`)
 
     for (const id of [

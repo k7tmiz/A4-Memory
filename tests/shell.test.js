@@ -64,6 +64,24 @@ describe("responsive application shell", () => {
     assert.match(appCode, /paperMeaningBtn\.setAttribute\("aria-pressed"/)
   })
 
+  it("keeps a dedicated immersive exit action on the paper after the surrounding controls disappear", () => {
+    assert.match(indexMarkup, /id="paperImmersiveExitBtn"[^>]*class="[^"]*paper-toolbar-action/)
+    assert.match(appCode, /paperImmersiveExitBtn:\s*document\.getElementById\("paperImmersiveExitBtn"\)/)
+    assert.match(appCode, /paperImmersiveExitBtn\?\.classList\.toggle\("hidden",\s*!appState\.immersiveMode\)/)
+    assert.match(appCode, /paperImmersiveExitBtn\?\.addEventListener\("click",\s*toggleImmersiveMode\)/)
+  })
+
+  it("locks the Study viewport to vertical gestures without resizing the A4 paper", () => {
+    assert.match(indexMarkup, /maximum-scale=1, user-scalable=no/)
+    assert.match(sharedStyle, /html\s*\{[^}]*overflow-x:\s*clip[^}]*overscroll-behavior-x:\s*none/s)
+    assert.match(sharedStyle, /body\.home-page\s*\{[^}]*overflow-x:\s*clip[^}]*touch-action:\s*pan-y[^}]*overscroll-behavior-x:\s*none/s)
+    assert.match(shellStyle, /body\.home-page \.paper\s*\{[^}]*width:\s*456px[^}]*aspect-ratio:\s*210 \/ 297/s)
+  })
+
+  it("positions the shared lookup panel slightly above visual center", () => {
+    assert.match(sharedStyle, /\.lookup-modal \.lookup-panel\s*\{[^}]*translate:\s*0\s+clamp\(-40px,\s*-4dvh,\s*-24px\)/s)
+  })
+
   it("mounts Study, Records, and Settings inside one route stage", () => {
     assert.match(indexMarkup, /class="app-view-stage"[^>]*id="appViewStage"/)
     assert.match(indexMarkup, /<body class="home-page" data-a4-current-view="study">/)
@@ -286,25 +304,26 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20260731-1"
+    const styleRevision = "20260801-1"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${styleRevision}"`))
     }
-    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260731-1"/)
-    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260731-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260801-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260801-1"/)
     const scriptRevisions = new Map([
-      ["js/core/common.js", "20260731-1"],
-      ["js/ui/layers.js", "20260731-1"],
-      ["js/ui/router.js", "20260731-1"],
-      ["js/utils.js", "20260731-1"],
-      ["js/updater.js", "20260731-1"],
-      ["js/settings.js", "20260731-1"],
-      ["js/lookup.js", "20260731-1"],
-      ["js/app.js", "20260731-1"],
-      ["js/records.js", "20260731-1"],
-      ["js/settings-page.js", "20260731-1"],
+      ["js/core/common.js", "20260801-1"],
+      ["js/ui/layers.js", "20260801-1"],
+      ["js/ui/router.js", "20260801-1"],
+      ["js/utils.js", "20260801-1"],
+      ["js/speech.js", "20260801-1"],
+      ["js/updater.js", "20260801-1"],
+      ["js/settings.js", "20260801-1"],
+      ["js/lookup.js", "20260801-1"],
+      ["js/app.js", "20260801-1"],
+      ["js/records.js", "20260801-1"],
+      ["js/settings-page.js", "20260801-1"],
     ])
     for (const [script, revision] of scriptRevisions) {
       const escapedScript = script.replaceAll(".", "\\.")

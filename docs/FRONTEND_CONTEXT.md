@@ -202,13 +202,16 @@ window.A4Utils = {
   downloadJsonFile({ filename, data }),
   downloadBlob({ filename, blob }),
   showConfirmDialog(messageOrOpts),   // 自定义二次确认弹窗，替代原生 confirm
+  showNoticeDialog(messageOrOpts),    // 应用内提示弹窗
+  showChoiceDialog(options),          // 应用内单选底部面板
+  showToast(messageOrOpts),           // 全局轻提示
   getTauriInvoke(),                   // 统一获取 Tauri invoke 函数
   installMobileTapGuard(el),          // 移动端 300ms 延迟兼容
   installAndroidSelectPicker(root, selector),
   refreshAndroidSelectPickers(root),
 }
 ```
-文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录。设置页中的下拉选择在 Android 环境使用应用内底部面板，原 `<select>` 保留为状态源。所有删除/清空操作的二次确认统一使用 `A4Utils.showConfirmDialog`。
+文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录，结果反馈由前端共享 toast 呈现。应用拥有的通知、选择列表和删除/清空确认分别使用 `showNoticeDialog` / `showToast`、`showChoiceDialog` / `installAndroidSelectPicker` 和 `showConfirmDialog`，不调用 WebView 原生 `alert` / `confirm` / `prompt`。Android 下的词书、在线导入、查词语言和设置选项均使用应用内底部面板，原 `<select>` 保留为状态源；AI 常用模型使用应用内选择面板，同时保留自由输入。系统打印、系统文件选择、外部浏览器、OAuth 和软键盘属于平台能力，继续使用系统界面。
 
 ### `js/speech.js`
 语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `ttsMode` / `onlineTtsProvider` 控制；浏览器优先直连首选在线源，未及时开始播放时尝试同源私有桥接层代理，再依次尝试另一在线源、已安装离线语音和系统语音。桌面端与 Android 均支持「离线 TTS」模式（Sherpa-ONNX，模型按需下载到 `app_data_dir()/voices/<id>/`），通过 `a4_offline_speak` 命令合成 WAV 后用 HTMLAudioElement 播放；离线模式失败时只回退系统语音，不调用在线源。同一 voice ID 的合成、替换和删除覆盖完整生命周期串行执行；桌面端在文件替换或删除前释放引擎缓存，模型安装使用同级 staging/backup 原子切换并恢复未完成事务。Android 的模型加载和推理在 Kotlin 单线程执行器中运行，Rust 命令通过短 JNI 调用轮询结果，不阻塞 WebView 线程；超时请求会取消并清理结果/WAV，模型替换或删除会等待旧原生引擎释放。朗读文本不写入学习状态、备份或云同步数据。Tauri CSP 需放行 `wss:` 与 `media-src blob: https:`。
@@ -226,7 +229,7 @@ window.A4Speech = {
 ```
 
 ### `js/settings.js`
-设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层：
+设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。AI 模型输入支持自由填写，当前服务商的常用模型通过应用内选择面板填入，不依赖 WebView 原生 `datalist` 候选界面：
 ```javascript
 window.A4Settings = {
   createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation }),
@@ -244,7 +247,7 @@ window.A4Lookup = {
   createLookupModalController({ getState, setState, persist, getWordbookLanguage, addWordToCurrentRound }),
 }
 ```
-App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每个视图获得一个打开句柄，打开时切换到该视图的状态、持久化与词书语言上下文。学习视图的查词上下文提供“加入当前轮”能力，记录视图的查词上下文不提供该操作。功能包括本地词书检索、在线补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充和查词缓存。
+App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每个视图获得一个打开句柄，打开时切换到该视图的状态、持久化与词书语言上下文。学习视图的查词上下文提供“加入当前轮”能力，记录视图的查词上下文不提供该操作。查词面板在视口中心基础上略向上偏移，Android 的查词语言选择使用应用内底部面板。功能包括本地词书检索、在线补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充和查词缓存。
 
 ### `js/app.js`
 学习视图控制器（UI 层，不含核心业务逻辑）。负责：
@@ -255,7 +258,7 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 - 词书导入、词书 JSON 导出与在线词书导入
 - 轮次推进与状态写回
 
-宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在词书行旁的 `.mobile-more-tools` 下拉菜单；宽度达到 701px 时，A4 在视口居中，词书/工具与进度卡分居两侧，低频入口在左侧 `.desktop-tools-popover`。两种布局共用纸面复习/释义操作和悬浮底栏；「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
+宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在词书行旁的 `.mobile-more-tools` 下拉菜单；宽度达到 701px 时，A4 在视口居中，词书/工具与进度卡分居两侧，低频入口在左侧 `.desktop-tools-popover`。两种布局共用纸面复习/释义操作和悬浮底栏；沉浸模式下纸面工具栏显示独立退出操作。「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。学习页根视口裁切横向溢出，页面手势仅允许纵向平移并禁用双击/双指缩放；A4 保持原始布局比例，复习卡仍独立处理横向标记手势。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
 
 ### `js/records.js`
 记录视图控制器（UI 层）。进入视图时重新读取存储并刷新统计与列表，离开后仍保持控制器和 DOM 挂载。负责：
@@ -290,7 +293,7 @@ window.A4Updater = {
 `src-tauri/src/lib.rs` 暴露最小平台能力；外部打开能力使用 `tauri-plugin-opener`：
 - `a4_open_external(url)`：桌面端 / Android 打开系统默认浏览器或下载处理器。
 - `a4_android_print()`：Android 端调用 WebView 原生打印接口。
-- `a4_android_save_text_file(filename, mime, content)`：Android 端将文本类导出写入下载目录，用于词书、备份和 CSV 导出。
+- `a4_android_save_text_file(filename, mime, content)`：Android 端将文本类导出写入下载目录，用于词书、备份和 CSV 导出；原生桥接不创建 Toast，完成或失败状态由前端共享 toast 呈现。
 - `a4_android_speak(text, lang)`：Android 端调用系统 TextToSpeech 引擎朗读。
 - `a4_offline_voices_manifest_url()` / `a4_offline_voices_manifest_fetch()`：返回 GitHub Raw 模型清单源 URL 与经过字段校验的 JSON；网络、HTTP、解析或校验失败时返回编译进应用的 v1 清单。
 - `a4_offline_voices_installed()`：列出 `app_data_dir()/voices/` 下已安装的语音包。
@@ -304,8 +307,9 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 
 - 词书导入：TXT、CSV、JSON 本地导入均应正常创建自定义词书并可选中。
 - 学习流程：新增单词后自动复习弹窗应打开；记录页手动复习应可返回首页并打开复习弹窗。
+- 学习页手势：直接左右拖动纸面或背景不得产生横向页面偏移，双击/双指操作不得缩放 A4；复习卡横向标记保持可用；沉浸模式可从纸面工具栏退出。
 - 安全渲染：导入词条中的 HTML 片段只能作为文本显示，不得生成真实 DOM 标签或触发脚本。
-- 路由与设置：学习、记录、设置应通过同一底栏无刷新切换；浏览器返回后地址、底栏选中态和可见视图应一致；设置视图内确认/预览弹层、备份导入导出入口、记录视图 CSV/PDF 导出入口应可正常访问。
+- 路由与设置：学习、记录、设置应通过同一底栏无刷新切换；浏览器返回后地址、底栏选中态和可见视图应一致；设置视图内确认/预览弹层、AI 常用模型选择、备份导入导出入口、记录视图 CSV/PDF 导出入口应可正常访问。
 
 ---
 
@@ -320,7 +324,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 1. **账号** — 登录、注册、重置密码、登录状态卡片与云同步（上传/下载数据）。登录状态卡片在宽度不超过 430px 时常显单词数、连续天数和当前轮，其余统计通过「更多学习统计」展开且每次打开设置默认折叠；平板和桌面宽度默认直接展示全部统计。
 2. **学习** — 外观（主题模式与经典/纸张绿/海蓝配色）、学习目标（每日轮次/单词）、学习设置（每轮上限）和复习配置（复习间隔、翻面、持续背书）。
 3. **发音** — 朗读开关、发音方式（在线 TTS / 离线 TTS / 系统语音）和在线发音源；「离线语音包」分区与当前首选发音方式相互独立，桌面端和 Android 应用可随时下载、删除、试听及选择模型，选中离线 TTS 时分区自动展开。Web 端保留该分区并明确提示不支持模型管理。
-4. **AI** — 自定义 API 配置、模型选择和词书生成。
+4. **AI** — 自定义 API 配置、模型选择和词书生成；常用模型由应用内面板选择，模型名仍可自由输入。
 5. **更多** — 包含联网补充（在线查词）、数据管理和版本信息；版本信息仅在 Tauri 桌面端与 Android 应用中显示。
 
 移动端使用跟随主题的统一分段式顶部导航，内容按单列手风琴卡片排列。宽度达到 760px 时，类别导航位于左侧，内容使用响应式两列手风琴布局；账号面板横跨整个内容区。所有宽度均复用 App Shell 的学习、记录、设置悬浮底栏。

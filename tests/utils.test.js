@@ -110,6 +110,8 @@ function loadUtilsWithLayerSpy({ deferClose = false } = {}) {
     navigator: { userAgent: "node", maxTouchPoints: 0 },
     Blob,
     URL,
+    setTimeout,
+    clearTimeout,
   }
   vm.createContext(sandbox)
   vm.runInContext(code, sandbox)
@@ -377,5 +379,47 @@ describe("A4Utils modal integration", () => {
     assert.equal(await result, false)
     assert.equal(document.activeElement, trigger)
     assert.equal(body.children.length, 1)
+  })
+
+  it("opens application notices through the shared layer manager", async () => {
+    const { A4Utils: utils, body, layerCalls } = loadUtilsWithLayerSpy()
+    const result = utils.showNoticeDialog({
+      title: "导入失败",
+      message: "数据结构不正确。",
+    })
+
+    assert.equal(body.children.length, 1)
+    assert.equal(layerCalls[0].visible, true)
+    const modal = body.children[0]
+    const panel = modal.children[1]
+    assert.equal(panel.children[0].children[0].textContent, "导入失败")
+    assert.equal(panel.children[1].textContent, "数据结构不正确。")
+
+    panel.children[2].children[0].click()
+    assert.equal(await result, true)
+    assert.equal(body.children.length, 0)
+  })
+
+  it("returns an application-owned choice through a shared bottom sheet", async () => {
+    const { A4Utils: utils, body, layerCalls } = loadUtilsWithLayerSpy()
+    const trigger = { id: "model-picker" }
+    const result = utils.showChoiceDialog({
+      title: "选择常用模型",
+      options: [
+        { value: "gpt-4o-mini", label: "gpt-4o-mini" },
+        { value: "gpt-4.1-mini", label: "gpt-4.1-mini" },
+      ],
+      value: "gpt-4o-mini",
+      trigger,
+    })
+
+    assert.equal(layerCalls[0].options.trigger, trigger)
+    assert.equal(layerCalls[0].options.motion, "sheet")
+    const modal = body.children[0]
+    const list = modal.children[1].children[1]
+    list.children[1].click()
+
+    assert.equal(await result, "gpt-4.1-mini")
+    assert.equal(body.children.length, 0)
   })
 })

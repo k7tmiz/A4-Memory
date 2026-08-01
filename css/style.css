@@ -5,6 +5,9 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
 }
 
 :root {
@@ -83,6 +86,22 @@ body {
   background-attachment: fixed;
   min-height: 100dvh;
   -webkit-text-size-adjust: 100%;
+}
+
+body.home-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+  touch-action: pan-y;
+  overscroll-behavior-x: none;
+}
+
+body.home-page .app-view-stage,
+body.home-page [data-a4-view="study"] {
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body.no-select {
@@ -2922,6 +2941,32 @@ body.theme-dark .account-badge {
   line-height: 1.3;
 }
 
+.a4-global-toast {
+  position: fixed;
+  z-index: 120;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  width: min(calc(100vw - 28px), 460px);
+  margin: 0;
+  padding: 11px 14px;
+  border-color: color-mix(in srgb, var(--border3) 82%, transparent);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--text) 16%, transparent);
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+.a4-global-toast.is-success {
+  border-color: color-mix(in srgb, #16803c 30%, var(--border));
+}
+
+.a4-global-toast.is-error {
+  border-color: color-mix(in srgb, #b42318 34%, var(--border));
+}
+
 .word-row {
   display: grid;
   grid-template-columns: 1fr 1.2fr;
@@ -3004,6 +3049,7 @@ body.theme-dark .account-badge {
   max-height: min(84vh, 720px);
   border-radius: 18px;
   overflow: hidden;
+  translate: 0 clamp(-40px, -4dvh, -24px);
 }
 
 .lookup-header {

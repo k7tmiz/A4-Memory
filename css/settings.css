@@ -47,6 +47,20 @@ body.settings-page #settingsModal .modal-panel {
   animation: none;
 }
 
+.ai-model-control {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-model-picker-btn {
+  min-height: 38px;
+  padding: 8px 11px;
+  white-space: nowrap;
+}
+
 .settings-page-intro {
   min-width: 0;
   margin-bottom: clamp(18px, 3vw, 30px);

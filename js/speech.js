@@ -21,6 +21,14 @@
     speakGen: 0,
   }
 
+  function showSpeechWarning(message) {
+    window.A4Utils?.showToast?.({
+      message: String(message || ""),
+      kind: "error",
+      duration: 5200,
+    })
+  }
+
   function isSpeakRequestCurrent(requestGen) {
     return typeof requestGen !== "number" || requestGen === speechState.speakGen
   }
@@ -249,7 +257,7 @@
     if (!k) return
     if (speechState.warnedNoLang.has(k)) return
     speechState.warnedNoLang.add(k)
-    window.alert(text)
+    showSpeechWarning(text)
   }
 
   function warnSpeechFailure(resolved) {
@@ -257,13 +265,13 @@
     if (resolved.reason === "no_support") {
       if (speechState.warnedNoSupport) return
       speechState.warnedNoSupport = true
-      window.alert("当前浏览器不支持发音。")
+      showSpeechWarning("当前浏览器不支持发音。")
       return
     }
     if (resolved.reason === "no_voice") {
       if (speechState.warnedNoVoice) return
       speechState.warnedNoVoice = true
-      window.alert("当前设备没有可用语音。请在系统设置中下载语音，或更换支持 SpeechSynthesis 的浏览器。")
+      showSpeechWarning("当前设备没有可用语音。请在系统设置中下载语音，或更换支持 SpeechSynthesis 的浏览器。")
     }
   }
 
@@ -290,7 +298,7 @@
   async function speakWithAndroidTts({ text, pronunciationLang, wordbookLanguage, accent }) {
     const invoke = window.A4Utils?.getTauriInvoke?.()
     if (typeof invoke !== "function") {
-      if (isAndroidRuntime()) window.alert("Android 原生发音桥接不可用，请安装最新 Android 版 A4 Memory。")
+      if (isAndroidRuntime()) showSpeechWarning("Android 原生发音桥接不可用，请安装最新 Android 版 A4 Memory。")
       return false
     }
     const lang = getNativeSpeechLang({ pronunciationLang, wordbookLanguage, accent })
@@ -1047,7 +1055,7 @@
     if (!isSpeakRequestCurrent(requestGen)) return false
     if (!ok && !speechState.warnedOnlineFailure) {
       speechState.warnedOnlineFailure = true
-      window.alert(
+      showSpeechWarning(
         mode === "offline"
           ? "离线发音和系统语音均不可用。请检查离线语音包或系统语音。"
           : "发音不可用。请检查网络、安装系统语音，或在设置页下载离线语音包。"
