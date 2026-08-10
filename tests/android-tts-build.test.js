@@ -193,16 +193,20 @@ describe("Android offline TTS build integration", () => {
     assert.doesNotMatch(tauriConfig, /tts\.k7tmiz\.com/)
   })
 
-  it("documents the arm64-only Android build and keeps release notes current", () => {
+  it("documents the arm64-only Android build and provides versioned release notes", () => {
     const readme = fs.readFileSync(path.join(ROOT, "README.md"), "utf8")
     const workflow = fs.readFileSync(path.join(ROOT, ".github", "workflows", "release.yml"), "utf8")
+    const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"))
+    const releaseNotes = workflow.match(/### 本次更新\n([\s\S]*?)\n\s*### 功能/)?.[1] || ""
+    const releaseNoteItems = releaseNotes
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("- "))
+
     assert.match(readme, /android build -- --apk --target aarch64/)
     assert.doesNotMatch(workflow, /tts\.k7tmiz\.com/)
-    assert.match(workflow, /学习页直接左右滑动不再产生页面偏移/)
-    assert.match(workflow, /沉浸模式在纸面工具栏保留「退出」入口/)
-    assert.match(workflow, /应用提示、选择面板与 Android 下拉交互统一为应用内 UI/)
-    assert.match(workflow, /Google 登录入口提供界面预览，本版暂未开放账号授权/)
-    assert.match(workflow, /a4-memory-v2\.2\.1-android\.apk/)
+    assert.ok(releaseNoteItems.some((line) => !line.includes("Android 安装包")))
+    assert.ok(releaseNoteItems.includes(`- Android 安装包：\`a4-memory-v${version}-android.apk\``))
     assert.match(workflow, /SIGNED="a4-memory-\$\{TAG\}-android\.apk"/)
   })
 

@@ -7,6 +7,7 @@ const assert = require("node:assert/strict")
 const ROOT = path.join(__dirname, "..")
 const updaterCode = fs.readFileSync(path.join(ROOT, "js", "updater.js"), "utf8")
 const styleCode = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
+const packageVersion = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version
 
 function loadUpdaterHelpers() {
   const window = {}
@@ -19,7 +20,7 @@ function loadUpdaterHelpers() {
 
 describe("A4Updater application version", () => {
   it("reports the coordinated interface release version", () => {
-    assert.equal(loadUpdaterHelpers().APP_VERSION, "2.2.1")
+    assert.equal(loadUpdaterHelpers().APP_VERSION, packageVersion)
   })
 })
 
