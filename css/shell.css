@@ -765,6 +765,10 @@
       calc(84px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   }
 
+  body.home-page.immersive [data-a4-view="study"] .app {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+
   .home-controls {
     padding: 0;
     display: flex;
@@ -916,6 +920,12 @@
     );
     border-radius: 8px;
     box-shadow: 0 14px 34px color-mix(in srgb, var(--text) 10%, transparent);
+  }
+
+  body.home-page.immersive [data-a4-view="study"] .paper {
+    height: calc(
+      100dvh - max(10px, env(safe-area-inset-top)) - 80px - env(safe-area-inset-bottom)
+    );
   }
 
   .paper-toolbar {

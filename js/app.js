@@ -2912,6 +2912,7 @@ dom.paperInner.addEventListener("click", (e) => {
 function toggleImmersiveMode() {
   appState.immersiveMode = !appState.immersiveMode
   updateImmersiveToggle()
+  renderCurrentRound()
   persist()
 }
 
