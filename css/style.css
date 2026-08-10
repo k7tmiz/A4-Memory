@@ -1601,6 +1601,15 @@ body.theme-dark .paper {
   -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
+.android-select-picker-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.android-select-picker-panel.has-search {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
 .wordbook-picker-header {
   align-items: flex-start;
   padding: 4px 14px 12px;
@@ -1627,6 +1636,14 @@ body.theme-dark .paper {
   letter-spacing: -0.02em;
 }
 
+.android-select-picker-search-wrap {
+  padding: 10px 12px 0;
+}
+
+.android-select-picker-search {
+  min-height: 42px;
+}
+
 .wordbook-picker-close {
   width: 32px;
   min-width: 32px;
@@ -1647,6 +1664,11 @@ body.theme-dark .paper {
   overflow: auto;
   display: grid;
   gap: 0;
+}
+
+.android-select-picker-empty {
+  padding: 18px 6px;
+  text-align: center;
 }
 
 .wordbook-picker-group + .wordbook-picker-group {

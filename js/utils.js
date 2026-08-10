@@ -285,6 +285,8 @@
       value: selectedValue = "",
       trigger = document.activeElement || null,
       motion = "sheet",
+      searchPlaceholder = "",
+      emptyText = "暂无可选项",
     } = options || {}
     const choices = Array.isArray(rawOptions) ? rawOptions : []
 
@@ -320,10 +322,26 @@
       list.className = "android-select-picker-list"
       list.setAttribute("role", "listbox")
 
+      let searchInput = null
+      let searchWrap = null
+      if (String(searchPlaceholder || "").trim()) {
+        panel.classList.add("has-search")
+        searchWrap = document.createElement("div")
+        searchWrap.className = "android-select-picker-search-wrap"
+        searchInput = document.createElement("input")
+        searchInput.className = "text-input android-select-picker-search"
+        searchInput.type = "search"
+        searchInput.placeholder = String(searchPlaceholder || "").trim()
+        searchInput.setAttribute("aria-label", searchInput.placeholder)
+        searchInput.setAttribute("data-autofocus", "")
+        searchWrap.appendChild(searchInput)
+      }
+
       const modal = document.createElement("div")
       modal.className = "modal hidden android-select-picker-modal"
       modal.setAttribute("aria-hidden", "true")
       panel.appendChild(header)
+      if (searchWrap) panel.appendChild(searchWrap)
       panel.appendChild(list)
       modal.appendChild(backdrop)
       modal.appendChild(panel)
@@ -342,6 +360,9 @@
       }
 
       let previousGroup = null
+      let currentGroupRecord = null
+      const renderedChoices = []
+      const groupRecords = []
       for (const rawChoice of choices) {
         const choice = rawChoice && typeof rawChoice === "object"
           ? rawChoice
@@ -353,6 +374,11 @@
           groupTitle.textContent = group
           list.appendChild(groupTitle)
           previousGroup = group
+          currentGroupRecord = { title: groupTitle, choices: [] }
+          groupRecords.push(currentGroupRecord)
+        } else if (!group) {
+          previousGroup = null
+          currentGroupRecord = null
         }
 
         const option = document.createElement("button")
@@ -368,13 +394,35 @@
           if (!option.disabled) finish(optionValue)
         })
         list.appendChild(option)
+        const record = {
+          option,
+          searchText: `${optionValue} ${option.textContent}`.toLocaleLowerCase(),
+        }
+        renderedChoices.push(record)
+        currentGroupRecord?.choices.push(record)
       }
 
-      if (!list.children.length) {
-        const empty = document.createElement("div")
-        empty.className = "form-help"
-        empty.textContent = "暂无可选项"
-        list.appendChild(empty)
+      const empty = document.createElement("div")
+      empty.className = "form-help android-select-picker-empty"
+      empty.textContent = String(emptyText || "暂无可选项")
+      empty.classList.toggle("hidden", renderedChoices.length > 0)
+      list.appendChild(empty)
+
+      if (searchInput) {
+        searchInput.addEventListener("input", () => {
+          const query = String(searchInput.value || "").trim().toLocaleLowerCase()
+          let visibleCount = 0
+          for (const record of renderedChoices) {
+            const visible = !query || record.searchText.includes(query)
+            record.option.classList.toggle("hidden", !visible)
+            if (visible) visibleCount += 1
+          }
+          for (const groupRecord of groupRecords) {
+            const hasVisibleChoice = groupRecord.choices.some((record) => !record.option.classList.contains("hidden"))
+            groupRecord.title.classList.toggle("hidden", !hasVisibleChoice)
+          }
+          empty.classList.toggle("hidden", visibleCount > 0)
+        })
       }
 
       modal.addEventListener("a4-layer-dismiss", (event) => {

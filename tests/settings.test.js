@@ -7,6 +7,7 @@ const assert = require("node:assert/strict")
 const ROOT = path.join(__dirname, "..")
 const commonCode = fs.readFileSync(path.join(ROOT, "js", "core", "common.js"), "utf8")
 const settingsCode = fs.readFileSync(path.join(ROOT, "js", "settings.js"), "utf8")
+const lookupCode = fs.readFileSync(path.join(ROOT, "js", "lookup.js"), "utf8")
 const settingsStylePath = path.join(ROOT, "css", "settings.css")
 const settingsStyle = fs.existsSync(settingsStylePath) ? fs.readFileSync(settingsStylePath, "utf8") : ""
 
@@ -260,6 +261,25 @@ describe("A4Settings imported state normalization", () => {
     assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "ocean" }).themePalette, "ocean")
     assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "plum" }).themePalette, "classic")
   })
+
+  it("migrates removed SiliconCloud configs to custom without losing endpoint or model", () => {
+    const settings = loadSettingsHelpers()
+    const state = settings.normalizeImportedState({
+      version: 2,
+      rounds: [],
+      aiConfig: {
+        provider: "siliconcloud",
+        baseUrl: "https://api.siliconflow.cn/v1",
+        apiKey: "must-not-survive",
+        model: "deepseek-ai/DeepSeek-V3",
+      },
+    })
+
+    assert.equal(state.aiConfig.provider, "custom")
+    assert.equal(state.aiConfig.baseUrl, "https://api.siliconflow.cn/v1")
+    assert.equal(state.aiConfig.model, "deepseek-ai/DeepSeek-V3")
+    assert.equal(state.aiConfig.apiKey, "")
+  })
 })
 
 describe("A4Settings visual palettes", () => {
@@ -312,7 +332,24 @@ describe("A4Settings AI provider changes", () => {
     assert.equal(next.provider, "deepseek")
     assert.equal(next.baseUrl, "https://api.deepseek.com/v1")
     assert.equal(next.apiKey, "")
-    assert.equal(next.model, "deepseek-chat")
+    assert.equal(next.model, "")
+  })
+
+  it("preserves a config when the normalized provider does not change", () => {
+    const settings = loadSettingsHelpers()
+    const next = settings.computeAiConfigOnProviderChange({
+      prevConfig: {
+        provider: "custom",
+        baseUrl: "https://example.com/v1",
+        apiKey: "session-key",
+        model: "vendor-model",
+      },
+      nextProvider: "custom",
+    })
+
+    assert.equal(next.baseUrl, "https://example.com/v1")
+    assert.equal(next.apiKey, "session-key")
+    assert.equal(next.model, "vendor-model")
   })
 
   it("detects a custom endpoint origin change before reusing a key", () => {
@@ -334,6 +371,42 @@ describe("A4Settings AI provider changes", () => {
       }),
       false
     )
+  })
+})
+
+describe("A4Settings live AI model discovery", () => {
+  it("builds standard model-list endpoints from supported base URL shapes", () => {
+    const settings = loadSettingsHelpers()
+
+    assert.equal(settings.buildModelsUrl("https://api.openai.com/v1"), "https://api.openai.com/v1/models")
+    assert.equal(
+      settings.buildModelsUrl("https://example.com/v1/chat/completions"),
+      "https://example.com/v1/models"
+    )
+    assert.equal(settings.buildModelsUrl("https://example.com/v1/models/"), "https://example.com/v1/models")
+    assert.equal(settings.buildModelsUrl("http://example.com/v1"), "")
+  })
+
+  it("parses, trims, deduplicates, and sorts standard model IDs", () => {
+    const settings = loadSettingsHelpers()
+    const models = settings.parseModelIds({
+      data: [{ id: "zeta" }, { id: " alpha " }, { id: "zeta" }, { id: "" }, null],
+    })
+
+    assert.deepEqual(Array.from(models), ["alpha", "zeta"])
+    assert.deepEqual(Array.from(settings.parseModelIds({ models: [] })), [])
+  })
+
+  it("contains no built-in model catalog or removed provider UI", () => {
+    assert.doesNotMatch(settingsCode, /defaultModel/)
+    assert.doesNotMatch(settingsCode, /SiliconCloud/)
+    assert.doesNotMatch(settingsCode, />常用模型</)
+    assert.match(settingsCode, />获取模型</)
+  })
+
+  it("omits fixed temperature from both AI request entry points", () => {
+    assert.doesNotMatch(settingsCode, /temperature:\s*0\.2/)
+    assert.doesNotMatch(lookupCode, /temperature:\s*0\.2/)
   })
 })
 

@@ -212,7 +212,7 @@
 
   function normalizeAiProvider(value) {
     const v = String(value || "").trim().toLowerCase()
-    if (v === "openai" || v === "gemini" || v === "deepseek" || v === "siliconcloud" || v === "custom") return v
+    if (v === "openai" || v === "gemini" || v === "deepseek" || v === "custom") return v
     return "custom"
   }
 

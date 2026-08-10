@@ -29,28 +29,15 @@
   const AI_PROVIDER_PRESETS = {
     openai: {
       baseUrl: "https://api.openai.com/v1",
-      models: ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4o"],
-      defaultModel: "gpt-4o-mini",
     },
     gemini: {
       baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-      models: ["gemini-1.5-flash", "gemini-1.5-pro"],
-      defaultModel: "gemini-1.5-flash",
     },
     deepseek: {
       baseUrl: "https://api.deepseek.com/v1",
-      models: ["deepseek-chat", "deepseek-reasoner"],
-      defaultModel: "deepseek-chat",
-    },
-    siliconcloud: {
-      baseUrl: "https://api.siliconflow.cn/v1",
-      models: ["deepseek-ai/DeepSeek-V3", "deepseek-ai/DeepSeek-R1"],
-      defaultModel: "deepseek-ai/DeepSeek-V3",
     },
     custom: {
       baseUrl: "",
-      models: [],
-      defaultModel: "",
     },
   }
 
@@ -79,23 +66,20 @@
   function computeAiConfigOnProviderChange({ prevConfig, nextProvider }) {
     const prevProvider = normalizeAiProvider(prevConfig?.provider)
     const nextProv = normalizeAiProvider(nextProvider)
-    const prevPreset = getAiPreset(prevProvider)
-    const nextPreset = getAiPreset(nextProv)
-
-    let baseUrl = String(prevConfig?.baseUrl || "").trim()
-    let model = String(prevConfig?.model || "").trim()
-    if (!baseUrl || (prevPreset.baseUrl && baseUrl === prevPreset.baseUrl)) {
-      baseUrl = String(nextPreset.baseUrl || "").trim()
-    }
-    if (!model || (prevPreset.defaultModel && model === prevPreset.defaultModel)) {
-      model = String(nextPreset.defaultModel || "").trim()
+    if (prevProvider === nextProv) {
+      return {
+        provider: nextProv,
+        baseUrl: String(prevConfig?.baseUrl || "").trim(),
+        apiKey: String(prevConfig?.apiKey || "").trim(),
+        model: String(prevConfig?.model || "").trim(),
+      }
     }
 
     return {
       provider: nextProv,
-      baseUrl,
-      apiKey: prevProvider === nextProv ? String(prevConfig?.apiKey || "").trim() : "",
-      model,
+      baseUrl: String(getAiPreset(nextProv).baseUrl || "").trim(),
+      apiKey: "",
+      model: "",
     }
   }
 
@@ -421,6 +405,22 @@
     if (b.endsWith("/v1")) return `${b}/chat/completions`
     if (b.includes("/v1/")) return `${b.replace(/\/+$/, "")}/chat/completions`
     return `${b}/v1/chat/completions`
+  }
+
+  function buildModelsUrl(baseUrl) {
+    const b = String(baseUrl || "").trim().replace(/\/+$/, "")
+    if (!b || !b.startsWith("https://")) return ""
+    if (b.endsWith("/models")) return b
+    if (b.endsWith("/chat/completions")) return `${b.slice(0, -"/chat/completions".length)}/models`
+    return `${b}/models`
+  }
+
+  function parseModelIds(payload) {
+    if (!Array.isArray(payload?.data)) return []
+    const ids = payload.data
+      .map((item) => String(item?.id || "").trim())
+      .filter(Boolean)
+    return [...new Set(ids)].sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }))
   }
 
   function buildAiRequest({ type, customTopic, count }) {
@@ -1020,8 +1020,7 @@
                 <div class="form-control">
                   <select id="aiProviderSelect" aria-label="API 提供商">
                     <option value="openai">OpenAI</option><option value="gemini">Gemini</option>
-                    <option value="deepseek">DeepSeek</option><option value="siliconcloud">SiliconCloud</option>
-                    <option value="custom">自定义</option>
+                    <option value="deepseek">DeepSeek</option><option value="custom">自定义</option>
                   </select>
                 </div>
               </div>
@@ -1031,14 +1030,14 @@
               </div>
               <div class="form-row">
                 <div class="form-label">API Key</div>
-                <div class="form-control"><input id="aiApiKeyInput" class="text-input" type="password" placeholder="只保存在当前浏览器本地" /></div>
+                <div class="form-control"><input id="aiApiKeyInput" class="text-input" type="password" placeholder="仅保留在当前会话内存中" /></div>
               </div>
               <div class="form-row">
                 <div class="form-label">Model</div>
                 <div class="form-control">
                   <div class="ai-model-control">
                     <input id="aiModelInput" class="text-input" type="text" placeholder="可直接输入模型名称" />
-                    <button id="aiModelPickerBtn" class="ghost ai-model-picker-btn" type="button" aria-haspopup="dialog">常用模型</button>
+                    <button id="aiModelPickerBtn" class="ghost ai-model-picker-btn" type="button" aria-haspopup="dialog">获取模型</button>
                   </div>
                 </div>
               </div>
@@ -2160,8 +2159,7 @@
       const preset = getAiPreset(cfg.provider)
       if (dom.aiProviderSelect) dom.aiProviderSelect.value = cfg.provider
       if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.placeholder = preset.baseUrl || "https://api.example.com/v1"
-      if (dom.aiModelInput) dom.aiModelInput.placeholder = preset.defaultModel || "可直接输入或选常用模型"
-      if (dom.aiModelPickerBtn) dom.aiModelPickerBtn.disabled = !(preset.models || []).length
+      if (dom.aiModelInput) dom.aiModelInput.placeholder = "可直接输入或获取实时模型"
     }
 
     function setAiStatus(text) {
@@ -2174,6 +2172,42 @@
       dom.aiGenerateBtn.disabled = !!busy
     }
 
+    let modelDiscoveryAbortController = null
+    let modelDiscoveryBusy = false
+
+    function setModelDiscoveryBusy(busy) {
+      modelDiscoveryBusy = !!busy
+      if (!dom.aiModelPickerBtn) return
+      dom.aiModelPickerBtn.disabled = modelDiscoveryBusy
+      dom.aiModelPickerBtn.textContent = modelDiscoveryBusy ? "获取中…" : "获取模型"
+    }
+
+    function abortModelDiscovery() {
+      if (!modelDiscoveryAbortController) return
+      try {
+        modelDiscoveryAbortController.abort()
+      } catch { /* ignore */ }
+      modelDiscoveryAbortController = null
+    }
+
+    async function requestAiModels({ endpoint, apiKey, signal }) {
+      const res = await fetch(endpoint, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${String(apiKey || "").trim()}` },
+        signal,
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      let payload
+      try {
+        payload = await res.json()
+      } catch {
+        throw new Error("返回内容不是有效 JSON")
+      }
+      const models = parseModelIds(payload)
+      if (!models.length) throw new Error("接口没有返回可用模型")
+      return models
+    }
+
     async function requestAiChatCompletion({ endpoint, apiKey, model, system, user, stream, signal }) {
       const headers = { "Content-Type": "application/json" }
       if (String(apiKey || "").trim()) headers.Authorization = `Bearer ${apiKey}`
@@ -2183,7 +2217,6 @@
         signal,
         body: JSON.stringify({
           model,
-          temperature: 0.2,
           stream: !!stream,
           messages: [
             { role: "system", content: system },
@@ -2373,6 +2406,8 @@
     }
 
     function close() {
+      abortModelDiscovery()
+      setModelDiscoveryBusy(false)
       if (pagePresentation) return
       setModalVisible(dom.modal, false)
     }
@@ -2752,7 +2787,7 @@
     })
 
     dom.aiBaseUrlInput?.addEventListener("change", () => {
-      patchAiConfig({ baseUrl: dom.aiBaseUrlInput.value })
+      patchAiConfig({ baseUrl: dom.aiBaseUrlInput.value }, { syncInputs: true })
       render()
     })
     dom.aiApiKeyInput?.addEventListener("change", () => {
@@ -2765,17 +2800,49 @@
     })
 
     dom.aiModelPickerBtn?.addEventListener("click", async (event) => {
-      const cfg = getAiConfigFromState(getStateSafe())
-      const models = getAiPreset(cfg.provider).models || []
-      if (!models.length) {
-        showAppToast({ message: "当前提供商没有预设模型，请直接输入模型名称。", duration: 4200 })
+      if (modelDiscoveryBusy) return
+      const savedConfig = getAiConfigFromState(getStateSafe())
+      const baseUrl = String(dom.aiBaseUrlInput?.value || savedConfig.baseUrl || "").trim()
+      const apiKey = String(dom.aiApiKeyInput?.value || savedConfig.apiKey || "").trim()
+      const endpoint = buildModelsUrl(baseUrl)
+      if (!endpoint) {
+        setAiStatus("请先填写有效的 HTTPS API Base URL。")
         return
       }
+      if (!apiKey) {
+        setAiStatus("请先填写 API Key。")
+        return
+      }
+
+      patchAiConfig({ baseUrl, apiKey })
+      abortModelDiscovery()
+      const requestController = new AbortController()
+      modelDiscoveryAbortController = requestController
+      setModelDiscoveryBusy(true)
+      setAiStatus("正在获取模型…")
+
+      let models
+      try {
+        models = await requestAiModels({ endpoint, apiKey, signal: requestController.signal })
+      } catch (error) {
+        if (error?.name === "AbortError") return
+        setAiStatus(`获取模型失败：${String(error?.message || "网络或接口错误")}`)
+        return
+      } finally {
+        if (modelDiscoveryAbortController === requestController) {
+          modelDiscoveryAbortController = null
+          setModelDiscoveryBusy(false)
+        }
+      }
+
+      setAiStatus(`已获取 ${models.length} 个模型。`)
       const selected = await showChoiceDialog({
-        title: "选择常用模型",
+        title: "选择模型",
         options: models.map((model) => ({ value: model, label: model })),
-        value: String(dom.aiModelInput?.value || cfg.model || ""),
+        value: String(dom.aiModelInput?.value || savedConfig.model || ""),
         trigger: event.currentTarget,
+        searchPlaceholder: "搜索模型",
+        emptyText: "没有匹配的模型",
       })
       if (selected == null) return
       if (dom.aiModelInput) dom.aiModelInput.value = selected
@@ -2784,6 +2851,8 @@
     })
 
     dom.aiProviderSelect?.addEventListener("change", () => {
+      abortModelDiscovery()
+      setModelDiscoveryBusy(false)
       const state = getStateSafe()
       const prev = getAiConfigFromState(state)
       const next = computeAiConfigOnProviderChange({ prevConfig: prev, nextProvider: dom.aiProviderSelect.value })
@@ -3557,6 +3626,8 @@
     configureSettingsPresentation,
     normalizeAiWordbook,
     buildChatCompletionsUrl,
+    buildModelsUrl,
+    parseModelIds,
     stripJsonFromText,
     buildAiRequest,
     readStateRaw: window.A4Storage?.readStateRaw,

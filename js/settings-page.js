@@ -69,9 +69,14 @@
     if (mount) mount.textContent = "设置模块加载失败，请刷新后重试。"
   }
 
+  function leaveSettingsView() {
+    controller?.close?.()
+    persist()
+  }
+
   const settingsRouteRegistered = window.A4Router?.register?.("settings", {
     enter: enterSettingsView,
-    leave: persist,
+    leave: leaveSettingsView,
     exit: persist,
   })
   if (!settingsRouteRegistered) enterSettingsView()

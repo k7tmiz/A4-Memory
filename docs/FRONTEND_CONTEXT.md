@@ -211,7 +211,7 @@ window.A4Utils = {
   refreshAndroidSelectPickers(root),
 }
 ```
-文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录，结果反馈由前端共享 toast 呈现。应用拥有的通知、选择列表和删除/清空确认分别使用 `showNoticeDialog` / `showToast`、`showChoiceDialog` / `installAndroidSelectPicker` 和 `showConfirmDialog`，不调用 WebView 原生 `alert` / `confirm` / `prompt`。Android 下的词书、在线导入、查词语言和设置选项均使用应用内底部面板，原 `<select>` 保留为状态源；AI 常用模型使用应用内选择面板，同时保留自由输入。系统打印、系统文件选择、外部浏览器、OAuth 和软键盘属于平台能力，继续使用系统界面。
+文件导出在 Web/桌面端使用浏览器下载；Android Tauri 端通过 `a4_android_save_text_file` 将文本类导出写入下载目录，结果反馈由前端共享 toast 呈现。应用拥有的通知、选择列表和删除/清空确认分别使用 `showNoticeDialog` / `showToast`、`showChoiceDialog` / `installAndroidSelectPicker` 和 `showConfirmDialog`，不调用 WebView 原生 `alert` / `confirm` / `prompt`。Android 下的词书、在线导入、查词语言和设置选项均使用应用内底部面板，原 `<select>` 保留为状态源；AI 实时模型结果使用带本地搜索的应用内选择面板，同时保留自由输入。系统打印、系统文件选择、外部浏览器、OAuth 和软键盘属于平台能力，继续使用系统界面。
 
 ### `js/speech.js`
 语音合成封装。Web/桌面端使用 SpeechSynthesis；Android Tauri 端通过全局 Tauri invoke 调用原生 `a4_android_speak`。在线模式支持 Microsoft Edge TTS / Google Translate TTS，由 `ttsMode` / `onlineTtsProvider` 控制；浏览器优先直连首选在线源，未及时开始播放时尝试同源私有桥接层代理，再依次尝试另一在线源、已安装离线语音和系统语音。桌面端与 Android 均支持「离线 TTS」模式（Sherpa-ONNX，模型按需下载到 `app_data_dir()/voices/<id>/`），通过 `a4_offline_speak` 命令合成 WAV 后用 HTMLAudioElement 播放；离线模式失败时只回退系统语音，不调用在线源。同一 voice ID 的合成、替换和删除覆盖完整生命周期串行执行；桌面端在文件替换或删除前释放引擎缓存，模型安装使用同级 staging/backup 原子切换并恢复未完成事务。Android 的模型加载和推理在 Kotlin 单线程执行器中运行，Rust 命令通过短 JNI 调用轮询结果，不阻塞 WebView 线程；超时请求会取消并清理结果/WAV，模型替换或删除会等待旧原生引擎释放。朗读文本不写入学习状态、备份或云同步数据。Tauri CSP 需放行 `wss:` 与 `media-src blob: https:`。
@@ -229,7 +229,7 @@ window.A4Speech = {
 ```
 
 ### `js/settings.js`
-设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口为界面占位，点击只显示暂未接入提示，不调用私有登录桥接。AI 模型输入支持自由填写，当前服务商的常用模型通过应用内选择面板填入，不依赖 WebView 原生 `datalist` 候选界面：
+设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口为界面占位，点击只显示暂未接入提示，不调用私有登录桥接。AI 模型输入支持自由填写；“获取模型”使用当前 Base URL 和内存态 API Key 请求标准 `/models` 接口，成功结果通过带本地搜索的应用内选择面板填入。模型列表不内置、不缓存、不回退，获取失败不打开选择面板：
 ```javascript
 window.A4Settings = {
   createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation }),
@@ -309,7 +309,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 - 学习流程：新增单词后自动复习弹窗应打开；记录页手动复习应可返回首页并打开复习弹窗。
 - 学习页手势：直接左右拖动纸面或背景不得产生横向页面偏移，双击/双指操作不得缩放 A4；复习卡横向标记保持可用；沉浸模式可从纸面工具栏退出。
 - 安全渲染：导入词条中的 HTML 片段只能作为文本显示，不得生成真实 DOM 标签或触发脚本。
-- 路由与设置：学习、记录、设置应通过同一底栏无刷新切换；浏览器返回后地址、底栏选中态和可见视图应一致；设置视图内确认/预览弹层、AI 常用模型选择、备份导入导出入口、记录视图 CSV/PDF 导出入口应可正常访问。
+- 路由与设置：学习、记录、设置应通过同一底栏无刷新切换；浏览器返回后地址、底栏选中态和可见视图应一致；设置视图内确认/预览弹层、AI 实时模型获取与选择、备份导入导出入口、记录视图 CSV/PDF 导出入口应可正常访问。
 
 ---
 
@@ -324,7 +324,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 1. **账号** — 登录、注册、重置密码、登录状态卡片与云同步（上传/下载数据）。登录状态卡片在宽度不超过 430px 时常显单词数、连续天数和当前轮，其余统计通过「更多学习统计」展开且每次打开设置默认折叠；平板和桌面宽度默认直接展示全部统计。
 2. **学习** — 外观（主题模式与经典/纸张绿/海蓝配色）、学习目标（每日轮次/单词）、学习设置（每轮上限）和复习配置（复习间隔、翻面、持续背书）。
 3. **发音** — 朗读开关、发音方式（在线 TTS / 离线 TTS / 系统语音）和在线发音源；「离线语音包」分区与当前首选发音方式相互独立，桌面端和 Android 应用可随时下载、删除、试听及选择模型，选中离线 TTS 时分区自动展开。Web 端保留该分区并明确提示不支持模型管理。
-4. **AI** — 自定义 API 配置、模型选择和词书生成；常用模型由应用内面板选择，模型名仍可自由输入。
+4. **AI** — OpenAI、Gemini、DeepSeek 和自定义 OpenAI 兼容 API 配置、模型选择与词书生成；模型名可自由输入，也可从服务商 `/models` 接口实时获取后通过应用内面板选择，不保留内置、缓存或回退列表。
 5. **更多** — 包含联网补充（在线查词）、数据管理和版本信息；版本信息仅在 Tauri 桌面端与 Android 应用中显示。
 
 移动端使用跟随主题的统一分段式顶部导航，内容按单列手风琴卡片排列。宽度达到 760px 时，类别导航位于左侧，内容使用响应式两列手风琴布局；账号面板横跨整个内容区。所有宽度均复用 App Shell 的学习、记录、设置悬浮底栏。

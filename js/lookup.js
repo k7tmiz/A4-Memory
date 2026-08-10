@@ -394,7 +394,6 @@
     if (cfg.apiKey) headers.Authorization = `Bearer ${cfg.apiKey}`
     const body = {
       model,
-      temperature: 0.2,
       messages: [
         { role: "system", content: "You are a strict JSON generator. Output ONLY valid JSON, no extra text." },
         { role: "user", content: buildLookupAiUserPrompt({ term: t, base }) },

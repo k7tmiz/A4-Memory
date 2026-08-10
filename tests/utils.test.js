@@ -44,9 +44,12 @@ function loadUtilsWithLayerSpy({ deferClose = false } = {}) {
       parentElement: null,
       style: {},
       textContent: "",
+      value: "",
+      placeholder: "",
       type: "",
       setAttribute() {},
       addEventListener(type, listener) { listeners.set(type, listener) },
+      dispatch(type) { listeners.get(type)?.({ target: element }) },
       appendChild(child) {
         child.parentElement = element
         element.children.push(child)
@@ -57,6 +60,12 @@ function loadUtilsWithLayerSpy({ deferClose = false } = {}) {
         add(...names) { names.forEach((name) => classes.add(name)) },
         remove(...names) { names.forEach((name) => classes.delete(name)) },
         contains(name) { return classes.has(name) },
+        toggle(name, force) {
+          const enabled = force === undefined ? !classes.has(name) : !!force
+          if (enabled) classes.add(name)
+          else classes.delete(name)
+          return enabled
+        },
       },
     }
     Object.defineProperty(element, "className", {
@@ -404,12 +413,12 @@ describe("A4Utils modal integration", () => {
     const { A4Utils: utils, body, layerCalls } = loadUtilsWithLayerSpy()
     const trigger = { id: "model-picker" }
     const result = utils.showChoiceDialog({
-      title: "选择常用模型",
+      title: "选择模型",
       options: [
-        { value: "gpt-4o-mini", label: "gpt-4o-mini" },
-        { value: "gpt-4.1-mini", label: "gpt-4.1-mini" },
+        { value: "model-fast", label: "model-fast" },
+        { value: "model-pro", label: "model-pro" },
       ],
-      value: "gpt-4o-mini",
+      value: "model-fast",
       trigger,
     })
 
@@ -419,7 +428,28 @@ describe("A4Utils modal integration", () => {
     const list = modal.children[1].children[1]
     list.children[1].click()
 
-    assert.equal(await result, "gpt-4.1-mini")
+    assert.equal(await result, "model-pro")
     assert.equal(body.children.length, 0)
+  })
+
+  it("filters a live model choice list locally when search is enabled", async () => {
+    const { A4Utils: utils, body } = loadUtilsWithLayerSpy()
+    const result = utils.showChoiceDialog({
+      title: "选择模型",
+      options: ["gpt-5.6-luna", "gpt-5.6-terra"],
+      searchPlaceholder: "搜索模型",
+      emptyText: "没有匹配的模型",
+    })
+
+    const panel = body.children[0].children[1]
+    const searchInput = panel.children[1].children[0]
+    const list = panel.children[2]
+    searchInput.value = "terra"
+    searchInput.dispatch("input")
+
+    assert.equal(list.children[0].classList.contains("hidden"), true)
+    assert.equal(list.children[1].classList.contains("hidden"), false)
+    list.children[1].click()
+    assert.equal(await result, "gpt-5.6-terra")
   })
 })
