@@ -101,17 +101,17 @@ body.records-page .app.records {
   top: calc(100% + 8px);
   right: 0;
   width: min(220px, calc(100vw - 32px));
-  padding: 7px;
+  padding: 6px;
   display: none;
-  gap: 3px;
+  gap: 2px;
   border: 1px solid var(--border);
-  border-radius: 17px;
-  background: color-mix(in srgb, var(--card) 96%, transparent);
-  box-shadow: 0 18px 48px color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 16px 40px -8px color-mix(in srgb, var(--text) 20%, transparent);
   color: var(--text);
   transform-origin: top right;
-  backdrop-filter: blur(22px) saturate(145%);
-  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
 }
 
 .records-tools[open] .records-tools-menu {
@@ -120,18 +120,28 @@ body.records-page .app.records {
 }
 
 .records-tools-menu button {
-  min-height: 42px;
-  padding: 9px 12px;
+  min-height: 38px;
+  padding: 8px 12px;
   justify-content: flex-start;
   border: 0;
-  border-radius: 11px;
+  border-radius: 10px;
   background: transparent;
+  box-shadow: none !important;
   color: var(--text);
   text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .records-tools-menu button:hover {
   background: var(--surfaceHover);
+  box-shadow: none !important;
+  transform: none;
+}
+
+.records-tools-menu button:active {
+  transform: scale(0.98);
 }
 
 .records-tools-menu #clearBtn {

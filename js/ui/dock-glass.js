@@ -61,7 +61,6 @@
       velocity = 0
       dragPx = 0
       nav.classList.add("is-lifting")
-      nav.setPointerCapture?.(event.pointerId)
     }
 
     function handlePointerMove(event) {
@@ -74,9 +73,18 @@
       lastTime = now
       const maxDrag = tabWidth() * (items().length - 1)
       dragPx = clamp(event.clientX - startX, -maxDrag, maxDrag)
-      nav.classList.add("is-dragging")
-      setVar("--a4-dock-drag", `${dragPx}px`)
-      setVar("--a4-dock-shift", `${clamp(dragPx * 0.08, -MAX_SHIFT_PX, MAX_SHIFT_PX)}px`)
+      if (Math.abs(dragPx) > DRAG_THRESHOLD_PX) {
+        if (!nav.classList.contains("is-dragging")) {
+          try {
+            nav.setPointerCapture?.(event.pointerId)
+          } catch (_err) {
+            void 0
+          }
+        }
+        nav.classList.add("is-dragging")
+        setVar("--a4-dock-drag", `${dragPx}px`)
+        setVar("--a4-dock-shift", `${clamp(dragPx * 0.08, -MAX_SHIFT_PX, MAX_SHIFT_PX)}px`)
+      }
     }
 
     function handlePointerUp(event) {
@@ -90,7 +98,7 @@
       }
       if (wasDragging && Math.abs(dragPx) > DRAG_THRESHOLD_PX) suppressedClick = true
 
-      if (!prefersReducedMotion(windowRef)) {
+      if (!prefersReducedMotion(windowRef) && wasDragging) {
         const speed = Math.abs(velocity)
         if (speed > 0.4) {
           const stretch = clamp(1 + speed * 0.06 * (dragPx >= 0 ? 1 : -1), 0.94, 1.12)
@@ -104,12 +112,20 @@
         }
       }
 
+      if (nav.hasPointerCapture?.(event.pointerId)) {
+        try {
+          nav.releasePointerCapture?.(event.pointerId)
+        } catch (_err) {
+          void 0
+        }
+      }
+
       resetDragState()
       pointerId = null
       lastX = 0
       lastTime = 0
 
-      if (target !== from) {
+      if (wasDragging && target !== from) {
         const view = items()[target]?.dataset?.a4Route
         if (view) windowRef.A4Router?.navigate?.(view, { queue: true })
       }

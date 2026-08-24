@@ -69,7 +69,71 @@ POST /api/auth/login
 
 ---
 
-### 1.3 发送注册验证码
+### 1.3 Google 登录配置
+
+```
+GET /api/auth/google/config
+```
+
+**鉴权**：无（公开）
+
+**成功响应**（200）：
+```json
+{
+  "success": true,
+  "enabled": true,
+  "clientId": "xxx.apps.googleusercontent.com"
+}
+```
+
+未启用时 `enabled` 为 `false`，`clientId` 为空字符串。
+
+---
+
+### 1.4 Google 登录
+
+```
+POST /api/auth/google
+```
+
+**鉴权**：无（公开）
+
+**Rate Limit**：同一 IP 15 分钟内最多 10 次
+
+**请求体**（二选一）：
+```json
+{
+  "accessToken": "ya29..."
+}
+```
+
+或：
+```json
+{
+  "idToken": "eyJ..."
+}
+```
+
+**行为**：
+- 服务端校验 Google token，并要求邮箱已验证
+- 已绑定 Google 的账号直接登录
+- 同邮箱已有账号会自动绑定 Google 身份
+- 新用户创建无密码账号并登录
+
+**成功响应**（200）：形状与邮箱登录相同
+
+**错误响应**：
+- 400：参数无效
+- 401：Google token 无效
+- 403：账号已禁用，或 Google 邮箱未验证
+- 409：邮箱已绑定其他 Google 账号
+- 429：请求过于频繁
+- 503：服务端未配置 Google 登录
+- 500：服务器内部错误
+
+---
+
+### 1.5 发送注册验证码
 
 ```
 POST /api/email/send-register-code
@@ -105,7 +169,7 @@ POST /api/email/send-register-code
 
 ---
 
-### 1.4 邮箱验证码注册
+### 1.6 邮箱验证码注册
 
 ```
 POST /api/email/register-with-code
@@ -149,7 +213,7 @@ POST /api/email/register-with-code
 
 ---
 
-### 1.5 发送重置密码验证码
+### 1.7 发送重置密码验证码
 
 ```
 POST /api/email/send-reset-code
@@ -185,7 +249,7 @@ POST /api/email/send-reset-code
 
 ---
 
-### 1.6 重置密码
+### 1.8 重置密码
 
 ```
 POST /api/email/reset-password
@@ -216,7 +280,7 @@ POST /api/email/reset-password
 
 ---
 
-### 1.7 下载用户 State
+### 1.9 下载用户 State
 
 ```
 GET /api/state
@@ -250,7 +314,7 @@ Authorization: Bearer <user_jwt_token>
 
 ---
 
-### 1.8 上传用户 State
+### 1.10 上传用户 State
 
 ```
 POST /api/state
@@ -295,7 +359,7 @@ Content-Type: application/json
 
 ---
 
-### 1.9 获取公告列表
+### 1.11 获取公告列表
 
 ```
 GET /api/announcements
@@ -333,7 +397,7 @@ GET /api/announcements
 
 ---
 
-### 1.10 标记公告已读
+### 1.12 标记公告已读
 
 ```
 POST /api/announcements/read
