@@ -547,14 +547,11 @@
     width: 42px;
     height: 42px;
     flex: 0 0 42px;
-    display: grid;
-    place-items: center;
-    border-radius: 14px;
-    background: var(--accent);
-    color: var(--accentText);
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: -0.04em;
+    border-radius: 12px;
+    object-fit: contain;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 25%, transparent);
+    user-select: none;
+    -webkit-user-drag: none;
   }
 
   .desktop-brand h1 {
