@@ -11,9 +11,9 @@ body.settings-page .settings-page-main {
   width: min(100%, 1120px);
   margin: 0 auto;
   padding:
-    clamp(24px, 4vw, 56px)
+    clamp(24px, 4vw, 48px)
     max(clamp(16px, 4vw, 44px), env(safe-area-inset-right))
-    calc(128px + env(safe-area-inset-bottom))
+    calc(140px + env(safe-area-inset-bottom))
     max(clamp(16px, 4vw, 44px), env(safe-area-inset-left));
 }
 
@@ -322,6 +322,19 @@ body.settings-page #settingsModal .settings-category-tabs {
   gap: 14px;
   background: transparent;
 }
+
+/* Specific Card Header Icons */
+#settingsPanelLearning .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🎨"; margin-right: 8px; font-size: 15px; }
+#settingsPanelLearning .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "⏱️"; margin-right: 8px; font-size: 15px; }
+#settingsPanelLearning .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "📖"; margin-right: 8px; font-size: 15px; }
+#settingsPanelPronunciation .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🎙️"; margin-right: 8px; font-size: 15px; }
+#settingsPanelPronunciation .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "📦"; margin-right: 8px; font-size: 15px; }
+#settingsPanelPronunciation .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "🔊"; margin-right: 8px; font-size: 15px; }
+#settingsPanelAi .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "⚡"; margin-right: 8px; font-size: 15px; }
+#settingsPanelAi .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "⚙️"; margin-right: 8px; font-size: 15px; }
+#settingsPanelMore .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🌐"; margin-right: 8px; font-size: 15px; }
+#settingsPanelMore .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "💾"; margin-right: 8px; font-size: 15px; }
+#settingsPanelMore .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "ℹ️"; margin-right: 8px; font-size: 15px; }
 
 /* 4. Form Layouts & Seamless Rows */
 #settingsModal .form-row {
@@ -930,14 +943,87 @@ body.theme-dark .account-oauth-btn:hover {
     padding: 11px 16px;
     text-align: left;
     font-size: 13.5px;
+    display: flex;
+    align-items: center;
   }
+
+  #settingsTabAccount::before { content: "👤"; margin-right: 8px; font-size: 14px; }
+  #settingsTabLearning::before { content: "🎯"; margin-right: 8px; font-size: 14px; }
+  #settingsTabPronunciation::before { content: "🔊"; margin-right: 8px; font-size: 14px; }
+  #settingsTabAi::before { content: "✨"; margin-right: 8px; font-size: 14px; }
+  #settingsTabMore::before { content: "⚙️"; margin-right: 8px; font-size: 14px; }
 
   #settingsModal .settings-accordion-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
   }
 
+  /* Balanced Learning Tab: Left tall card, Right two stacked cards */
+  #settingsPanelLearning .settings-accordion-grid {
+    grid-template-columns: 1.12fr 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #settingsPanelLearning .settings-accordion-card:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  #settingsPanelLearning .settings-accordion-card:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  #settingsPanelLearning .settings-accordion-card:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  /* Pronunciation Tab */
+  #settingsPanelPronunciation .settings-accordion-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #settingsPanelPronunciation .settings-accordion-card:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #settingsPanelPronunciation .settings-accordion-card:nth-child(3) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  #settingsPanelPronunciation .settings-accordion-card:nth-child(2),
   #settingsModal .settings-accordion-wide {
     grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  /* AI Tab */
+  #settingsPanelAi .settings-accordion-grid {
+    grid-template-columns: 1.15fr 1fr;
+  }
+
+  /* More Tab */
+  #settingsPanelMore .settings-accordion-grid {
+    grid-template-columns: 1.08fr 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  #settingsPanelMore .settings-accordion-card:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  #settingsPanelMore .settings-accordion-card:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  #settingsPanelMore .settings-accordion-card:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
   }
 }
 
@@ -946,7 +1032,7 @@ body.theme-dark .account-oauth-btn:hover {
     padding:
       max(18px, env(safe-area-inset-top))
       max(12px, env(safe-area-inset-right))
-      calc(112px + env(safe-area-inset-bottom))
+      calc(120px + env(safe-area-inset-bottom))
       max(12px, env(safe-area-inset-left));
   }
 
