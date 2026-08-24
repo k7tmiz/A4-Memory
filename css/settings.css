@@ -1,6 +1,6 @@
 /* ==========================================================================
-   A4 MEMORY 3.0 BENTO GLASS LUXURY SETTINGS DASHBOARD
-   (Linear Bento 2.0 × Arc Deep Glass Design System)
+   A4 MEMORY 3.0 BENTO GLASS SETTINGS DASHBOARD
+   (Refactored: Permanent Open Bento Cards × Compact Sticky Rail × Unified Glass)
    ========================================================================== */
 
 body.settings-page {
@@ -140,6 +140,7 @@ body.settings-page #settingsModal .modal-panel {
   flex: 0 0 auto;
   display: grid;
   align-content: start;
+  align-items: start;
   gap: clamp(16px, 2.5vw, 28px);
 }
 
@@ -161,7 +162,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   position: sticky;
   z-index: 18;
   top: 0;
-  align-self: stretch;
+  align-self: flex-start;
 }
 
 #settingsModal .settings-category-indicator {
@@ -200,10 +201,6 @@ body.settings-page #settingsModal .settings-category-tabs {
   min-width: 0;
   min-height: 44px;
   padding: 9px 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   border: 0;
   border-radius: 14px;
   background: transparent;
@@ -212,7 +209,6 @@ body.settings-page #settingsModal .settings-category-tabs {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
-  cursor: pointer;
   transition: color 180ms ease, transform 140ms ease, background 180ms ease;
 }
 
@@ -251,10 +247,12 @@ body.settings-page #settingsModal .settings-category-tabs {
   display: none;
 }
 
+/* 3. Open Bento Cards Grid */
 #settingsModal .settings-accordion-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  align-items: start;
 }
 
 #settingsModal .settings-category-panel > .panel,
@@ -266,8 +264,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   margin: 0;
   padding: clamp(18px, 2.5vw, 26px);
   border: 1px solid var(--border);
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--card) 94%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
   box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.45);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
@@ -280,7 +278,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   letter-spacing: -0.02em;
 }
 
-/* 3. Bento Glass Tiles & Accordion Cards */
+/* Permanent Open Bento Card Styles */
 #settingsModal .settings-accordion-card {
   min-width: 0;
   align-self: start;
@@ -300,21 +298,23 @@ body.settings-page #settingsModal .settings-category-tabs {
   transform: translateY(-2px);
 }
 
+/* Static Card Section Header (No Click Toggle / No Chevron) */
 #settingsModal .settings-accordion-card > summary {
   position: relative;
-  min-height: 52px;
-  padding: 15px 44px 15px 18px;
+  min-height: 48px;
+  padding: 14px 20px;
   display: flex;
   align-items: center;
   color: var(--text);
-  background: color-mix(in srgb, var(--card2) 70%, transparent);
-  cursor: pointer;
+  background: color-mix(in srgb, var(--card2) 65%, transparent);
+  border-bottom: 1px solid var(--border2);
+  cursor: default !important;
+  pointer-events: none !important;
+  user-select: none;
   font-size: 14.5px;
-  font-weight: 750;
+  font-weight: 800;
   letter-spacing: -0.01em;
   list-style: none;
-  transition: background 160ms ease;
-  user-select: none;
 }
 
 #settingsModal .settings-accordion-card > summary::-webkit-details-marker {
@@ -322,61 +322,36 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 #settingsModal .settings-accordion-card > summary::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 18px;
-  width: 7px;
-  height: 7px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
-  border-radius: 1px;
-  transform: translateY(-70%) rotate(45deg);
-  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-#settingsModal .settings-accordion-card[open] > summary {
-  border-bottom: 1px solid var(--border2);
-}
-
-#settingsModal .settings-accordion-card[open] > summary::after {
-  transform: translateY(-30%) rotate(225deg);
-}
-
-#settingsModal .settings-accordion-card > summary:hover {
-  background: var(--surfaceHover);
+  display: none !important;
 }
 
 #settingsModal .settings-accordion-content {
-  padding: 16px 18px 20px;
-  display: grid;
+  display: grid !important;
+  padding: 16px 20px 20px;
   gap: 14px;
   background: transparent;
 }
 
-/* 4. Form Layouts & Modern Controls */
+/* 4. Form Layouts & Seamless Rows */
 #settingsModal .form-row {
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 0;
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
   align-items: center;
   gap: 14px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--card2) 50%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border2) 50%, transparent);
-  transition: background 160ms ease, border-color 160ms ease;
+  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--border2) 50%, transparent);
 }
 
-#settingsModal .form-row:hover {
-  background: color-mix(in srgb, var(--card2) 75%, transparent);
-  border-color: var(--border2);
+#settingsModal .form-row:last-child {
+  border-bottom: 0;
 }
 
 #settingsModal .form-label {
   color: var(--text);
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 #settingsModal .form-control {
@@ -391,7 +366,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--card) 95%, transparent);
+  background: color-mix(in srgb, var(--card2) 80%, var(--card));
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
@@ -539,9 +514,9 @@ body.theme-dark .account-oauth-btn:hover {
   padding: 16px;
   display: grid;
   gap: 12px;
-  border: 1px solid var(--border);
-  border-radius: 17px;
-  background: color-mix(in srgb, var(--card2) 88%, transparent);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card2) 60%, transparent);
 }
 
 .account-section-title {
@@ -944,10 +919,15 @@ body.theme-dark .account-oauth-btn:hover {
     align-items: start;
   }
 
+  body.settings-page #settingsModal .settings-category-tabs,
   #settingsModal .settings-category-tabs {
     display: flex;
     flex-direction: column;
-    align-self: start;
+    align-self: flex-start;
+    height: auto;
+    min-height: auto;
+    position: sticky;
+    top: 24px;
     gap: 4px;
     padding: 6px;
     border-radius: 20px;
@@ -1101,7 +1081,6 @@ body.theme-dark .account-oauth-btn:hover {
 @media (prefers-reduced-motion: reduce) {
   #settingsModal .settings-category-indicator,
   #settingsModal .settings-category-tab,
-  #settingsModal .settings-accordion-card > summary::after,
   .account-cloud-action,
   .account-oauth-btn,
   .offline-tts-section {

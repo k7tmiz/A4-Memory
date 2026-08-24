@@ -498,10 +498,10 @@ describe("A4Settings responsive category navigation", () => {
 
     assert.match(account, /<section class="panel account-panel" id="accountPanel">/)
     assert.doesNotMatch(account, /settings-accordion-card/)
-    assertAccordionGroups(learning, ["外观与目标", "复习节奏", "学习体验"], ["外观与目标"])
-    assertAccordionGroups(pronunciation, ["发音方式", "离线语音包", "系统语音"], ["发音方式", "离线语音包"])
-    assertAccordionGroups(ai, ["模型配置", "生成参数"], ["模型配置"])
-    assertAccordionGroups(more, ["联网补充", "数据管理", "版本信息"], ["联网补充"])
+    assertAccordionGroups(learning, ["外观与目标", "复习节奏", "学习体验"], ["外观与目标", "复习节奏", "学习体验"])
+    assertAccordionGroups(pronunciation, ["发音方式", "离线语音包", "系统语音"], ["发音方式", "离线语音包", "系统语音"])
+    assertAccordionGroups(ai, ["模型配置", "生成参数"], ["模型配置", "生成参数"])
+    assertAccordionGroups(more, ["联网补充", "数据管理", "版本信息"], ["联网补充", "数据管理", "版本信息"])
 
     for (const id of [
       "themeModeSelect", "dailyGoalRoundsInput", "dailyGoalWordsInput", "roundCapInput",

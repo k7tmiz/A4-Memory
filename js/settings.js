@@ -846,7 +846,7 @@
             <div class="form-help">可选 20–30。修改后对新一轮生效。</div>
                   </div>
                 </details>
-                <details class="settings-accordion-card">
+                <details class="settings-accordion-card" open>
                   <summary>复习节奏</summary>
                   <div class="settings-accordion-content">
             <div class="form-row">
@@ -870,7 +870,7 @@
             <div class="form-help">到期规则：按状态计算下次复习时间；到期后会显示"待复习"。</div>
                   </div>
                 </details>
-                <details class="settings-accordion-card">
+                <details class="settings-accordion-card" open>
                   <summary>学习体验</summary>
                   <div class="settings-accordion-content">
             <div class="form-row">
@@ -948,7 +948,7 @@
             </div>
                   </div>
                 </details>
-                <details class="settings-accordion-card">
+                <details class="settings-accordion-card" open>
                   <summary>系统语音</summary>
                   <div class="settings-accordion-content">
             <!-- Below are shown when System mode is selected -->
@@ -1044,7 +1044,7 @@
             </div>
                   </div>
                 </details>
-                <details class="settings-accordion-card">
+                <details class="settings-accordion-card" open>
                   <summary>生成参数</summary>
                   <div class="settings-accordion-content">
             <div class="form-row">
@@ -1109,7 +1109,7 @@
                   </div>
                 </details>
 
-                <details class="settings-accordion-card">
+                <details class="settings-accordion-card" open>
                   <summary>数据管理</summary>
                   <div class="settings-accordion-content">
             <div class="stack">
@@ -1121,7 +1121,7 @@
                   </div>
                 </details>
 
-                <details class="settings-accordion-card" id="versionPanel">
+                <details class="settings-accordion-card" id="versionPanel" open>
                   <summary>版本信息</summary>
                   <div class="settings-accordion-content">
             <div class="form-row">
@@ -2389,6 +2389,9 @@
         dom.versionPanel.classList.toggle("hidden", !isTauri)
       }
       setAccountStatsExpanded(shouldExpandAccountStatsByDefault(accountStatsWideQuery))
+      dom.modal.querySelectorAll?.("details.settings-accordion-card")?.forEach?.((card) => {
+        card.open = true
+      })
       render()
       renderAiProviderUi()
       if (pagePresentation) {
