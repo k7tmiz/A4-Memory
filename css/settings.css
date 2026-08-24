@@ -1,6 +1,5 @@
 /* ==========================================================================
-   A4 MEMORY 3.0 BENTO GLASS SETTINGS DASHBOARD
-   (Refactored: Permanent Open Bento Cards × Compact Sticky Rail × Unified Glass)
+   A4 MEMORY 3.0 LUXURY BENTO GLASS SETTINGS DASHBOARD
    ========================================================================== */
 
 body.settings-page {
@@ -11,7 +10,7 @@ body.settings-page .settings-page-main {
   width: min(100%, 1120px);
   margin: 0 auto;
   padding:
-    clamp(24px, 4vw, 48px)
+    clamp(28px, 4vw, 48px)
     max(clamp(16px, 4vw, 44px), env(safe-area-inset-right))
     calc(140px + env(safe-area-inset-bottom))
     max(clamp(16px, 4vw, 44px), env(safe-area-inset-left));
@@ -62,16 +61,16 @@ body.settings-page #settingsModal .modal-panel {
 }
 
 .ai-model-picker-btn {
-  min-height: 38px;
-  padding: 8px 12px;
+  min-height: 40px;
+  padding: 8px 14px;
   white-space: nowrap;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 /* 1. Header & Page Intro */
 .settings-page-intro {
   min-width: 0;
-  margin-bottom: clamp(20px, 3.5vw, 32px);
+  margin-bottom: clamp(24px, 3.5vw, 36px);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -88,14 +87,14 @@ body.settings-page #settingsModal .modal-panel {
   color: var(--muted);
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .settings-page-intro h1 {
   margin: 0;
-  font-size: clamp(28px, 4vw, 38px);
-  font-weight: 800;
+  font-size: clamp(30px, 4vw, 40px);
+  font-weight: 850;
   line-height: 1.1;
   letter-spacing: -0.04em;
 }
@@ -103,26 +102,26 @@ body.settings-page #settingsModal .modal-panel {
 .settings-page-intro p {
   margin: 8px 0 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.5;
 }
 
 .settings-page-status {
-  min-height: 36px;
-  padding: 6px 14px;
+  min-height: 38px;
+  padding: 7px 16px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--card);
-  box-shadow: var(--shadow);
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  box-shadow: 0 4px 16px -2px color-mix(in srgb, var(--text) 6%, transparent);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 650;
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
 
 .settings-page-status-dot {
@@ -131,7 +130,7 @@ body.settings-page #settingsModal .modal-panel {
   flex: 0 0 auto;
   border-radius: 999px;
   background: var(--success);
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--success) 20%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--success) 24%, transparent);
 }
 
 /* 2. Shell & 5-Category Navigation Rail */
@@ -141,7 +140,7 @@ body.settings-page #settingsModal .modal-panel {
   display: grid;
   align-content: start;
   align-items: start;
-  gap: clamp(16px, 2.5vw, 28px);
+  gap: clamp(20px, 2.5vw, 32px);
 }
 
 #settingsModal .settings-category-tabs {
@@ -153,7 +152,7 @@ body.settings-page #settingsModal .modal-panel {
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--card2);
   box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
@@ -173,7 +172,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   width: var(--settings-indicator-width, 0px);
   height: var(--settings-indicator-height, 0px);
   border: 1px solid color-mix(in srgb, var(--text) 12%, var(--border));
-  border-radius: 14px;
+  border-radius: 15px;
   background: var(--card);
   box-shadow: 0 4px 16px -2px color-mix(in srgb, var(--text) 10%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   opacity: 0;
@@ -202,11 +201,11 @@ body.settings-page #settingsModal .settings-category-tabs {
   min-height: 44px;
   padding: 9px 8px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 15px;
   background: transparent;
   box-shadow: none;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   white-space: nowrap;
   transition: color 180ms ease, transform 140ms ease, background 180ms ease;
@@ -262,19 +261,19 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .settings-category-panel > .panel {
   margin: 0;
-  padding: clamp(18px, 2.5vw, 26px);
+  padding: clamp(20px, 2.5vw, 28px);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
   box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
 }
 
 #settingsModal .settings-category-panel > .panel .section-title {
-  margin-bottom: 16px;
-  font-size: 17px;
-  font-weight: 800;
+  margin-bottom: 18px;
+  font-size: 18px;
+  font-weight: 850;
   letter-spacing: -0.02em;
 }
 
@@ -284,12 +283,12 @@ body.settings-page #settingsModal .settings-category-tabs {
   align-self: start;
   overflow: clip;
   border: 1px solid var(--border);
-  border-radius: 20px;
-  background: color-mix(in srgb, var(--card) 92%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
   box-shadow: 0 4px 20px -4px color-mix(in srgb, var(--text) 6%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  transition: border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #settingsModal .settings-accordion-card:hover {
@@ -298,12 +297,12 @@ body.settings-page #settingsModal .settings-category-tabs {
   transform: translateY(-2px);
 }
 
-/* Static Card Section Header (No Click Toggle / No Chevron) */
+/* Static Card Section Header */
 #settingsModal .settings-accordion-card > .settings-card-header,
 #settingsModal .settings-accordion-card > summary {
   position: relative;
-  min-height: 48px;
-  padding: 14px 20px;
+  min-height: 50px;
+  padding: 15px 22px;
   display: flex;
   align-items: center;
   color: var(--text);
@@ -311,19 +310,19 @@ body.settings-page #settingsModal .settings-category-tabs {
   border-bottom: 1px solid var(--border2);
   cursor: default;
   user-select: none;
-  font-size: 14.5px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 850;
   letter-spacing: -0.01em;
 }
 
 #settingsModal .settings-accordion-content {
   display: grid !important;
-  padding: 16px 20px 20px;
+  padding: 18px 22px 24px;
   gap: 14px;
   background: transparent;
 }
 
-/* Specific Card Header Icons */
+/* Header Icons */
 #settingsPanelLearning .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🎨"; margin-right: 8px; font-size: 15px; }
 #settingsPanelLearning .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "⏱️"; margin-right: 8px; font-size: 15px; }
 #settingsPanelLearning .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "📖"; margin-right: 8px; font-size: 15px; }
@@ -339,11 +338,11 @@ body.settings-page #settingsModal .settings-category-tabs {
 /* 4. Form Layouts & Seamless Rows */
 #settingsModal .form-row {
   margin: 0;
-  padding: 8px 0;
+  padding: 10px 0;
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: 130px minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   background: transparent;
   border-bottom: 1px solid color-mix(in srgb, var(--border2) 50%, transparent);
 }
@@ -354,8 +353,8 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .form-label {
   color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 750;
 }
 
 #settingsModal .form-control {
@@ -366,13 +365,13 @@ body.settings-page #settingsModal .settings-category-tabs {
 #settingsModal input.text-input,
 #settingsModal input[type="number"] {
   width: 100%;
-  min-height: 40px;
-  padding: 8px 12px;
+  min-height: 42px;
+  padding: 9px 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--card2) 80%, var(--card));
   color: var(--text);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.18s ease;
@@ -387,18 +386,18 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 #settingsModal .form-control button.ghost {
-  min-height: 38px;
-  padding: 8px 14px;
+  min-height: 40px;
+  padding: 8px 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--card2) 80%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card2) 85%, transparent);
   color: var(--text);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 750;
   cursor: pointer;
   transition: all 0.18s ease;
 }
@@ -423,13 +422,13 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 .account-oauth {
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .account-oauth-btn {
   width: 100%;
   min-height: 46px;
-  padding: 11px 16px;
+  padding: 11px 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -439,8 +438,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   background: #ffffff;
   color: #1f1f1f;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 750;
   letter-spacing: -0.01em;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -482,7 +481,7 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 .account-auth-divider {
-  margin: 16px 0 14px;
+  margin: 18px 0 16px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
@@ -514,19 +513,19 @@ body.theme-dark .account-oauth-btn:hover {
 }
 
 .account-section {
-  margin-top: 14px;
-  padding: 16px;
+  margin-top: 16px;
+  padding: 18px;
   display: grid;
-  gap: 12px;
+  gap: 14px;
   border: 1px solid var(--border2);
-  border-radius: 16px;
+  border-radius: 18px;
   background: color-mix(in srgb, var(--card2) 60%, transparent);
 }
 
 .account-section-title {
   color: var(--text);
-  font-size: 13px;
-  font-weight: 780;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .account-actions {
@@ -540,14 +539,14 @@ body.theme-dark .account-oauth-btn:hover {
 #cloudResetPasswordBtn,
 #cloudSendCodeBtn,
 #cloudSendResetCodeBtn {
-  min-height: 42px;
-  padding: 9px 18px;
+  min-height: 44px;
+  padding: 10px 20px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 13px;
   background: var(--accent);
   color: var(--accentText, #ffffff);
-  font-size: 13.5px;
-  font-weight: 750;
+  font-size: 14px;
+  font-weight: 800;
   box-shadow: 0 3px 12px -2px color-mix(in srgb, var(--accent) 35%, transparent);
   cursor: pointer;
   transition: all 0.18s ease;
@@ -565,9 +564,9 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary {
   margin-top: 4px;
-  padding: clamp(16px, 2.2vw, 22px);
+  padding: clamp(18px, 2.2vw, 24px);
   display: grid;
-  gap: 14px;
+  gap: 16px;
   border: 1px solid var(--border);
   border-radius: 20px;
   background: color-mix(in srgb, var(--card2) 85%, transparent);
@@ -590,7 +589,7 @@ body.theme-dark .account-oauth-btn:hover {
 .account-summary-title {
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 850;
   letter-spacing: -0.02em;
 }
@@ -599,31 +598,31 @@ body.theme-dark .account-oauth-btn:hover {
   margin-top: 2px;
   overflow-wrap: anywhere;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.45;
 }
 
 .account-badge {
-  padding: 6px 12px;
+  padding: 6px 14px;
   flex: 0 0 auto;
   border: 1px solid color-mix(in srgb, var(--success) 24%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--success) 14%, var(--card));
   color: var(--success);
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .account-summary-sync {
   min-width: 0;
-  padding: 11px 14px;
+  padding: 12px 16px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   border: 1px solid var(--border2);
-  border-radius: 14px;
+  border-radius: 15px;
   background: color-mix(in srgb, var(--card) 85%, transparent);
 }
 
@@ -642,7 +641,7 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary-sync span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 11.5px;
   white-space: nowrap;
 }
 
@@ -650,7 +649,7 @@ body.theme-dark .account-oauth-btn:hover {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.35;
 }
 
@@ -660,13 +659,13 @@ body.theme-dark .account-oauth-btn:hover {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--border2);
-  border-radius: 14px;
+  border-radius: 15px;
   background: color-mix(in srgb, var(--card) 85%, transparent);
 }
 
 .account-summary-stat {
   min-width: 0;
-  padding: 10px 8px;
+  padding: 12px 8px;
   display: grid;
   gap: 3px;
   border-right: 1px solid var(--border2);
@@ -679,7 +678,7 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary-stat span {
   color: var(--muted);
-  font-size: 10.5px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -687,8 +686,8 @@ body.theme-dark .account-oauth-btn:hover {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 850;
   line-height: 1.25;
 }
 
@@ -730,26 +729,26 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary-session {
   min-width: 0;
-  padding: 10px 14px;
+  padding: 11px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   border: 1px solid var(--border2);
-  border-radius: 14px;
+  border-radius: 15px;
   background: color-mix(in srgb, var(--card) 85%, transparent);
 }
 
 .account-summary-session span {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
 }
 
 .account-summary-session strong {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 12.5px;
+  font-size: 13px;
   text-align: right;
 }
 
@@ -757,20 +756,20 @@ body.theme-dark .account-oauth-btn:hover {
 .account-cloud-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .account-cloud-action {
   min-width: 0;
-  min-height: 76px;
-  padding: 14px;
+  min-height: 80px;
+  padding: 16px;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: 46px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   background: color-mix(in srgb, var(--card) 92%, var(--primary) 8%);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 20px;
   box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   color: var(--text);
   text-align: left;
@@ -808,15 +807,15 @@ body.theme-dark .account-oauth-btn:hover {
 }
 
 .account-cloud-action-icon {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
   border: 1px solid color-mix(in srgb, currentColor 20%, var(--border));
-  border-radius: 13px;
+  border-radius: 14px;
   background: color-mix(in srgb, currentColor 9%, transparent);
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 22px;
+  font-weight: 800;
 }
 
 .account-cloud-action-copy {
@@ -832,28 +831,28 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-cloud-action-copy strong {
   color: currentColor;
-  font-size: 13.5px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 850;
 }
 
 .account-cloud-action-copy small {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 500;
   line-height: 1.35;
 }
 
 .account-logout-action {
   justify-self: center;
-  min-height: 36px;
-  padding: 8px 16px;
+  min-height: 38px;
+  padding: 8px 20px;
   border: 1px solid transparent;
   border-color: transparent;
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 650;
   box-shadow: none;
   transition: all 0.2s ease;
 }
@@ -869,10 +868,10 @@ body.theme-dark .account-oauth-btn:hover {
 }
 
 .account-status {
-  margin-top: 12px;
-  padding: 12px 16px;
+  margin-top: 14px;
+  padding: 12px 18px;
   border: 1px solid var(--border2);
-  border-radius: 14px;
+  border-radius: 15px;
   background: var(--card2);
   font-size: 13px;
 }
@@ -934,7 +933,7 @@ body.theme-dark .account-oauth-btn:hover {
     top: 24px;
     gap: 4px;
     padding: 6px;
-    border-radius: 20px;
+    border-radius: 22px;
   }
 
   #settingsModal .settings-category-tab {
@@ -955,7 +954,7 @@ body.theme-dark .account-oauth-btn:hover {
 
   #settingsModal .settings-accordion-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 18px;
   }
 
   /* Balanced Learning Tab: Left tall card, Right two stacked cards */
@@ -1037,7 +1036,7 @@ body.theme-dark .account-oauth-btn:hover {
   }
 
   .settings-page-intro {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
     padding: 0 4px;
     align-items: flex-start;
     flex-direction: column;
@@ -1050,7 +1049,7 @@ body.theme-dark .account-oauth-btn:hover {
 
   .settings-page-status {
     min-height: 32px;
-    padding: 6px 10px;
+    padding: 6px 12px;
     box-shadow: none;
   }
 
