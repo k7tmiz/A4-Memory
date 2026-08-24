@@ -671,14 +671,26 @@
   }
 
   .desktop-tools-popover button {
-    min-height: 39px;
-    padding: 0 10px;
+    min-height: 38px;
+    padding: 8px 12px;
     display: flex;
     align-items: center;
     gap: 9px;
     border: 0;
+    border-radius: 10px;
     background: transparent;
+    box-shadow: none !important;
+    color: var(--text);
     text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .desktop-tools-popover button:hover {
+    background: var(--surfaceHover);
+    box-shadow: none !important;
+    transform: none;
   }
 
   .desktop-tools-popover button span {
@@ -930,21 +942,25 @@
   }
 
   .mobile-more-menu button {
-    min-height: 42px;
-    padding: 9px 12px;
+    min-height: 38px;
+    padding: 8px 12px;
     justify-content: flex-start;
     border: 0;
-    border-radius: 11px;
+    border-radius: 10px;
     background: transparent;
+    box-shadow: none !important;
     color: var(--text);
     text-align: left;
     font-size: 13px;
-    font-weight: 650;
+    font-weight: 600;
+    transition: background 0.15s ease, color 0.15s ease;
   }
 
   .mobile-more-menu button:hover,
   .mobile-more-menu button:active {
     background: var(--surfaceHover);
+    box-shadow: none !important;
+    transform: none;
   }
 
   .paper-wrap {
