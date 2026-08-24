@@ -4,8 +4,8 @@
 
 /* 1. PAPER THEME (Bespoke Warm Linen & Sage) */
 body.theme-palette-paper {
-  --bg: #f6f3eb;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #fdfcf7 0%, #eee7d7 100%);
+  --bg: #f7f4ec;
+  --bg-gradient: linear-gradient(180deg, #fdfcf9 0%, #eee9dc 100%);
   --text: #222d27;
   --muted: #5d6c64;
   --card: rgba(255, 254, 249, 0.9);
@@ -28,8 +28,8 @@ body.theme-palette-paper {
 }
 
 body.theme-dark.theme-palette-paper {
-  --bg: #0b1411;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #152922 0%, #080d0b 100%);
+  --bg: #0c1512;
+  --bg-gradient: linear-gradient(180deg, #11221c 0%, #0c1512 50%, #080e0c 100%);
   --text: #e6f0eb;
   --muted: #9cb3a8;
   --card: rgba(20, 36, 30, 0.75);
@@ -53,8 +53,8 @@ body.theme-dark.theme-palette-paper {
 
 /* 2. OCEAN THEME (Nordic Twilight & Deep Cyan) */
 body.theme-palette-ocean {
-  --bg: #edf4f9;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #f8fcff 0%, #e2ecf4 100%);
+  --bg: #f0f6fa;
+  --bg-gradient: linear-gradient(180deg, #f8fcff 0%, #e3edf5 100%);
   --text: #0f2334;
   --muted: #4d667a;
   --card: rgba(255, 255, 255, 0.9);
@@ -77,8 +77,8 @@ body.theme-palette-ocean {
 }
 
 body.theme-dark.theme-palette-ocean {
-  --bg: #081018;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #102538 0%, #060b10 100%);
+  --bg: #08111a;
+  --bg-gradient: linear-gradient(180deg, #0e1e2d 0%, #08111a 50%, #050a10 100%);
   --text: #e6f3fd;
   --muted: #90b2cc;
   --card: rgba(16, 35, 52, 0.75);

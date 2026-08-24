@@ -798,8 +798,8 @@
 
             <section class="settings-category-panel" id="settingsPanelLearning" role="tabpanel" aria-labelledby="settingsTabLearning" hidden>
               <div class="settings-accordion-grid">
-                <details class="settings-accordion-card" open>
-                  <summary>外观与目标</summary>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">外观与目标</header>
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">主题模式</div>
@@ -845,9 +845,9 @@
             </div>
             <div class="form-help">可选 20–30。修改后对新一轮生效。</div>
                   </div>
-                </details>
-                <details class="settings-accordion-card" open>
-                  <summary>复习节奏</summary>
+                </section>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">复习节奏</header>
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">启用轻量复习</div>
@@ -869,9 +869,9 @@
             </div>
             <div class="form-help">到期规则：按状态计算下次复习时间；到期后会显示"待复习"。</div>
                   </div>
-                </details>
-                <details class="settings-accordion-card" open>
-                  <summary>学习体验</summary>
+                </section>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">学习体验</header>
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">持续背书模式</div>
@@ -883,14 +883,14 @@
               <div class="form-control"><button class="ghost" id="reviewCardFlipToggleBtn" type="button">翻面：关</button></div>
             </div>
                   </div>
-                </details>
+                </section>
               </div>
             </section>
 
             <section class="settings-category-panel" id="settingsPanelPronunciation" role="tabpanel" aria-labelledby="settingsTabPronunciation" hidden>
               <div class="settings-accordion-grid">
-                <details class="settings-accordion-card" open>
-                  <summary>发音方式</summary>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">发音方式</header>
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">启用发音</div>
@@ -923,9 +923,9 @@
               <div class="form-control"><button class="ghost" id="onlineTtsToggleBtn" type="button">在线兜底：开</button></div>
             </div>
                   </div>
-                </details>
-                <details class="settings-accordion-card settings-accordion-wide" id="offlineTtsCard" open>
-                  <summary>离线语音包</summary>
+                </section>
+                <section class="settings-accordion-card settings-accordion-wide" id="offlineTtsCard">
+                  <header class="settings-card-header">离线语音包</header>
                   <div class="settings-accordion-content">
             <div class="form-row offline-tts-section" id="offlineTtsSection">
               <div class="offline-tts-header">
@@ -947,9 +947,9 @@
               </div>
             </div>
                   </div>
-                </details>
-                <details class="settings-accordion-card" open>
-                  <summary>系统语音</summary>
+                </section>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">系统语音</header>
                   <div class="settings-accordion-content">
             <!-- Below are shown when System mode is selected -->
             <div class="form-row">
@@ -1005,14 +1005,14 @@
               <button class="ghost" id="testVoiceBtn" type="button">测试发音</button>
             </div>
                   </div>
-                </details>
+                </section>
               </div>
             </section>
 
             <section class="settings-category-panel" id="settingsPanelAi" role="tabpanel" aria-labelledby="settingsTabAi" hidden>
               <div class="settings-accordion-grid">
-                <details class="settings-accordion-card" open>
-                  <summary>模型配置</summary>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">模型配置</header>
                   <div class="settings-accordion-content">
             <div id="aiCustomConfigPanel">
               <div class="form-row">
@@ -1043,9 +1043,9 @@
               </div>
             </div>
                   </div>
-                </details>
-                <details class="settings-accordion-card" open>
-                  <summary>生成参数</summary>
+                </section>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">生成参数</header>
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">词书类型</div>
@@ -1071,14 +1071,14 @@
             <div class="stack"><button class="primary full" id="aiGenerateBtn" type="button">生成并预览</button></div>
             <div class="form-help" id="aiStatus"></div>
                   </div>
-                </details>
+                </section>
               </div>
             </section>
 
             <section class="settings-category-panel" id="settingsPanelMore" role="tabpanel" aria-labelledby="settingsTabMore" hidden>
               <div class="settings-accordion-grid">
-                <details class="settings-accordion-card" open>
-                  <summary>联网补充</summary>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">联网补充</header>
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">联网补充</div>
@@ -1107,10 +1107,10 @@
               <div class="form-control"><input id="lookupCacheDaysInput" class="text-input" type="number" min="1" max="365" value="30" /></div>
             </div>
                   </div>
-                </details>
+                </section>
 
-                <details class="settings-accordion-card" open>
-                  <summary>数据管理</summary>
+                <section class="settings-accordion-card">
+                  <header class="settings-card-header">数据管理</header>
                   <div class="settings-accordion-content">
             <div class="stack">
               <button class="ghost full" id="exportBackupBtn" type="button">导出完整学习数据（JSON）</button>
@@ -1119,10 +1119,10 @@
             </div>
             <div class="form-help">包含学习记录与设置；导入会覆盖当前浏览器本地数据。</div>
                   </div>
-                </details>
+                </section>
 
-                <details class="settings-accordion-card" id="versionPanel" open>
-                  <summary>版本信息</summary>
+                <section class="settings-accordion-card" id="versionPanel">
+                  <header class="settings-card-header">版本信息</header>
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">当前版本</div>
@@ -1131,7 +1131,7 @@
             <div class="stack" style="margin-top:4px"><button class="ghost full" id="checkUpdateBtn" type="button">检查更新</button></div>
             <div class="form-help hidden" id="updateStatus"></div>
                   </div>
-                </details>
+                </section>
               </div>
             </section>
           </div>
@@ -2389,9 +2389,6 @@
         dom.versionPanel.classList.toggle("hidden", !isTauri)
       }
       setAccountStatsExpanded(shouldExpandAccountStatsByDefault(accountStatsWideQuery))
-      dom.modal.querySelectorAll?.("details.settings-accordion-card")?.forEach?.((card) => {
-        card.open = true
-      })
       render()
       renderAiProviderUi()
       if (pagePresentation) {

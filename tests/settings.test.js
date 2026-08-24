@@ -111,13 +111,9 @@ function getCategoryPanelMarkup(panelId, nextPanelId) {
   return settingsCode.slice(start, end)
 }
 
-function assertAccordionGroups(markup, expectedLabels, openLabels) {
-  const groups = [...markup.matchAll(/<details class="settings-accordion-card[^"]*"[^>]*>\s*<summary>([^<]+)<\/summary>/g)]
+function assertAccordionGroups(markup, expectedLabels) {
+  const groups = [...markup.matchAll(/<section class="settings-accordion-card[^"]*"[^>]*>\s*<header class="settings-card-header">([^<]+)<\/header>/g)]
   assert.deepEqual(groups.map((match) => match[1]), expectedLabels)
-  assert.deepEqual(
-    groups.filter((match) => /\sopen(?:\s|>)/.test(match[0])).map((match) => match[1]),
-    openLabels
-  )
 }
 
 describe("A4Settings compact account summary", () => {
@@ -303,7 +299,7 @@ describe("A4Settings visual palettes", () => {
 
 describe("A4Settings offline voice manager visibility", () => {
   it("keeps offline models manageable for every speech mode", () => {
-    assert.match(settingsCode, /<details class="settings-accordion-card settings-accordion-wide" id="offlineTtsCard" open>/)
+    assert.match(settingsCode, /<section class="settings-accordion-card settings-accordion-wide" id="offlineTtsCard">/)
     assert.match(settingsCode, /class="form-row offline-tts-section" id="offlineTtsSection"/)
     assert.doesNotMatch(settingsCode, /offlineTtsSection\.classList\.toggle\("hidden",\s*ttsMode !== "offline"\)/)
     assert.match(settingsCode, /dom\.offlineTtsSection\.classList\.remove\("hidden"\)/)
@@ -489,7 +485,7 @@ describe("A4Settings responsive category navigation", () => {
     assert.deepEqual(panels.map((match) => !!match[3]), [false, true, true, true, true])
   })
 
-  it("maps every settings group into native non-exclusive accordion cards", () => {
+  it("maps every settings group into permanent open bento cards", () => {
     const account = getCategoryPanelMarkup("settingsPanelAccount", "settingsPanelLearning")
     const learning = getCategoryPanelMarkup("settingsPanelLearning", "settingsPanelPronunciation")
     const pronunciation = getCategoryPanelMarkup("settingsPanelPronunciation", "settingsPanelAi")
@@ -498,10 +494,10 @@ describe("A4Settings responsive category navigation", () => {
 
     assert.match(account, /<section class="panel account-panel" id="accountPanel">/)
     assert.doesNotMatch(account, /settings-accordion-card/)
-    assertAccordionGroups(learning, ["外观与目标", "复习节奏", "学习体验"], ["外观与目标", "复习节奏", "学习体验"])
-    assertAccordionGroups(pronunciation, ["发音方式", "离线语音包", "系统语音"], ["发音方式", "离线语音包", "系统语音"])
-    assertAccordionGroups(ai, ["模型配置", "生成参数"], ["模型配置", "生成参数"])
-    assertAccordionGroups(more, ["联网补充", "数据管理", "版本信息"], ["联网补充", "数据管理", "版本信息"])
+    assertAccordionGroups(learning, ["外观与目标", "复习节奏", "学习体验"])
+    assertAccordionGroups(pronunciation, ["发音方式", "离线语音包", "系统语音"])
+    assertAccordionGroups(ai, ["模型配置", "生成参数"])
+    assertAccordionGroups(more, ["联网补充", "数据管理", "版本信息"])
 
     for (const id of [
       "themeModeSelect", "dailyGoalRoundsInput", "dailyGoalWordsInput", "roundCapInput",

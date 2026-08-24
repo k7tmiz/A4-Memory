@@ -11,8 +11,8 @@ html {
 }
 
 :root {
-  --bg: #f6f8fb;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #ffffff 0%, #edf1f7 100%);
+  --bg: #f8fafc;
+  --bg-gradient: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
   --text: #0b1220;
   --muted: #546075;
   --card: rgba(255, 255, 255, 0.9);
@@ -44,8 +44,8 @@ body {
 }
 
 body.theme-dark {
-  --bg: #090d16;
-  --bg-gradient: radial-gradient(circle at 50% 0%, #131b2e 0%, #080c14 100%);
+  --bg: #0b1220;
+  --bg-gradient: linear-gradient(180deg, #0f172a 0%, #0b1220 50%, #070b14 100%);
   --text: #f8fafc;
   --muted: #94a3b8;
   --card: rgba(18, 26, 44, 0.75);
