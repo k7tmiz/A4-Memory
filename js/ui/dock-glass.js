@@ -77,7 +77,9 @@
         if (!nav.classList.contains("is-dragging")) {
           try {
             nav.setPointerCapture?.(event.pointerId)
-          } catch {}
+          } catch (_err) {
+            void 0
+          }
         }
         nav.classList.add("is-dragging")
         setVar("--a4-dock-drag", `${dragPx}px`)
@@ -113,7 +115,9 @@
       if (nav.hasPointerCapture?.(event.pointerId)) {
         try {
           nav.releasePointerCapture?.(event.pointerId)
-        } catch {}
+        } catch (_err) {
+          void 0
+        }
       }
 
       resetDragState()
