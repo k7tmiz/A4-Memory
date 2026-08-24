@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>A4 Memory - 设置页 5 大重构设计方案预览</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:italic,wght@0,400;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM TOKENS
+       ========================================================================== */
+    :root {
+      --font-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+      --font-serif: "Instrument Serif", "Charter", "Georgia", serif;
+      --font-mono: "JetBrains Mono", monospace;
+
+      --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+    }
+
+    /* THEME 1: CLASSIC SLATE */
+    body.theme-classic {
+      --bg: #f6f8fb;
+      --bg-grad: radial-gradient(circle at 50% 0%, #ffffff 0%, #edf1f7 100%);
+      --text: #0b1220;
+      --muted: #546075;
+      --card: rgba(255, 255, 255, 0.9);
+      --card-solid: #ffffff;
+      --card2: rgba(246, 248, 252, 0.92);
+      --border: rgba(226, 232, 240, 0.9);
+      --border-subtle: rgba(236, 241, 248, 0.8);
+      --accent: #0f172a;
+      --accent-hover: #1e293b;
+      --accent-text: #ffffff;
+      --accent-glow: rgba(15, 23, 42, 0.16);
+      --surface-hover: rgba(241, 245, 249, 0.9);
+      --shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
+      --shadow-hover: 0 12px 32px -6px rgba(15, 23, 42, 0.12);
+      --success: #10b981;
+    }
+
+    body.theme-classic.theme-dark {
+      --bg: #090d16;
+      --bg-grad: radial-gradient(circle at 50% 0%, #131b2e 0%, #080c14 100%);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --card: rgba(18, 26, 44, 0.75);
+      --card-solid: #121a2c;
+      --card2: rgba(24, 34, 58, 0.7);
+      --border: rgba(255, 255, 255, 0.09);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+      --accent: #f8fafc;
+      --accent-hover: #ffffff;
+      --accent-text: #090d16;
+      --accent-glow: rgba(248, 250, 252, 0.22);
+      --surface-hover: rgba(255, 255, 255, 0.07);
+      --shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+      --shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.7);
+      --success: #34d399;
+    }
+
+    /* THEME 2: WARM LINEN & SAGE PAPER */
+    body.theme-paper {
+      --bg: #f6f3eb;
+      --bg-grad: radial-gradient(circle at 50% 0%, #fdfcf7 0%, #eee7d7 100%);
+      --text: #222d27;
+      --muted: #5d6c64;
+      --card: rgba(255, 254, 249, 0.9);
+      --card-solid: #fffef9;
+      --card2: rgba(250, 247, 239, 0.92);
+      --border: rgba(216, 210, 194, 0.85);
+      --border-subtle: rgba(230, 225, 211, 0.8);
+      --accent: #176b5a;
+      --accent-hover: #115346;
+      --accent-text: #ffffff;
+      --accent-glow: rgba(23, 107, 90, 0.2);
+      --surface-hover: rgba(23, 107, 90, 0.08);
+      --shadow: 0 4px 20px -4px rgba(35, 45, 39, 0.06);
+      --shadow-hover: 0 14px 36px -8px rgba(35, 45, 39, 0.14);
+      --success: #176b5a;
+    }
+
+    body.theme-paper.theme-dark {
+      --bg: #0b1411;
+      --bg-grad: radial-gradient(circle at 50% 0%, #152922 0%, #080d0b 100%);
+      --text: #e6f0eb;
+      --muted: #9cb3a8;
+      --card: rgba(20, 36, 30, 0.75);
+      --card-solid: #14241e;
+      --card2: rgba(25, 45, 38, 0.7);
+      --border: rgba(230, 240, 235, 0.1);
+      --border-subtle: rgba(230, 240, 235, 0.06);
+      --accent: #a5d8c6;
+      --accent-hover: #c1ebd9;
+      --accent-text: #0e241d;
+      --accent-glow: rgba(165, 216, 198, 0.28);
+      --surface-hover: rgba(230, 240, 235, 0.08);
+      --shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+      --shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.7);
+      --success: #a5d8c6;
+    }
+
+    /* THEME 3: OCEAN */
+    body.theme-ocean {
+      --bg: #edf4f9;
+      --bg-grad: radial-gradient(circle at 50% 0%, #f8fcff 0%, #e2ecf4 100%);
+      --text: #0f2334;
+      --muted: #4d667a;
+      --card: rgba(255, 255, 255, 0.9);
+      --card-solid: #ffffff;
+      --card2: rgba(246, 251, 254, 0.92);
+      --border: rgba(210, 225, 236, 0.85);
+      --border-subtle: rgba(224, 236, 244, 0.8);
+      --accent: #155e75;
+      --accent-hover: #0e4557;
+      --accent-text: #ffffff;
+      --accent-glow: rgba(21, 94, 117, 0.2);
+      --surface-hover: rgba(21, 94, 117, 0.08);
+      --shadow: 0 4px 20px -4px rgba(15, 35, 52, 0.05);
+      --shadow-hover: 0 14px 36px -8px rgba(15, 35, 52, 0.14);
+      --success: #0284c7;
+    }
+
+    body.theme-ocean.theme-dark {
+      --bg: #081018;
+      --bg-grad: radial-gradient(circle at 50% 0%, #102538 0%, #060b10 100%);
+      --text: #e6f3fd;
+      --muted: #90b2cc;
+      --card: rgba(16, 35, 52, 0.75);
+      --card-solid: #0f2233;
+      --card2: rgba(20, 44, 66, 0.7);
+      --border: rgba(230, 243, 253, 0.1);
+      --border-subtle: rgba(230, 243, 253, 0.06);
+      --accent: #7dd3fc;
+      --accent-hover: #bae6fd;
+      --accent-text: #082f49;
+      --accent-glow: rgba(125, 211, 252, 0.28);
+      --surface-hover: rgba(230, 243, 253, 0.08);
+      --shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+      --shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.7);
+      --success: #7dd3fc;
+    }
+
+    /* ==========================================================================
+       BASE RESET
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background-color: var(--bg);
+      background-image: var(--bg-grad);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.3s ease, color 0.3s ease;
+      overflow-x: hidden;
+      padding-bottom: 60px;
+    }
+
+    /* TOP TEST BAR */
+    .test-banner {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .test-banner-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .test-banner-title span {
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .scheme-switcher {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 3px;
+      gap: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .scheme-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .scheme-btn.active {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .scheme-desc-pill {
+      margin: 18px 0 8px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .scheme-desc-pill strong { color: var(--text); }
+
+    /* WORKSPACE CONTAINER */
+    .scheme-workspace {
+      width: 100%;
+      max-width: 960px;
+      padding: 0 18px;
+      display: none;
+      animation: schemeFadeIn 0.3s var(--ease-spring);
+    }
+
+    .scheme-workspace.active { display: block; }
+
+    @keyframes schemeFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* COMMON CONTROLS */
+    .switch-pill {
+      width: 44px;
+      height: 26px;
+      background: color-mix(in srgb, var(--border) 80%, var(--muted) 20%);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.25s ease;
+      flex-shrink: 0;
+    }
+
+    .switch-pill.on { background: var(--accent); }
+
+    .switch-pill::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+      transition: transform 0.25s var(--ease-spring);
+    }
+
+    .switch-pill.on::after { transform: translateX(18px); }
+
+    .select-capsule {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--card2);
+      color: var(--text);
+      padding: 7px 28px 7px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      outline: none;
+    }
+
+    /* ==========================================================================
+       SCHEME 1: APPLE SEQUOIA FLUID SPLIT (Inset Grouped Rows)
+       ========================================================================== */
+    .seq-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-top: 14px;
+    }
+
+    .seq-sidebar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 6px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px) saturate(180%);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      position: sticky;
+      top: 70px;
+    }
+
+    .seq-nav-item {
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: left;
+      transition: all 0.15s ease;
+    }
+
+    .seq-nav-item:hover { background: var(--surface-hover); color: var(--text); }
+    .seq-nav-item.active { background: var(--accent); color: var(--accent-text); }
+
+    .seq-icon-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      background: rgba(255,255,255,0.2);
+    }
+
+    .seq-card-group {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px) saturate(180%);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .seq-card-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 4px 8px;
+    }
+
+    .seq-row {
+      padding: 13px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .seq-row:first-child { border-top: none; }
+
+    .seq-row-info { display: flex; flex-direction: column; gap: 2px; }
+    .seq-row-label { font-size: 14px; font-weight: 650; color: var(--text); }
+    .seq-row-sub { font-size: 12px; color: var(--muted); line-height: 1.35; }
+
+    /* ==========================================================================
+       SCHEME 2: LINEAR BENTO GRID (Modular Dashboard)
+       ========================================================================== */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .bento-cell {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px) saturate(180%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .bento-cell:hover {
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .bento-8 { grid-column: span 8; }
+    .bento-4 { grid-column: span 4; }
+    .bento-6 { grid-column: span 6; }
+    .bento-12 { grid-column: span 12; }
+
+    .bento-header-tag {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .bento-big-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 8px 0 4px;
+    }
+
+    .bento-action-tile {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.15s ease;
+    }
+
+    .bento-action-tile:hover { background: var(--surface-hover); }
+
+    /* ==========================================================================
+       SCHEME 3: NOTION / CRAFT MINIMALIST DOCUMENT STYLE
+       ========================================================================== */
+    .notion-layout {
+      max-width: 680px;
+      margin: 20px auto 0;
+    }
+
+    .notion-section {
+      margin-bottom: 32px;
+    }
+
+    .notion-sec-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notion-item-row {
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: background 0.15s ease;
+    }
+
+    .notion-item-row:hover { background: var(--surface-hover); }
+
+    /* ==========================================================================
+       SCHEME 4: DYNAMIC FLOATING ISLAND CAPSULES
+       ========================================================================== */
+    .island-layout {
+      max-width: 720px;
+      margin: 14px auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .island-pill-tabs {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px;
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+    }
+
+    .island-pill-btn {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .island-pill-btn.active {
+      background: var(--accent);
+      color: var(--accent-text);
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .island-main-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(24px);
+    }
+
+    /* ==========================================================================
+       SCHEME 5: BESPOKE PAPER STUDIO (Handcrafted Ink & Parchment)
+       ========================================================================== */
+    .studio-layout {
+      max-width: 720px;
+      margin: 14px auto 0;
+      background: var(--card-solid);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 36px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 18px 48px -12px rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    .studio-header {
+      border-bottom: 2px solid var(--accent);
+      padding-bottom: 14px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .studio-stamp {
+      border: 1px dashed var(--accent);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .studio-row {
+      display: grid;
+      grid-template-columns: 180px 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px dashed var(--border-subtle);
+    }
+
+    .studio-row:last-child { border-bottom: none; }
+
+    @media (max-width: 760px) {
+      .seq-layout { grid-template-columns: 1fr; }
+      .seq-sidebar { display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; }
+      .seq-nav-item { justify-content: center; padding: 8px 4px; font-size: 12px; }
+      .bento-8, .bento-4, .bento-6 { grid-column: span 12; }
+      .studio-row { grid-template-columns: 1fr auto; gap: 8px; }
+      .studio-row > div:first-child { grid-column: span 2; }
+    }
+  </style>
+</head>
+
+<body class="theme-classic">
+
+  <!-- TOP SCHEME TEST CONTROLLER -->
+  <header class="test-banner">
+    <div class="test-banner-title">
+      <img src="./assets/icon.svg" width="22" height="22" style="border-radius:5px;" alt="A4" />
+      <span>A4 Memory 3.0</span> 设置页 5 大重构方案
+    </div>
+
+    <!-- 5 SCHEMES LIVE SWITCHER -->
+    <div class="scheme-switcher">
+      <button class="scheme-btn active" onclick="switchScheme(1)">方案 1：Apple Sequoia 灵动分栏</button>
+      <button class="scheme-btn" onclick="switchScheme(2)">方案 2：Linear Bento 极客网格</button>
+      <button class="scheme-btn" onclick="switchScheme(3)">方案 3：Notion 人文极简流</button>
+      <button class="scheme-btn" onclick="switchScheme(4)">方案 4：浮岛聚焦胶囊</button>
+      <button class="scheme-btn" onclick="switchScheme(5)">方案 5：纸墨工坊手札</button>
+    </div>
+
+    <!-- Live Theme Controller -->
+    <div style="display:flex; gap:6px;">
+      <select class="select-capsule" style="padding:4px 22px 4px 8px; font-size:11.5px;" onchange="setPalette(this.value)">
+        <option value="classic">经典 Slate</option>
+        <option value="paper">纸墨 Linen</option>
+        <option value="ocean">暮海 Ocean</option>
+      </select>
+      <button class="scheme-btn" style="background:rgba(255,255,255,0.15); color:#fff;" onclick="toggleDark()">深浅色切换</button>
+    </div>
+  </header>
+
+  <!-- SCHEME EXPLANATION PILL -->
+  <div class="scheme-desc-pill" id="schemeDescPill">
+    <span>💡</span> <strong>方案 1：Apple Sequoia 灵动分栏</strong> — 左侧浮动毛玻璃分类轨 + 右侧高质感 Inset 圆角分组行，最纯粹优雅。
+  </div>
+
+  <!-- ========================================================================
+       SCHEME 1: APPLE SEQUOIA FLUID SPLIT
+       ======================================================================== -->
+  <main class="scheme-workspace active" id="scheme-1">
+    <div class="seq-layout">
+      <!-- Left Sidebar -->
+      <aside class="seq-sidebar">
+        <button class="seq-nav-item active">
+          <span class="seq-icon-badge" style="background:#3b82f6; color:#fff;">👤</span>
+          <span>账号与云同步</span>
+        </button>
+        <button class="seq-nav-item">
+          <span class="seq-icon-badge" style="background:#10b981; color:#fff;">📖</span>
+          <span>学习与复习</span>
+        </button>
+        <button class="seq-nav-item">
+          <span class="seq-icon-badge" style="background:#f59e0b; color:#fff;">🎙️</span>
+          <span>发音与离线 TTS</span>
+        </button>
+        <button class="seq-nav-item">
+          <span class="seq-icon-badge" style="background:#8b5cf6; color:#fff;">✨</span>
+          <span>AI 词库生成</span>
+        </button>
+        <button class="seq-nav-item">
+          <span class="seq-icon-badge" style="background:#64748b; color:#fff;">⚙️</span>
+          <span>界面与偏好</span>
+        </button>
+      </aside>
+
+      <!-- Right Content Panels -->
+      <div class="seq-content">
+        <!-- Account Card -->
+        <div class="seq-card-title">账号与同步</div>
+        <div class="seq-card-group">
+          <div class="seq-row">
+            <div class="seq-row-info">
+              <span class="seq-row-label">当前账号</span>
+              <span class="seq-row-sub">已通过 Google 账号登录 (kcyx01@gmail.com)</span>
+            </div>
+            <span style="font-size:12px; font-weight:700; color:var(--success); background:color-mix(in srgb, var(--success) 12%, transparent); padding:4px 10px; border-radius:999px;">✓ 已连接云端</span>
+          </div>
+
+          <div class="seq-row">
+            <div class="seq-row-info">
+              <span class="seq-row-label">云端数据同步</span>
+              <span class="seq-row-sub">上次同步：今天 22:45 · 本机状态与云端完全一致</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="select-capsule" style="background:var(--accent); color:var(--accent-text); border:none; padding-right:12px;" onclick="alert('数据已成功上传到云端！')">立即上传</button>
+              <button class="select-capsule" style="padding-right:12px;" onclick="alert('从云端恢复成功！')">从云端恢复</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Learning Card -->
+        <div class="seq-card-title">学习体验</div>
+        <div class="seq-card-group">
+          <div class="seq-row">
+            <div class="seq-row-info">
+              <span class="seq-row-label">持续背书模式</span>
+              <span class="seq-row-sub">复习完毕后自动进入下一个单词，保持心流沉浸</span>
+            </div>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
+
+          <div class="seq-row">
+            <div class="seq-row-info">
+              <span class="seq-row-label">点击单词气泡发音</span>
+              <span class="seq-row-sub">在 A4 纸上点击任意单词时立即播放纯正真人语音</span>
+            </div>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
+
+          <div class="seq-row">
+            <div class="seq-row-info">
+              <span class="seq-row-label">单页容量上限</span>
+              <span class="seq-row-sub">一张 A4 纸允许容纳的最大单词数量</span>
+            </div>
+            <select class="select-capsule">
+              <option>30 词（推荐）</option>
+              <option>20 词（紧凑）</option>
+              <option>40 词（密集）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       SCHEME 2: LINEAR BENTO GRID
+       ======================================================================== -->
+  <main class="scheme-workspace" id="scheme-2">
+    <div class="bento-grid">
+      <!-- Bento 1: Cloud Sync Status (8 cols) -->
+      <div class="bento-cell bento-8">
+        <div>
+          <div class="bento-header-tag">
+            <span>Cloud State · 同步中心</span>
+            <span style="color:var(--success);">● LIVE SYNC</span>
+          </div>
+          <div class="bento-big-title">kcyx01@gmail.com</div>
+          <p style="font-size:13px; color:var(--muted);">328 个掌握单词 · 14 天打卡 · 12 轮历史记录已就绪</p>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button class="select-capsule" style="background:var(--accent); color:var(--accent-text); border:none; padding-right:14px; font-weight:700;">↑ 备份至云端</button>
+          <button class="select-capsule" style="padding-right:14px;">↓ 从云端同步</button>
+        </div>
+      </div>
+
+      <!-- Bento 2: Theme Quick Switcher (4 cols) -->
+      <div class="bento-cell bento-4">
+        <div>
+          <div class="bento-header-tag"><span>Appearance</span></div>
+          <div class="bento-big-title" style="font-size:17px;">主题与色彩</div>
+          <p style="font-size:12px; color:var(--muted);">微光与深色 OLED 优化</p>
+        </div>
+        <div style="display:flex; gap:6px; margin-top:14px;">
+          <button class="select-capsule" style="flex:1; padding-right:8px; text-align:center;" onclick="toggleDark()">🌓 切换深浅</button>
+        </div>
+      </div>
+
+      <!-- Bento 3: Offline Neural TTS (6 cols) -->
+      <div class="bento-cell bento-6">
+        <div>
+          <div class="bento-header-tag"><span>Speech Engine</span></div>
+          <div class="bento-big-title" style="font-size:17px;">Sherpa-ONNX 离线真人语音</div>
+          <p style="font-size:12px; color:var(--muted);">零网络延迟 · 离线神经网络模型已就绪</p>
+        </div>
+        <div class="bento-action-tile">
+          <span style="font-size:13px; font-weight:600;">en_US-amy-medium (28MB)</span>
+          <span style="font-size:11.5px; color:var(--success); font-weight:700;">已安装</span>
+        </div>
+      </div>
+
+      <!-- Bento 4: Learning Controls (6 cols) -->
+      <div class="bento-cell bento-6">
+        <div>
+          <div class="bento-header-tag"><span>Workflow</span></div>
+          <div class="bento-big-title" style="font-size:17px;">智能学习流</div>
+          <p style="font-size:12px; color:var(--muted);">自动化复习与心流控制</p>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+          <span style="font-size:13px; font-weight:600;">持续背书自动化</span>
+          <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       SCHEME 3: NOTION / CRAFT MINIMALIST DOCUMENT STREAM
+       ======================================================================== -->
+  <main class="scheme-workspace" id="scheme-3">
+    <div class="notion-layout">
+      <!-- Section 1 -->
+      <div class="notion-section">
+        <div class="notion-sec-title">
+          <span>👤</span>
+          <span>账号与云端资产</span>
+        </div>
+        <div class="notion-item-row">
+          <div>
+            <div style="font-size:14px; font-weight:600;">登录账号</div>
+            <div style="font-size:12px; color:var(--muted);">kcyx01@gmail.com (Google 认证)</div>
+          </div>
+          <button class="select-capsule" style="padding-right:12px;">管理账号</button>
+        </div>
+        <div class="notion-item-row">
+          <div>
+            <div style="font-size:14px; font-weight:600;">云端即时同步</div>
+            <div style="font-size:12px; color:var(--muted);">上次更新：今天 22:45</div>
+          </div>
+          <button class="select-capsule" style="background:var(--accent); color:var(--accent-text); border:none; padding-right:12px;">立即同步</button>
+        </div>
+      </div>
+
+      <!-- Section 2 -->
+      <div class="notion-section">
+        <div class="notion-sec-title">
+          <span>📖</span>
+          <span>学习节奏与排版</span>
+        </div>
+        <div class="notion-item-row">
+          <div>
+            <div style="font-size:14px; font-weight:600;">持续背书模式</div>
+            <div style="font-size:12px; color:var(--muted);">复习完成后自动抽取下一个单词</div>
+          </div>
+          <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="notion-item-row">
+          <div>
+            <div style="font-size:14px; font-weight:600;">A4 满页规格</div>
+            <div style="font-size:12px; color:var(--muted);">单张纸面容纳词数上限</div>
+          </div>
+          <select class="select-capsule">
+            <option>30 词 / 页面</option>
+            <option>20 词 / 页面</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       SCHEME 4: DYNAMIC FLOATING ISLAND CAPSULES
+       ======================================================================== -->
+  <main class="scheme-workspace" id="scheme-4">
+    <div class="island-layout">
+      <!-- Floating Island Tab Bar -->
+      <nav class="island-pill-tabs">
+        <button class="island-pill-btn active">👤 账号</button>
+        <button class="island-pill-btn">📖 学习</button>
+        <button class="island-pill-btn">🎙️ 语音</button>
+        <button class="island-pill-btn">✨ AI 词库</button>
+        <button class="island-pill-btn">⚙️ 偏好</button>
+      </nav>
+
+      <!-- Focused Glass Island -->
+      <div class="island-main-card">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+          <div>
+            <h2 style="font-size:20px; font-weight:800; letter-spacing:-0.03em;">云端资产中心</h2>
+            <p style="font-size:12.5px; color:var(--muted); margin-top:3px;">多设备端到端加密同步</p>
+          </div>
+          <span style="font-size:11.5px; font-weight:800; color:var(--success); background:color-mix(in srgb, var(--success) 12%, transparent); padding:5px 12px; border-radius:999px;">● 已连接</span>
+        </div>
+
+        <div style="background:var(--card2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:14px; font-weight:700;">Google 账号 · kcyx01@gmail.com</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:2px;">14 天连续学习 · 328 个掌握词</div>
+          </div>
+          <button class="select-capsule" style="padding-right:12px;">登出</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <button class="select-capsule" style="background:var(--accent); color:var(--accent-text); border:none; height:46px; border-radius:14px; font-weight:700;">↑ 立即上传备份</button>
+          <button class="select-capsule" style="height:46px; border-radius:14px; font-weight:700;">↓ 从云端恢复</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================================
+       SCHEME 5: BESPOKE PAPER STUDIO (Handcrafted Ink)
+       ======================================================================== -->
+  <main class="scheme-workspace" id="scheme-5">
+    <div class="studio-layout">
+      <div class="studio-header">
+        <div>
+          <h2 style="font-size:22px; font-weight:800; font-family:var(--font-serif); font-style:italic;">A4 Studio · 设定手札</h2>
+          <p style="font-size:12px; color:var(--muted); margin-top:2px;">调整记忆空间与声学偏好</p>
+        </div>
+        <div class="studio-stamp">NO. 0824 · SYNCED</div>
+      </div>
+
+      <div class="studio-row">
+        <strong style="font-size:13.5px;">云端手札同步</strong>
+        <span style="font-size:12px; color:var(--muted);">kcyx01@gmail.com · 实时备份</span>
+        <button class="select-capsule" style="padding-right:12px;">立即覆写</button>
+      </div>
+
+      <div class="studio-row">
+        <strong style="font-size:13.5px;">持续背诵流</strong>
+        <span style="font-size:12px; color:var(--muted);">单轮复习完成后自动落纸新词</span>
+        <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+      </div>
+
+      <div class="studio-row">
+        <strong style="font-size:13.5px;">点击字样发音</strong>
+        <span style="font-size:12px; color:var(--muted);">纸面触碰即触发神经声学引擎</span>
+        <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+      </div>
+
+      <div class="studio-row">
+        <strong style="font-size:13.5px;">单张纸幅容量</strong>
+        <span style="font-size:12px; color:var(--muted);">A4 纸面标准黄金分割容量</span>
+        <select class="select-capsule">
+          <option>30 词 / 满幅</option>
+          <option>20 词 / 宽松</option>
+        </select>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==========================================================================
+       JS CONTROLLER
+       ========================================================================== -->
+  <script>
+    const descriptions = [
+      "",
+      "💡 <strong>方案 1：Apple Sequoia 灵动分栏</strong> — 左侧浮动毛玻璃分类轨 + 右侧高质感 Inset 圆角分组行，最纯粹优雅。",
+      "⚡ <strong>方案 2：Linear Bento 极客网格</strong> — 模块化便当盒 Bento Grid，视觉张力极强，状态与快捷操作一目了然。",
+      "📖 <strong>方案 3：Notion 人文极简流</strong> — 无边框沉浸式文档设计，自然优雅，零视觉杂质。",
+      "🏝️ <strong>方案 4：浮岛聚焦胶囊</strong> — 顶部悬浮灵动胶囊导航 + 居中聚焦大卡片，尤其适合触控与现代移动端。",
+      "📜 <strong>方案 5：纸墨工坊手札</strong> — 契合 A4 纸张人文隐喻的古典工坊排版，铜版质感与专属印记。"
+    ];
+
+    function switchScheme(idx) {
+      document.querySelectorAll('.scheme-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx - 1);
+      });
+
+      document.querySelectorAll('.scheme-workspace').forEach((ws, i) => {
+        ws.classList.toggle('active', i === idx - 1);
+      });
+
+      const pill = document.getElementById('schemeDescPill');
+      if (pill) pill.innerHTML = descriptions[idx];
+    }
+
+    function setPalette(palette) {
+      document.body.classList.remove('theme-classic', 'theme-paper', 'theme-ocean');
+      document.body.classList.add('theme-' + palette);
+    }
+
+    function toggleDark() {
+      document.body.classList.toggle('theme-dark');
+    }
+  </script>
+</body>
+</html>
