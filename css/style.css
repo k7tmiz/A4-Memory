@@ -2254,10 +2254,10 @@ body.theme-dark .offline-tts-status.is-error {
 
 .account-section {
   margin-top: 12px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--card2);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   display: grid;
   gap: 10px;
 }
@@ -2278,7 +2278,7 @@ body.theme-dark .offline-tts-status.is-error {
   padding: 10px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--card2), var(--card));
+  background: transparent;
   display: grid;
   gap: 8px;
 }
@@ -2328,7 +2328,7 @@ body.theme-dark .offline-tts-status.is-error {
   padding: 7px 9px;
   border: 1px solid var(--border2);
   border-radius: 11px;
-  background: var(--card2);
+  background: transparent;
 }
 
 .account-summary-sync-state,
@@ -2365,7 +2365,7 @@ body.theme-dark .offline-tts-status.is-error {
   overflow: hidden;
   border: 1px solid var(--border2);
   border-radius: 11px;
-  background: var(--card2);
+  background: transparent;
 }
 
 .account-summary-stat {
@@ -2440,7 +2440,7 @@ body.theme-dark .offline-tts-status.is-error {
   gap: 8px;
   border: 1px solid var(--border2);
   border-radius: 11px;
-  background: var(--card2);
+  background: transparent;
 }
 
 .account-summary-session span {
@@ -2581,7 +2581,7 @@ body.theme-dark .account-badge {
 
   .account-section {
     margin-top: 10px;
-    padding: 10px;
+    padding: 0;
     gap: 8px;
   }
 
