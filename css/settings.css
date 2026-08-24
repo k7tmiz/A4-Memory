@@ -1,5 +1,6 @@
 /* ==========================================================================
-   A4 MEMORY 3.0 LUXURY SETTINGS DASHBOARD (Linear / Apple Sequoia Design System)
+   A4 MEMORY 3.0 BENTO GLASS SETTINGS DASHBOARD
+   (Linear Bento 2.0 × Arc Deep Glass Design System)
    ========================================================================== */
 
 body.settings-page {
@@ -51,7 +52,7 @@ body.settings-page #settingsModal .modal-panel {
   animation: none;
 }
 
-/* AI Model Pickers */
+/* AI Model Controls */
 .ai-model-control {
   width: 100%;
   display: grid;
@@ -248,7 +249,7 @@ body.settings-page #settingsModal .settings-category-tabs {
 #settingsModal .settings-accordion-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
 }
 
 #settingsModal .settings-category-panel > .panel,
@@ -261,10 +262,10 @@ body.settings-page #settingsModal .settings-category-tabs {
   padding: clamp(18px, 2.5vw, 26px);
   border: 1px solid var(--border);
   border-radius: 22px;
-  background: color-mix(in srgb, var(--card) 96%, transparent);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
 }
 
 #settingsModal .settings-category-panel > .panel .section-title {
@@ -274,34 +275,36 @@ body.settings-page #settingsModal .settings-category-tabs {
   letter-spacing: -0.02em;
 }
 
-/* 3. Modern Accordion Disclosure Cards */
+/* 3. Bento Glass Tiles & Accordion Cards */
 #settingsModal .settings-accordion-card {
   min-width: 0;
   align-self: start;
   overflow: clip;
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: var(--card);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: 0 4px 20px -4px color-mix(in srgb, var(--text) 6%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #settingsModal .settings-accordion-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  box-shadow: 0 12px 32px -6px color-mix(in srgb, var(--accent) 14%, transparent);
+  transform: translateY(-2px);
 }
 
 #settingsModal .settings-accordion-card > summary {
   position: relative;
   min-height: 52px;
-  padding: 14px 44px 14px 18px;
+  padding: 15px 44px 15px 18px;
   display: flex;
   align-items: center;
   color: var(--text);
-  background: color-mix(in srgb, var(--card2) 75%, transparent);
+  background: color-mix(in srgb, var(--card2) 70%, transparent);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 750;
   letter-spacing: -0.01em;
   list-style: none;
