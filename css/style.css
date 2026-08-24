@@ -44,27 +44,27 @@ body {
 }
 
 body.theme-dark {
-  --bg: #0b1220;
-  --bg-gradient: linear-gradient(180deg, #0f172a 0%, #0b1220 50%, #070b14 100%);
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --card: rgba(18, 26, 44, 0.75);
-  --card2: rgba(24, 34, 58, 0.7);
-  --border: rgba(255, 255, 255, 0.09);
-  --border2: rgba(255, 255, 255, 0.06);
-  --border3: rgba(255, 255, 255, 0.14);
-  --accent: #f8fafc;
-  --accentHover: #ffffff;
-  --accentText: #090d16;
+  --bg: #09090b;
+  --bg-gradient: none;
+  --text: #f4f4f6;
+  --muted: #a1a1aa;
+  --card: rgba(255, 255, 255, 0.04);
+  --card2: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.08);
+  --border2: rgba(255, 255, 255, 0.05);
+  --border3: rgba(255, 255, 255, 0.12);
+  --accent: #ffffff;
+  --accentHover: #e4e4e7;
+  --accentText: #09090b;
   --surfaceHover: rgba(255, 255, 255, 0.08);
   --paperBorder: rgba(255, 255, 255, 0.1);
-  --shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadowModal: 0 36px 88px rgba(0, 0, 0, 0.7), 0 14px 36px rgba(0, 0, 0, 0.45);
-  --wordBg: rgba(28, 38, 58, 0.85);
-  --wordBorder: rgba(255, 255, 255, 0.12);
-  --backdrop: rgba(0, 0, 0, 0.72);
-  --paper: #111827;
-  --paperShadow: 0 24px 64px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --shadowModal: 0 24px 64px rgba(0, 0, 0, 0.8);
+  --wordBg: rgba(255, 255, 255, 0.05);
+  --wordBorder: rgba(255, 255, 255, 0.08);
+  --backdrop: rgba(0, 0, 0, 0.75);
+  --paper: #121215;
+  --paperShadow: 0 16px 48px rgba(0, 0, 0, 0.6);
 }
 
 @media (hover: hover) {
