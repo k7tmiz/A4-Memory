@@ -303,6 +303,22 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.settings-page \.settings-page-main\s*\{[^}]*padding-bottom:\s*96px/s)
   })
 
+  it("keeps the dock glass interactive with drag, lift and velocity stretch", () => {
+    assert.match(indexMarkup, /<script src="\.\/js\/ui\/dock-glass\.js\?v=20260824-1"><\/script>/)
+    const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
+    assert.match(dockGlassCode, /A4DockGlass/)
+    assert.match(dockGlassCode, /--a4-dock-drag/)
+    assert.match(dockGlassCode, /--a4-dock-shift/)
+    assert.match(dockGlassCode, /A4Router\?\.navigate/)
+    assert.match(dockGlassCode, /suppressedClick/)
+    assert.match(shellStyle, /\.app-dock-nav\s*\{[^}]*touch-action:\s*pan-y[^}]*transform:\s*translateX\(var\(--a4-dock-shift/s)
+    assert.match(shellStyle, /\.app-dock-nav\.is-dragging,\s*\.app-dock-nav\.is-dragging \.app-dock-indicator\s*\{[^}]*transition:\s*none/s)
+    assert.match(shellStyle, /\.app-dock-indicator\s*\{[^}]*transform:\s*translate3d\(calc\(var\(--a4-dock-index\) \* 100% \+ var\(--a4-dock-drag, 0px\)\),\s*0,\s*0\) scale\(var\(--a4-dock-lift/s)
+    assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*--a4-dock-lift:\s*1\.22/s)
+    assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*filter:\s*drop-shadow\(0\.6px/s)
+    assert.match(shellStyle, /\.app-dock-item\s*\{[^}]*-webkit-user-drag:\s*none/s)
+  })
+
   it("cache-busts every changed shell asset", () => {
     const styleRevision = "20260802-1"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
@@ -316,6 +332,7 @@ describe("responsive application shell", () => {
       ["js/core/common.js", "20260802-1"],
       ["js/ui/layers.js", "20260802-1"],
       ["js/ui/router.js", "20260802-1"],
+      ["js/ui/dock-glass.js", "20260824-1"],
       ["js/utils.js", "20260802-1"],
       ["js/speech.js", "20260802-1"],
       ["js/updater.js", "20260802-1"],

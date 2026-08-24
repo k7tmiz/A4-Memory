@@ -98,7 +98,7 @@ A4-Memory/
 
 `index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。设置是一级 App Shell 路由，其页面呈现不使用弹窗式标题或返回头。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。页面退出时只有活动视图接收 `exit` 生命周期，非活动控制器不会用旧的完整状态快照覆盖存储。
 
-App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
+App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；底栏为 Liquid Glass 玻璃质感，按住浮起、横向拖动可切换视图；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
 学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，A4 纸面在视口水平居中；左侧词书/工具与右侧轮次进度相对纸面两侧固定排布。手机端低频工具收在 `.mobile-more-tools` 下拉菜单（与记录页 `.records-tools` 同构），桌面端使用 `.desktop-tools-popover`；两者与记录工具菜单共用 `a4-menu-enter` 弹出动效。手机沉浸模式的纸面高度使用动态视口与安全区计算，纸面底部和悬浮底栏顶部保持 15px 间距；模式切换后按归一化坐标重新渲染当前页单词。查词弹窗由 `js/lookup.js` 构建为 `.lookup-modal`，采用圆形关闭钮与搜索行布局；词书选择底部面板为 `.wordbook-picker-panel`。
 
@@ -111,6 +111,7 @@ index.html
   → js/ui/layers.js
   → js/ui/motion.js
   → js/ui/router.js
+  → js/ui/dock-glass.js
   → js/core/sanitize.js
   → js/utils.js
   → js/storage.js
@@ -152,6 +153,9 @@ index.html
 
 ### `js/ui/router.js`
 持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
+
+### `js/ui/dock-glass.js`
+悬浮底栏 Liquid Glass 交互层，暴露 `window.A4DockGlass`。按住底栏任意位置时胶囊浮起（放大、高光增强并附带轻微色差投影），横向拖动时胶囊跟手滑动且整条底栏按拖动方向小幅偏移，松手后按位移与甩动速度决定切换相邻视图或阻尼回弹；甩动时底栏产生速度形变并快速复位。拖动产生的点击由捕获阶段拦截，避免与 `data-a4-route` 链接默认导航冲突；`prefers-reduced-motion: reduce` 下不做速度形变，直接拖动与点击仍可用。
 
 ```javascript
 window.A4Router = {
