@@ -1,5 +1,5 @@
 /* ==========================================================================
-   A4 MEMORY 3.0 BENTO GLASS SETTINGS DASHBOARD
+   A4 MEMORY 3.0 BENTO GLASS LUXURY SETTINGS DASHBOARD
    (Linear Bento 2.0 × Arc Deep Glass Design System)
    ========================================================================== */
 
@@ -200,6 +200,10 @@ body.settings-page #settingsModal .settings-category-tabs {
   min-width: 0;
   min-height: 44px;
   padding: 9px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border: 0;
   border-radius: 14px;
   background: transparent;
@@ -208,6 +212,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+  cursor: pointer;
   transition: color 180ms ease, transform 140ms ease, background 180ms ease;
 }
 
@@ -349,7 +354,83 @@ body.settings-page #settingsModal .settings-category-tabs {
   background: transparent;
 }
 
-/* 4. Account & Cloud Area */
+/* 4. Form Layouts & Modern Controls */
+#settingsModal .form-row {
+  margin: 0;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card2) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border2) 50%, transparent);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+#settingsModal .form-row:hover {
+  background: color-mix(in srgb, var(--card2) 75%, transparent);
+  border-color: var(--border2);
+}
+
+#settingsModal .form-label {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+#settingsModal .form-control {
+  min-width: 0;
+}
+
+#settingsModal select,
+#settingsModal input.text-input,
+#settingsModal input[type="number"] {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 95%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: all 0.18s ease;
+}
+
+#settingsModal select:focus,
+#settingsModal input.text-input:focus,
+#settingsModal input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+#settingsModal .form-control button.ghost {
+  min-height: 38px;
+  padding: 8px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card2) 80%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+#settingsModal .form-control button.ghost:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--card) 95%, var(--accent) 5%);
+  transform: translateY(-1px);
+}
+
+/* 5. Account & Cloud Area */
 #settingsModal #settingsPanelAccount .account-panel {
   width: 100%;
 }
@@ -444,15 +525,13 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 body.theme-dark .account-oauth-btn {
-  background: color-mix(in srgb, var(--card) 88%, #fff 12%);
-  border-color: color-mix(in srgb, var(--border3) 70%, #fff 8%);
-  color: var(--text);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: #ffffff;
+  color: #1f1f1f;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
 body.theme-dark .account-oauth-btn:hover {
-  background: color-mix(in srgb, var(--card) 72%, #fff 18%);
-  border-color: color-mix(in srgb, var(--border3) 50%, #fff 14%);
+  background: #f1f3f4;
 }
 
 .account-section {
@@ -474,6 +553,35 @@ body.theme-dark .account-oauth-btn:hover {
 .account-actions {
   display: grid;
   gap: 8px;
+}
+
+/* Primary Auth Submit Button */
+#cloudLoginBtn,
+#cloudRegisterBtn,
+#cloudResetPasswordBtn,
+#cloudSendCodeBtn,
+#cloudSendResetCodeBtn {
+  min-height: 42px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accentText, #ffffff);
+  font-size: 13.5px;
+  font-weight: 750;
+  box-shadow: 0 3px 12px -2px color-mix(in srgb, var(--accent) 35%, transparent);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+#cloudLoginBtn:hover,
+#cloudRegisterBtn:hover,
+#cloudResetPasswordBtn:hover,
+#cloudSendCodeBtn:hover,
+#cloudSendResetCodeBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px -2px color-mix(in srgb, var(--accent) 45%, transparent);
+  filter: brightness(1.05);
 }
 
 .account-summary {
@@ -666,7 +774,7 @@ body.theme-dark .account-oauth-btn:hover {
   text-align: right;
 }
 
-/* 5. Tactile Cloud Action Tiles */
+/* 6. Tactile Cloud Action Tiles */
 .account-cloud-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
