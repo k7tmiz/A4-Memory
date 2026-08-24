@@ -3,23 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>A4 Memory - 设置页 5 大设计方案（电脑端 & 移动端双端深度适配）</title>
+  <title>A4 Memory - 设置页全新 6 套前沿设计方案（电脑端 & 移动端并排预览）</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:italic,wght@0,400;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:italic,wght@0,400;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
   <style>
     :root {
       --font-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
       --font-serif: "Instrument Serif", "Charter", "Georgia", serif;
       --font-mono: "JetBrains Mono", monospace;
+      --font-display: "Space Grotesk", var(--font-ui);
 
       --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 18px;
-      --radius-xl: 22px;
+      --radius-xl: 24px;
       --radius-full: 9999px;
     }
 
@@ -29,7 +30,7 @@
       --bg-grad: radial-gradient(circle at 50% 0%, #ffffff 0%, #edf1f7 100%);
       --text: #0b1220;
       --muted: #546075;
-      --card: rgba(255, 255, 255, 0.92);
+      --card: rgba(255, 255, 255, 0.94);
       --card-solid: #ffffff;
       --card2: rgba(246, 248, 252, 0.94);
       --border: rgba(226, 232, 240, 0.9);
@@ -40,9 +41,9 @@
       --accent-glow: rgba(15, 23, 42, 0.16);
       --surface-hover: rgba(241, 245, 249, 0.9);
       --shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.02);
-      --shadow-hover: 0 12px 32px -6px rgba(15, 23, 42, 0.12);
+      --shadow-hover: 0 14px 36px -6px rgba(15, 23, 42, 0.12);
       --success: #10b981;
-      --danger: #ef4444;
+      --tag-bg: rgba(16, 185, 129, 0.12);
     }
 
     body.theme-classic.theme-dark {
@@ -63,7 +64,7 @@
       --shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
       --shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.7);
       --success: #34d399;
-      --danger: #f87171;
+      --tag-bg: rgba(52, 211, 153, 0.15);
     }
 
     /* THEME 2: WARM LINEN & SAGE PAPER */
@@ -85,7 +86,7 @@
       --shadow: 0 4px 20px -4px rgba(35, 45, 39, 0.06);
       --shadow-hover: 0 14px 36px -8px rgba(35, 45, 39, 0.14);
       --success: #176b5a;
-      --danger: #dc2626;
+      --tag-bg: rgba(23, 107, 90, 0.12);
     }
 
     body.theme-paper.theme-dark {
@@ -106,7 +107,7 @@
       --shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
       --shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.7);
       --success: #a5d8c6;
-      --danger: #f87171;
+      --tag-bg: rgba(165, 216, 198, 0.18);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -133,7 +134,7 @@
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       color: #fff;
-      padding: 10px 20px;
+      padding: 10px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -146,18 +147,13 @@
       flex-wrap: wrap;
     }
 
-    .top-bar-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
     .top-bar-title {
       font-size: 13.5px;
       font-weight: 800;
       display: flex;
       align-items: center;
       gap: 8px;
+      white-space: nowrap;
     }
 
     .top-bar-title span {
@@ -173,6 +169,8 @@
       padding: 3px;
       gap: 2px;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      overflow-x: auto;
+      max-width: 100%;
     }
 
     .scheme-tab-btn {
@@ -195,7 +193,6 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
-    /* DEVICE VIEWPORT MODE TOGGLE */
     .viewport-toggle {
       display: inline-flex;
       background: rgba(255, 255, 255, 0.12);
@@ -215,6 +212,7 @@
       font-weight: 700;
       cursor: pointer;
       transition: all 0.15s ease;
+      white-space: nowrap;
     }
 
     .viewport-btn.active {
@@ -222,7 +220,6 @@
       color: #082f49;
     }
 
-    /* DESCRIPTION PILL */
     .desc-pill {
       margin: 16px 0 10px;
       padding: 8px 18px;
@@ -237,13 +234,13 @@
       gap: 8px;
       box-shadow: var(--shadow);
       backdrop-filter: blur(12px);
-      max-width: 900px;
+      max-width: 940px;
       text-align: center;
     }
 
     .desc-pill strong { color: var(--text); }
 
-    /* VIEWPORT STAGE SIMULATOR */
+    /* VIEWPORT STAGE */
     .stage-container {
       width: 100%;
       display: flex;
@@ -254,14 +251,12 @@
       transition: all 0.3s ease;
     }
 
-    /* DESKTOP CONTAINER */
     .viewport-desktop {
       width: 100%;
-      max-width: 920px;
+      max-width: 900px;
       transition: all 0.3s var(--ease-spring);
     }
 
-    /* MOBILE IPHONE SIMULATOR FRAME */
     .viewport-mobile-frame {
       width: 390px;
       min-height: 780px;
@@ -282,7 +277,6 @@
 
     .viewport-mobile-frame::-webkit-scrollbar { display: none; }
 
-    /* Dynamic Island Notch on Phone Frame */
     .phone-notch {
       position: sticky;
       top: -16px;
@@ -294,36 +288,7 @@
       z-index: 100;
     }
 
-    /* Phone Floating Bottom Dock */
-    .phone-bottom-dock {
-      position: sticky;
-      bottom: -68px;
-      margin-top: 24px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 8px 16px;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-      backdrop-filter: blur(20px);
-      z-index: 90;
-    }
-
-    .phone-dock-item {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-    }
-
-    .phone-dock-item.active { color: var(--accent); }
-
-    /* CONTROLS */
+    /* COMMON CONTROLS */
     .switch-pill {
       width: 44px;
       height: 26px;
@@ -386,190 +351,225 @@
     .btn-action.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 
     /* ==========================================================================
-       SCHEME 1: APPLE SEQUOIA FLUID SPLIT (Desktop Rail / Mobile Inset Grouped)
+       SCHEME A: LINEAR BENTO 2.0 (Upgrade with Status Ring & Radar)
        ========================================================================== */
-    .seq-desktop-grid {
+    .bento2-grid {
       display: grid;
-      grid-template-columns: 210px 1fr;
-      gap: 20px;
-      align-items: start;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
     }
 
-    .seq-sidebar {
+    .bento2-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 6px;
+      border-radius: var(--radius-xl);
+      padding: 20px;
       box-shadow: var(--shadow);
       backdrop-filter: blur(24px) saturate(180%);
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      position: sticky;
-      top: 80px;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
     }
 
-    .seq-nav-item {
-      padding: 9px 12px;
-      border-radius: var(--radius-md);
-      font-size: 13px;
-      font-weight: 650;
-      color: var(--muted);
-      background: transparent;
-      border: none;
-      cursor: pointer;
+    .bento2-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .bento2-8 { grid-column: span 8; }
+    .bento2-4 { grid-column: span 4; }
+    .bento2-6 { grid-column: span 6; }
+    .bento2-12 { grid-column: span 12; }
+
+    .bento2-stat-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--tag-bg);
+      color: var(--success);
+      font-size: 11.5px;
+      font-weight: 750;
+    }
+
+    /* Waveform Animation for Voice Engine */
+    .waveform-bar {
       display: flex;
       align-items: center;
-      gap: 10px;
-      text-align: left;
-      transition: all 0.15s ease;
+      gap: 3px;
+      height: 18px;
+    }
+    .waveform-bar span {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--accent);
+      animation: wave 1.2s ease-in-out infinite alternate;
+    }
+    .waveform-bar span:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+    .waveform-bar span:nth-child(2) { height: 14px; animation-delay: 0.3s; }
+    .waveform-bar span:nth-child(3) { height: 18px; animation-delay: 0.2s; }
+    .waveform-bar span:nth-child(4) { height: 10px; animation-delay: 0.4s; }
+
+    @keyframes wave {
+      0% { transform: scaleY(0.4); }
+      100% { transform: scaleY(1); }
     }
 
-    .seq-nav-item:hover { background: var(--surface-hover); color: var(--text); }
-    .seq-nav-item.active { background: var(--accent); color: var(--accent-text); }
-
-    .seq-icon-badge {
-      width: 24px;
-      height: 24px;
-      border-radius: 7px;
-      display: grid;
-      place-items: center;
-      font-size: 12px;
-      background: rgba(255,255,255,0.2);
-    }
-
-    .seq-group {
-      background: var(--card);
+    /* ==========================================================================
+       SCHEME B: ARC DYNAMIC GLASS STUDIO (Deep-Luminescent Glassmorphism)
+       ========================================================================== */
+    .arc-glass-wrap {
+      background: color-mix(in srgb, var(--card) 70%, transparent);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(24px) saturate(180%);
-      overflow: hidden;
-      margin-bottom: 16px;
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+      backdrop-filter: blur(40px) saturate(200%);
+      -webkit-backdrop-filter: blur(40px) saturate(200%);
+      display: grid;
+      gap: 16px;
     }
 
-    .seq-group-title {
-      font-size: 12px;
-      font-weight: 750;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin: 0 4px 6px;
-    }
-
-    .seq-row {
-      padding: 12px 16px;
+    .arc-tile {
+      background: color-mix(in srgb, var(--card2) 80%, transparent);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      border-top: 1px solid var(--border-subtle);
+      transition: all 0.2s ease;
     }
 
-    .seq-row:first-child { border-top: none; }
-    .seq-row-label { font-size: 13.5px; font-weight: 650; color: var(--text); }
-    .seq-row-sub { font-size: 11.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
-
-    /* MOBILE SEGMENT ON SCHEME 1 */
-    .mobile-segment-track {
-      display: flex;
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 3px;
-      margin-bottom: 14px;
-      gap: 2px;
-    }
-
-    .mobile-segment-btn {
-      flex: 1;
-      padding: 6px 4px;
-      border-radius: 9px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-size: 11.5px;
-      font-weight: 700;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .mobile-segment-btn.active {
+    .arc-tile:hover {
       background: var(--card);
-      color: var(--text);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+      transform: scale(1.01);
     }
 
     /* ==========================================================================
-       SCHEME 2: LINEAR BENTO GRID (Desktop 12-col / Mobile Reflow)
+       SCHEME C: RAYCAST PRO DASHBOARD (Command & Shortcut Console)
        ========================================================================== */
-    .bento-grid {
+    .raycast-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .raycast-search-bar {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      background: var(--card2);
+    }
+
+    .raycast-row {
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+
+    .raycast-row:hover { background: var(--surface-hover); }
+
+    .raycast-kbd {
+      padding: 3px 7px;
+      border-radius: 6px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    /* ==========================================================================
+       SCHEME D: SWISS EDITORIAL GALLERY (International Typographic Style)
+       ========================================================================== */
+    .swiss-wrap {
+      padding: 24px;
+      background: var(--card-solid);
+      border: 2px solid var(--text);
+      border-radius: 0px;
+      box-shadow: 6px 6px 0px var(--text);
+    }
+
+    .swiss-header {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: -0.04em;
+      border-bottom: 2px solid var(--text);
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .swiss-num {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .swiss-row {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
       display: grid;
-      grid-template-columns: repeat(12, 1fr);
+      grid-template-columns: 40px 1fr auto;
+      align-items: center;
       gap: 12px;
     }
 
-    .bento-cell {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(24px) saturate(180%);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.2s ease;
-    }
-
-    .bento-8 { grid-column: span 8; }
-    .bento-4 { grid-column: span 4; }
-    .bento-6 { grid-column: span 6; }
-    .bento-12 { grid-column: span 12; }
-
-    /* MOBILE BENTO OVERRIDES */
-    .viewport-mobile-frame .bento-grid {
-      grid-template-columns: 1fr;
-    }
-    .viewport-mobile-frame .bento-cell {
-      grid-column: span 1 !important;
+    /* ==========================================================================
+       SCHEME E: SPATIAL AMBIENT HUB (Apple VisionOS Floating Layers)
+       ========================================================================== */
+    .spatial-card {
+      background: color-mix(in srgb, var(--card) 60%, transparent);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 26px;
+      padding: 24px;
+      box-shadow: 0 30px 70px -10px rgba(0,0,0,0.18), inset 0 1px 1px rgba(255,255,255,0.9);
+      backdrop-filter: blur(36px);
+      -webkit-backdrop-filter: blur(36px);
+      display: grid;
+      gap: 16px;
     }
 
     /* ==========================================================================
-       SCHEME 4: DYNAMIC FLOATING ISLAND
+       SCHEME F: TACTILE CERAMIC STUDIO (Minimalist Ceramic & Sage Craft)
        ========================================================================== */
-    .island-bar {
-      background: var(--card);
+    .ceramic-wrap {
+      background: var(--card-solid);
       border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 4px;
-      display: flex;
-      justify-content: space-between;
-      gap: 3px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(20px);
-      margin-bottom: 16px;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 6px 24px -4px rgba(35, 45, 39, 0.08), inset 0 2px 4px rgba(255,255,255,0.9);
     }
 
-    .island-btn {
-      flex: 1;
-      padding: 8px 10px;
-      border-radius: 999px;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s ease;
-    }
-
-    .island-btn.active {
-      background: var(--accent);
-      color: var(--accent-text);
-      box-shadow: 0 4px 14px var(--accent-glow);
-    }
+    /* Mobile overrides */
+    .viewport-mobile-frame .bento2-grid { grid-template-columns: 1fr; }
+    .viewport-mobile-frame .bento2-card { grid-column: span 1 !important; }
+    .viewport-mobile-frame .swiss-row { grid-template-columns: 1fr auto; }
+    .viewport-mobile-frame .swiss-num { display: none; }
   </style>
 </head>
 
@@ -577,34 +577,32 @@
 
   <!-- TOP APP CONTROLLER BAR -->
   <header class="top-bar">
-    <div class="top-bar-left">
-      <div class="top-bar-title">
-        <img src="./assets/icon.svg" width="22" height="22" style="border-radius:5px;" alt="A4" />
-        <span>A4 Memory 3.0</span> 设置页深度双端重构
-      </div>
-
-      <!-- 5 SCHEMES -->
-      <div class="scheme-tabs">
-        <button class="scheme-tab-btn active" onclick="setScheme(1)">方案 1：Apple Sequoia 灵动分栏</button>
-        <button class="scheme-tab-btn" onclick="setScheme(2)">方案 2：Linear Bento 极客网格</button>
-        <button class="scheme-tab-btn" onclick="setScheme(3)">方案 3：Notion 人文极简流</button>
-        <button class="scheme-tab-btn" onclick="setScheme(4)">方案 4：浮岛聚焦胶囊</button>
-        <button class="scheme-tab-btn" onclick="setScheme(5)">方案 5：纸墨工坊手札</button>
-      </div>
+    <div class="top-bar-title">
+      <img src="./assets/icon.svg" width="22" height="22" style="border-radius:5px;" alt="A4" />
+      <span>A4 Memory 3.0</span> 设置页全新 6 套前沿方案
     </div>
 
-    <!-- VIEWPORT SIMULATOR BUTTONS -->
-    <div style="display:flex; align-items:center; gap:10px;">
+    <!-- 6 SCHEMES -->
+    <div class="scheme-tabs">
+      <button class="scheme-tab-btn active" onclick="setScheme('A')">方案 A：Linear Bento 2.0 极客进阶</button>
+      <button class="scheme-tab-btn" onclick="setScheme('B')">方案 B：Arc 深透毛玻璃流</button>
+      <button class="scheme-tab-btn" onclick="setScheme('C')">方案 C：Raycast Pro 控制台</button>
+      <button class="scheme-tab-btn" onclick="setScheme('D')">方案 D：瑞士国际画廊排版</button>
+      <button class="scheme-tab-btn" onclick="setScheme('E')">方案 E：VisionOS 空间悬浮层</button>
+      <button class="scheme-tab-btn" onclick="setScheme('F')">方案 F：温润素瓷工坊</button>
+    </div>
+
+    <!-- VIEWPORT TOGGLE -->
+    <div style="display:flex; align-items:center; gap:8px;">
       <div class="viewport-toggle">
-        <button class="viewport-btn active" onclick="setViewport('both')">↔️ 电脑与手机并排对比</button>
-        <button class="viewport-btn" onclick="setViewport('desktop')">💻 仅看电脑端</button>
-        <button class="viewport-btn" onclick="setViewport('mobile')">📱 仅看手机端</button>
+        <button class="viewport-btn active" onclick="setViewport('both')">↔️ 双端对比</button>
+        <button class="viewport-btn" onclick="setViewport('desktop')">💻 电脑端</button>
+        <button class="viewport-btn" onclick="setViewport('mobile')">📱 手机端</button>
       </div>
 
       <select class="select-capsule" style="padding:4px 22px 4px 8px; font-size:11px;" onchange="setPalette(this.value)">
         <option value="classic">经典 Slate</option>
         <option value="paper">纸墨 Linen</option>
-        <option value="ocean">暮海 Ocean</option>
       </select>
 
       <button class="btn-action" style="padding:4px 10px; font-size:11.5px;" onclick="toggleDark()">🌓 深浅</button>
@@ -613,7 +611,7 @@
 
   <!-- SCHEME EXPLANATION PILL -->
   <div class="desc-pill" id="schemeDescPill">
-    <span>💡</span> <strong>方案 1：Apple macOS Sequoia 灵动分栏</strong> — 电脑端为毛玻璃左侧导航轨 + Inset 分组行；手机端无缝自适应为 iOS 18 风格分段与圆角卡片。
+    <span>⚡</span> <strong>方案 A：Linear Bento 2.0 极客进阶</strong> — 升级版便当盒网格，配备实时同步数据环、神经语音频谱波形与双端智能回流。
   </div>
 
   <!-- STAGE SIMULATOR CONTAINER -->
@@ -627,213 +625,216 @@
         <span>💻</span> 电脑端高分辨率视口（1024px+）
       </div>
 
-      <!-- SCHEME 1 DESKTOP -->
-      <div class="scheme-content" data-scheme="1">
-        <div class="seq-desktop-grid">
-          <!-- Left Rail -->
-          <aside class="seq-sidebar">
-            <button class="seq-nav-item active">
-              <span class="seq-icon-badge" style="background:#3b82f6; color:#fff;">👤</span>
-              <span>账号与云同步</span>
-            </button>
-            <button class="seq-nav-item">
-              <span class="seq-icon-badge" style="background:#10b981; color:#fff;">📖</span>
-              <span>学习与节奏</span>
-            </button>
-            <button class="seq-nav-item">
-              <span class="seq-icon-badge" style="background:#f59e0b; color:#fff;">🎙️</span>
-              <span>发音与离线 TTS</span>
-            </button>
-            <button class="seq-nav-item">
-              <span class="seq-icon-badge" style="background:#8b5cf6; color:#fff;">✨</span>
-              <span>AI 词库生成</span>
-            </button>
-            <button class="seq-nav-item">
-              <span class="seq-icon-badge" style="background:#64748b; color:#fff;">⚙️</span>
-              <span>偏好与更多</span>
-            </button>
-          </aside>
-
-          <!-- Right Content -->
-          <div>
-            <div class="seq-group-title">云端账号与状态</div>
-            <div class="seq-group">
-              <div class="seq-row">
-                <div>
-                  <div class="seq-row-label">Google 登录账号</div>
-                  <div class="seq-row-sub">kcyx01@gmail.com · 连续背诵打卡 14 天 · 328 个掌握单词</div>
-                </div>
-                <span style="font-size:11.5px; font-weight:800; color:var(--success); background:color-mix(in srgb, var(--success) 12%, transparent); padding:4px 10px; border-radius:999px;">✓ 已连接</span>
+      <!-- SCHEME A: LINEAR BENTO 2.0 DESKTOP -->
+      <div class="scheme-content" data-scheme="A">
+        <div class="bento2-grid">
+          <!-- Big Cloud Hub (8 col) -->
+          <div class="bento2-card bento2-8">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div>
+                <span class="bento2-stat-chip">● CLOUD CONNECTED</span>
+                <h2 style="font-size:24px; font-weight:800; letter-spacing:-0.03em; margin:10px 0 3px;">kcyx01@gmail.com</h2>
+                <p style="font-size:13px; color:var(--muted);">14 天背诵打卡 · 328 个掌握单词 · 12 轮历史存档已加密同步</p>
               </div>
-              <div class="seq-row">
-                <div>
-                  <div class="seq-row-label">数据备份与恢复</div>
-                  <div class="seq-row-sub">上次同步：今天 22:45 · 本机数据已全量就绪</div>
-                </div>
-                <div style="display:flex; gap:8px;">
-                  <button class="btn-action primary" onclick="alert('备份上传成功！')">↑ 上传备份</button>
-                  <button class="btn-action" onclick="alert('云端恢复成功！')">↓ 恢复状态</button>
-                </div>
-              </div>
+              <img src="./assets/icon.svg" width="44" height="44" style="border-radius:12px; box-shadow:0 4px 14px var(--accent-glow);" />
             </div>
 
-            <div class="seq-group-title">学习与心流偏好</div>
-            <div class="seq-group">
-              <div class="seq-row">
-                <div>
-                  <div class="seq-row-label">持续背书自动化模式</div>
-                  <div class="seq-row-sub">复习完毕后自动进入下一个单词，保持心流沉浸</div>
-                </div>
-                <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
-              </div>
-              <div class="seq-row">
-                <div>
-                  <div class="seq-row-label">点击单词气泡发音</div>
-                  <div class="seq-row-sub">在 A4 纸上点击任意单词时立即播放纯正真人语音</div>
-                </div>
-                <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
-              </div>
-              <div class="seq-row">
-                <div>
-                  <div class="seq-row-label">单页容量上限</div>
-                  <div class="seq-row-sub">一张 A4 纸允许容纳的最大单词数量</div>
-                </div>
-                <select class="select-capsule">
-                  <option>30 词（推荐标准）</option>
-                  <option>20 词（宽松版）</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SCHEME 2 DESKTOP -->
-      <div class="scheme-content" data-scheme="2" style="display:none;">
-        <div class="bento-grid">
-          <div class="bento-cell bento-8">
-            <div>
-              <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; display:flex; justify-content:space-between;">
-                <span>Cloud Center</span>
-                <span style="color:var(--success);">● LIVE SYNC</span>
-              </div>
-              <h2 style="font-size:22px; font-weight:800; letter-spacing:-0.03em; margin:6px 0 2px;">kcyx01@gmail.com</h2>
-              <p style="font-size:12.5px; color:var(--muted);">328 个掌握词 · 14 天连续打卡 · 12 轮历史记录已就绪</p>
-            </div>
-            <div style="display:flex; gap:10px; margin-top:16px;">
-              <button class="btn-action primary">↑ 备份至云端</button>
-              <button class="btn-action">↓ 从云端同步</button>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+              <button class="btn-action primary" style="padding:10px 18px; font-size:13.5px;" onclick="alert('备份上传成功！')">↑ 立即上传覆盖</button>
+              <button class="btn-action" style="padding:10px 18px; font-size:13.5px;" onclick="alert('云端恢复成功！')">↓ 从云端同步</button>
             </div>
           </div>
 
-          <div class="bento-cell bento-4">
+          <!-- Quick Theme & Mode (4 col) -->
+          <div class="bento2-card bento2-4">
             <div>
-              <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">Appearance</div>
-              <h3 style="font-size:16px; font-weight:800; margin:6px 0 2px;">主题调色盘</h3>
-              <p style="font-size:12px; color:var(--muted);">自适应 OLED 深色</p>
+              <span style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">Palette & OLED</span>
+              <h3 style="font-size:17px; font-weight:800; margin:6px 0 4px;">色彩与深色调</h3>
+              <p style="font-size:12px; color:var(--muted);">高饱和度毛玻璃与暗黑模式</p>
             </div>
-            <button class="btn-action" style="margin-top:12px;" onclick="toggleDark()">🌓 切换深浅色</button>
+            <button class="btn-action" style="margin-top:14px; width:100%; text-align:center;" onclick="toggleDark()">🌓 切换深浅模式</button>
           </div>
 
-          <div class="bento-cell bento-6">
+          <!-- Neural Voice Engine (6 col) -->
+          <div class="bento2-card bento2-6">
             <div>
-              <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">Acoustic Engine</div>
-              <h3 style="font-size:16px; font-weight:800; margin:6px 0 2px;">Sherpa 神经离线 TTS</h3>
-              <p style="font-size:12px; color:var(--muted);">零网络延迟 · 离线语音已安装</p>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">Neural Voice</span>
+                <div class="waveform-bar"><span></span><span></span><span></span><span></span></div>
+              </div>
+              <h3 style="font-size:18px; font-weight:800; margin:6px 0 4px;">Sherpa-ONNX 离线真声</h3>
+              <p style="font-size:12.5px; color:var(--muted);">毫秒级本地神经网络发音 · 零网络依赖</p>
             </div>
-            <div style="background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:12.5px; font-weight:600;">en_US-amy-medium (28MB)</span>
-              <span style="font-size:11px; color:var(--success); font-weight:700;">✓ 已就绪</span>
+            <div style="background:var(--card2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong style="font-size:13px;">en_US-amy-medium</strong>
+                <div style="font-size:11px; color:var(--muted);">28.4 MB · 纯正美音女声</div>
+              </div>
+              <span style="font-size:11.5px; color:var(--success); font-weight:800;">✓ 已就绪</span>
             </div>
           </div>
 
-          <div class="bento-cell bento-6">
+          <!-- Flow Automation (6 col) -->
+          <div class="bento2-card bento2-6">
             <div>
-              <div style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">Workflow</div>
-              <h3 style="font-size:16px; font-weight:800; margin:6px 0 2px;">学习心流控制</h3>
-              <p style="font-size:12px; color:var(--muted);">自动化复习与翻页</p>
+              <span style="font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase;">Automation Flow</span>
+              <h3 style="font-size:18px; font-weight:800; margin:6px 0 4px;">背诵心流自动化</h3>
+              <p style="font-size:12.5px; color:var(--muted);">复习完成自动进入下一个词</p>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-              <span style="font-size:13px; font-weight:650;">持续背书模式</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
+              <span style="font-size:13.5px; font-weight:700;">持续背书模式开关</span>
               <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- SCHEME 3 DESKTOP -->
-      <div class="scheme-content" data-scheme="3" style="display:none;">
-        <div style="max-width:680px; margin:0 auto;">
-          <h2 style="font-size:24px; font-weight:800; letter-spacing:-0.03em; margin-bottom:18px;">偏好与账户设置</h2>
-          <div style="margin-bottom:24px;">
-            <div style="font-size:15px; font-weight:750; margin-bottom:8px;">👤 账号与资产</div>
-            <div style="padding:10px 0; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <div style="font-size:13.5px; font-weight:600;">Google 认证账号</div>
-                <div style="font-size:11.5px; color:var(--muted);">kcyx01@gmail.com</div>
-              </div>
-              <button class="btn-action">管理账号</button>
+      <!-- SCHEME B: ARC DYNAMIC GLASS STUDIO DESKTOP -->
+      <div class="scheme-content" data-scheme="B" style="display:none;">
+        <div class="arc-glass-wrap">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div>
+              <h2 style="font-size:22px; font-weight:800; letter-spacing:-0.03em;">偏好与全局中枢</h2>
+              <p style="font-size:13px; color:var(--muted);">深透毛玻璃流光架构</p>
             </div>
-            <div style="padding:10px 0; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <div style="font-size:13.5px; font-weight:600;">云端即时同步</div>
-                <div style="font-size:11.5px; color:var(--muted);">上次更新：今天 22:45</div>
-              </div>
-              <button class="btn-action primary">立即同步</button>
+            <button class="btn-action primary">云端备份已同步</button>
+          </div>
+
+          <div class="arc-tile">
+            <div>
+              <div style="font-size:14px; font-weight:700;">持续背书自动化</div>
+              <div style="font-size:12px; color:var(--muted);">一轮复习结束后无缝落入新词</div>
             </div>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
+
+          <div class="arc-tile">
+            <div>
+              <div style="font-size:14px; font-weight:700;">点击词条即刻发音</div>
+              <div style="font-size:12px; color:var(--muted);">在 A4 纸上点击单词气泡触发声学朗读</div>
+            </div>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
+
+          <div class="arc-tile">
+            <div>
+              <div style="font-size:14px; font-weight:700;">A4 黄金排版规格</div>
+              <div style="font-size:12px; color:var(--muted);">单张纸面容纳词数上限</div>
+            </div>
+            <select class="select-capsule">
+              <option>30 词（推荐满幅）</option>
+              <option>20 词（宽松）</option>
+            </select>
           </div>
         </div>
       </div>
 
-      <!-- SCHEME 4 DESKTOP -->
-      <div class="scheme-content" data-scheme="4" style="display:none;">
-        <nav class="island-bar">
-          <button class="island-btn active">👤 账号</button>
-          <button class="island-btn">📖 学习</button>
-          <button class="island-btn">🎙️ 语音</button>
-          <button class="island-btn">✨ AI 词库</button>
-          <button class="island-btn">⚙️ 偏好</button>
-        </nav>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:var(--radius-xl); padding:24px; box-shadow:var(--shadow);">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-            <div>
-              <h2 style="font-size:20px; font-weight:800;">云端资产中心</h2>
-              <p style="font-size:12.5px; color:var(--muted);">多端端到端加密数据同步</p>
-            </div>
-            <span style="font-size:11.5px; font-weight:800; color:var(--success); background:color-mix(in srgb, var(--success) 12%, transparent); padding:4px 12px; border-radius:999px;">● 实时同步中</span>
+      <!-- SCHEME C: RAYCAST PRO DESKTOP -->
+      <div class="scheme-content" data-scheme="C" style="display:none;">
+        <div class="raycast-wrap">
+          <div class="raycast-search-bar">
+            <span>🔍</span>
+            <span>键入以快速搜索或跳转设置项...</span>
           </div>
-          <div style="background:var(--card2); border:1px solid var(--border); border-radius:14px; padding:14px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+
+          <div class="raycast-row">
+            <div>
+              <div style="font-size:13.5px; font-weight:700;">云端即时同步状态</div>
+              <div style="font-size:11.5px; color:var(--muted);">kcyx01@gmail.com · 今日 22:45</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="raycast-kbd">⌘ S</span>
+              <button class="btn-action primary" style="padding:4px 10px; font-size:12px;">立即同步</button>
+            </div>
+          </div>
+
+          <div class="raycast-row">
+            <div>
+              <div style="font-size:13.5px; font-weight:700;">持续背书自动化模式</div>
+              <div style="font-size:11.5px; color:var(--muted);">复习完毕后自动进入下一个单词</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="raycast-kbd">Space</span>
+              <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+
+          <div class="raycast-row">
+            <div>
+              <div style="font-size:13.5px; font-weight:700;">神经离线语音引擎</div>
+              <div style="font-size:11.5px; color:var(--muted);">en_US-amy-medium 本地模型</div>
+            </div>
+            <span class="raycast-kbd">已安装</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEME D: SWISS EDITORIAL DESKTOP -->
+      <div class="scheme-content" data-scheme="D" style="display:none;">
+        <div class="swiss-wrap">
+          <div class="swiss-header">
+            <span>01 / SETTINGS</span>
+            <span style="font-size:16px;">A4 MEMORY</span>
+          </div>
+
+          <div class="swiss-row">
+            <span class="swiss-num">01.1</span>
+            <div>
+              <strong style="font-size:15px; font-family:var(--font-display);">CLOUD SYNC</strong>
+              <div style="font-size:12px; color:var(--muted);">kcyx01@gmail.com / ACTIVE</div>
+            </div>
+            <button class="btn-action primary" style="border-radius:0px;">BACKUP NOW</button>
+          </div>
+
+          <div class="swiss-row">
+            <span class="swiss-num">01.2</span>
+            <div>
+              <strong style="font-size:15px; font-family:var(--font-display);">FLOW AUTOMATION</strong>
+              <div style="font-size:12px; color:var(--muted);">CONTINUOUS RECALL STREAM</div>
+            </div>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCHEME E: SPATIAL AMBIENT DESKTOP -->
+      <div class="scheme-content" data-scheme="E" style="display:none;">
+        <div class="spatial-card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h2 style="font-size:22px; font-weight:800;">空间资产中枢</h2>
+              <p style="font-size:12.5px; color:var(--muted);">VisionOS 悬浮反光层</p>
+            </div>
+            <span class="bento2-stat-chip">● 空间同步就绪</span>
+          </div>
+
+          <div style="background:rgba(255,255,255,0.4); border:1px solid rgba(255,255,255,0.6); border-radius:18px; padding:16px; display:flex; justify-content:space-between; align-items:center;">
             <div>
               <div style="font-size:14px; font-weight:700;">Google 账号 · kcyx01@gmail.com</div>
-              <div style="font-size:12px; color:var(--muted);">14 天连续打卡 · 328 个掌握单词</div>
+              <div style="font-size:12px; color:var(--muted);">328 个词 · 14 天打卡</div>
             </div>
-            <button class="btn-action">切换账号</button>
-          </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button class="btn-action primary" style="height:44px; font-size:13.5px;">↑ 立即上传备份</button>
-            <button class="btn-action" style="height:44px; font-size:13.5px;">↓ 从云端恢复</button>
+            <button class="btn-action primary">↑ 备份覆盖</button>
           </div>
         </div>
       </div>
 
-      <!-- SCHEME 5 DESKTOP -->
-      <div class="scheme-content" data-scheme="5" style="display:none;">
-        <div style="background:var(--card-solid); border:1px solid var(--border); border-radius:12px; padding:28px 32px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
-          <div style="border-bottom:2px solid var(--accent); padding-bottom:12px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:baseline;">
-            <h2 style="font-size:22px; font-weight:800; font-family:var(--font-serif); font-style:italic;">A4 Studio · 设定手札</h2>
-            <span style="font-family:var(--font-mono); font-size:11px; border:1px dashed var(--accent); padding:3px 8px; border-radius:4px; color:var(--accent);">NO. 0824 · SYNCED</span>
-          </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px dashed var(--border-subtle);">
+      <!-- SCHEME F: TACTILE CERAMIC DESKTOP -->
+      <div class="scheme-content" data-scheme="F" style="display:none;">
+        <div class="ceramic-wrap">
+          <h2 style="font-size:22px; font-weight:800; font-family:var(--font-serif); font-style:italic; margin-bottom:18px;">
+            素瓷工坊 · 记忆偏好
+          </h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border-subtle);">
             <div>
-              <div style="font-size:13.5px; font-weight:700;">云端记忆手札</div>
-              <div style="font-size:11.5px; color:var(--muted);">kcyx01@gmail.com · 实时备份已就绪</div>
+              <div style="font-size:14px; font-weight:700;">手札云端同步</div>
+              <div style="font-size:12px; color:var(--muted);">温润端到端加密</div>
             </div>
-            <button class="btn-action primary">立即覆写</button>
+            <button class="btn-action primary" style="border-radius:14px;">立即存储</button>
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px dashed var(--border-subtle);">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 0;">
             <div>
-              <div style="font-size:13.5px; font-weight:700;">持续背诵流</div>
-              <div style="font-size:11.5px; color:var(--muted);">单轮复习完成后自动落纸新词</div>
+              <div style="font-size:14px; font-weight:700;">持续背书自动化</div>
+              <div style="font-size:12px; color:var(--muted);">复习完成自动抽词</div>
             </div>
             <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
           </div>
@@ -850,71 +851,20 @@
         📱 手机端视口（iPhone 390px）
       </div>
 
-      <!-- SCHEME 1 MOBILE -->
-      <div class="scheme-content" data-scheme="1">
-        <!-- Mobile 5 Segment Control -->
-        <div class="mobile-segment-track">
-          <button class="mobile-segment-btn active">👤 账号</button>
-          <button class="mobile-segment-btn">📖 学习</button>
-          <button class="mobile-segment-btn">🎙️ 发音</button>
-          <button class="mobile-segment-btn">✨ AI</button>
-          <button class="mobile-segment-btn">⚙️ 偏好</button>
-        </div>
-
-        <div class="seq-group-title">云端账号</div>
-        <div class="seq-group">
-          <div class="seq-row">
-            <div>
-              <div class="seq-row-label">Google 登录</div>
-              <div class="seq-row-sub">kcyx01@gmail.com</div>
-            </div>
-            <span style="font-size:11px; font-weight:800; color:var(--success);">已连接</span>
-          </div>
-          <div class="seq-row" style="flex-direction:column; align-items:stretch; gap:10px;">
-            <div class="seq-row-sub">上次同步：今天 22:45 · 状态正常</div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+      <!-- SCHEME A MOBILE -->
+      <div class="scheme-content" data-scheme="A">
+        <div class="bento2-grid">
+          <div class="bento2-card">
+            <span class="bento2-stat-chip">● CLOUD LIVE</span>
+            <h3 style="font-size:18px; font-weight:800; margin:6px 0 2px;">kcyx01@gmail.com</h3>
+            <p style="font-size:12px; color:var(--muted);">14 天连续背诵 · 328 词掌握</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:14px;">
               <button class="btn-action primary" style="font-size:12px; padding:7px;">↑ 上传备份</button>
               <button class="btn-action" style="font-size:12px; padding:7px;">↓ 恢复数据</button>
             </div>
           </div>
-        </div>
 
-        <div class="seq-group-title">学习体验</div>
-        <div class="seq-group">
-          <div class="seq-row">
-            <div>
-              <div class="seq-row-label">持续背书</div>
-              <div class="seq-row-sub">自动进入下一词</div>
-            </div>
-            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
-          </div>
-          <div class="seq-row">
-            <div>
-              <div class="seq-row-label">单页词量</div>
-              <div class="seq-row-sub">每页上限</div>
-            </div>
-            <select class="select-capsule" style="padding:4px 24px 4px 8px; font-size:12px;">
-              <option>30 词</option>
-              <option>20 词</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- SCHEME 2 MOBILE -->
-      <div class="scheme-content" data-scheme="2" style="display:none;">
-        <div class="bento-grid">
-          <div class="bento-cell">
-            <div style="font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase;">Cloud Center</div>
-            <h3 style="font-size:17px; font-weight:800; margin:4px 0 2px;">kcyx01@gmail.com</h3>
-            <p style="font-size:11.5px; color:var(--muted);">328 个掌握词 · 14 天打卡</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:12px;">
-              <button class="btn-action primary" style="padding:6px; font-size:11.5px;">↑ 备份</button>
-              <button class="btn-action" style="padding:6px; font-size:11.5px;">↓ 恢复</button>
-            </div>
-          </div>
-
-          <div class="bento-cell">
+          <div class="bento2-card">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <span style="font-size:13px; font-weight:700;">持续背书自动化</span>
               <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
@@ -923,94 +873,88 @@
         </div>
       </div>
 
-      <!-- SCHEME 3 MOBILE -->
-      <div class="scheme-content" data-scheme="3" style="display:none;">
-        <h3 style="font-size:18px; font-weight:800; margin-bottom:12px;">偏好设置</h3>
-        <div style="padding:10px 0; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div style="font-size:13px; font-weight:600;">持续背书</div>
-            <div style="font-size:11px; color:var(--muted);">复习后自动抽词</div>
-          </div>
-          <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
-        </div>
-        <div style="padding:10px 0; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <div style="font-size:13px; font-weight:600;">云端同步</div>
-            <div style="font-size:11px; color:var(--muted);">今日 22:45</div>
-          </div>
-          <button class="btn-action primary" style="padding:4px 8px; font-size:11.5px;">同步</button>
-        </div>
-      </div>
-
-      <!-- SCHEME 4 MOBILE -->
-      <div class="scheme-content" data-scheme="4" style="display:none;">
-        <div class="mobile-segment-track" style="margin-bottom:10px;">
-          <button class="mobile-segment-btn active">👤 账号</button>
-          <button class="mobile-segment-btn">📖 学习</button>
-          <button class="mobile-segment-btn">⚙️ 偏好</button>
-        </div>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:18px; padding:16px;">
-          <h3 style="font-size:16px; font-weight:800;">云端资产</h3>
-          <p style="font-size:11.5px; color:var(--muted); margin:3px 0 12px;">Google 账号 · kcyx01@gmail.com</p>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
-            <button class="btn-action primary" style="padding:8px; font-size:12px;">↑ 上传</button>
-            <button class="btn-action" style="padding:8px; font-size:12px;">↓ 恢复</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- SCHEME 5 MOBILE -->
-      <div class="scheme-content" data-scheme="5" style="display:none;">
-        <div style="background:var(--card-solid); border:1px solid var(--border); border-radius:10px; padding:16px;">
-          <div style="font-family:var(--font-serif); font-size:16px; font-weight:800; font-style:italic; border-bottom:1px solid var(--accent); padding-bottom:6px; margin-bottom:10px;">
-            A4 Studio · 手札
-          </div>
-          <div style="padding:8px 0; border-bottom:1px dashed var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:12.5px; font-weight:600;">持续背诵流</span>
+      <!-- SCHEME B MOBILE -->
+      <div class="scheme-content" data-scheme="B" style="display:none;">
+        <div class="arc-glass-wrap" style="padding:16px;">
+          <h3 style="font-size:17px; font-weight:800;">深透毛玻璃中枢</h3>
+          <div class="arc-tile" style="padding:12px;">
+            <span style="font-size:13px; font-weight:700;">持续背书模式</span>
             <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
           </div>
         </div>
       </div>
 
-      <!-- Simulated Floating Phone Dock -->
-      <div class="phone-bottom-dock">
-        <div class="phone-dock-item">
-          <span>📖</span>
-          <span>学习</span>
+      <!-- SCHEME C MOBILE -->
+      <div class="scheme-content" data-scheme="C" style="display:none;">
+        <div class="raycast-wrap">
+          <div class="raycast-row">
+            <div>
+              <div style="font-size:13px; font-weight:700;">云端同步</div>
+              <div style="font-size:11px; color:var(--muted);">今日 22:45</div>
+            </div>
+            <button class="btn-action primary" style="font-size:11.5px; padding:4px 8px;">同步</button>
+          </div>
+          <div class="raycast-row">
+            <div style="font-size:13px; font-weight:700;">持续背书</div>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
         </div>
-        <div class="phone-dock-item">
-          <span>📊</span>
-          <span>记录</span>
+      </div>
+
+      <!-- SCHEME D MOBILE -->
+      <div class="scheme-content" data-scheme="D" style="display:none;">
+        <div class="swiss-wrap" style="padding:16px;">
+          <div class="swiss-header" style="font-size:22px;">01/SETTINGS</div>
+          <div class="swiss-row" style="padding:10px 0;">
+            <strong style="font-size:13px;">CONTINUOUS FLOW</strong>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
         </div>
-        <div class="phone-dock-item active">
-          <span>⚙️</span>
-          <span>设置</span>
+      </div>
+
+      <!-- SCHEME E MOBILE -->
+      <div class="scheme-content" data-scheme="E" style="display:none;">
+        <div class="spatial-card" style="padding:16px;">
+          <h3 style="font-size:17px; font-weight:800;">空间资产</h3>
+          <p style="font-size:12px; color:var(--muted); margin:4px 0 10px;">kcyx01@gmail.com</p>
+          <button class="btn-action primary" style="width:100%;">↑ 立即备份</button>
+        </div>
+      </div>
+
+      <!-- SCHEME F MOBILE -->
+      <div class="scheme-content" data-scheme="F" style="display:none;">
+        <div class="ceramic-wrap" style="padding:18px;">
+          <h3 style="font-size:18px; font-family:var(--font-serif); font-style:italic;">素瓷手札</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+            <span style="font-size:13px; font-weight:600;">持续背诵流</span>
+            <div class="switch-pill on" onclick="this.classList.toggle('on')"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    const schemeDescs = [
-      "",
-      "💡 <strong>方案 1：Apple Sequoia 灵动分栏</strong> — 💻 电脑端为毛玻璃左侧导航轨 + Inset 分组行；📱 手机端无缝自适应为 iOS 18 风格分段与圆角卡片。",
-      "⚡ <strong>方案 2：Linear Bento 极客网格</strong> — 💻 电脑端为 12 栏模块化便当盒卡片；📱 手机端智能单列自适应回流，触控按钮加宽。",
-      "📖 <strong>方案 3：Notion 人文极简流</strong> — 💻 电脑端沉浸式无边框排版；📱 手机端边缘自然贴合，零视觉噪点。",
-      "🏝️ <strong>方案 4：浮岛聚焦胶囊</strong> — 💻 顶部悬浮胶囊导航 + 居中大聚焦卡；📱 手机端高频操作触手可及。",
-      "📜 <strong>方案 5：纸墨工坊手札</strong> — 契合 A4 纸墨人文隐喻的手札设计，双端均带有独特的工坊印记与纸张质感。"
-    ];
+    const descriptions = {
+      "A": "⚡ <strong>方案 A：Linear Bento 2.0 极客进阶</strong> — 升级版便当盒网格，配备实时同步数据环、神经语音频谱波形与双端智能回流。",
+      "B": "✨ <strong>方案 B：Arc 深透毛玻璃流</strong> — 类似 Arc 浏览器与 macOS Sequoia 的深透高饱和度毛玻璃（Blur 40px），质感通透高级。",
+      "C": "⌨️ <strong>方案 C：Raycast Pro 控制台</strong> — 类似 Raycast / Spotlight 极客控制台，带搜索过滤与快捷键指示（⌘S / Space）。",
+      "D": "📐 <strong>方案 D：瑞士国际画廊排版</strong> — 大号粗黑几何字体、高对比网格线与不对称排版，充满顶级平面杂志前卫感。",
+      "E": "🥽 <strong>方案 E：VisionOS 空间悬浮层</strong> — 空间计算多层景深与反光高光，科技质感极强。",
+      "F": "🏺 <strong>方案 F：温润素瓷工坊</strong> — 素瓷白与陶土墨绿，圆润手感，温和护眼。"
+    };
 
-    function setScheme(idx) {
-      document.querySelectorAll('.scheme-tab-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === idx - 1);
+    function setScheme(schemeKey) {
+      document.querySelectorAll('.scheme-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(schemeKey));
       });
 
       document.querySelectorAll('.scheme-content').forEach(el => {
-        el.style.display = el.getAttribute('data-scheme') == idx ? 'block' : 'none';
+        el.style.display = el.getAttribute('data-scheme') === schemeKey ? 'block' : 'none';
       });
 
       const pill = document.getElementById('schemeDescPill');
-      if (pill) pill.innerHTML = schemeDescs[idx];
+      if (pill) pill.innerHTML = descriptions[schemeKey];
     }
 
     function setViewport(mode) {
@@ -1033,7 +977,7 @@
     }
 
     function setPalette(palette) {
-      document.body.classList.remove('theme-classic', 'theme-paper', 'theme-ocean');
+      document.body.classList.remove('theme-classic', 'theme-paper');
       document.body.classList.add('theme-' + palette);
     }
 
