@@ -96,7 +96,11 @@
       if (Math.abs(velocity) > FLING_VELOCITY && Math.sign(velocity) === Math.sign(dragPx)) {
         target = clamp(from + Math.sign(velocity), 0, maxIndex)
       }
-      if (wasDragging && Math.abs(dragPx) > DRAG_THRESHOLD_PX) suppressedClick = true
+      if (wasDragging && Math.abs(dragPx) > DRAG_THRESHOLD_PX) {
+        suppressedClick = true
+      } else {
+        suppressedClick = false
+      }
 
       if (!prefersReducedMotion(windowRef) && wasDragging) {
         const speed = Math.abs(velocity)
@@ -134,14 +138,23 @@
     function handlePointerCancel(event) {
       if (event.pointerId !== pointerId) return
       pointerId = null
+      suppressedClick = false
       resetDragState()
     }
 
     function handleClickCapture(event) {
-      if (!suppressedClick) return
-      suppressedClick = false
-      event.preventDefault()
-      event.stopImmediatePropagation()
+      if (suppressedClick) {
+        suppressedClick = false
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        return
+      }
+      const item = event.target?.closest?.(".app-dock-item")
+      const route = item?.dataset?.a4Route
+      if (route && windowRef.A4Router) {
+        event.preventDefault()
+        windowRef.A4Router.navigate(route, { queue: true })
+      }
     }
 
     nav.addEventListener("pointerdown", handlePointerDown)
