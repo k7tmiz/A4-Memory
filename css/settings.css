@@ -1,5 +1,6 @@
 /* ==========================================================================
    A4 MEMORY 3.0 PURE ONYX BENTO GLASS SETTINGS DASHBOARD
+   (Refined: Seamless Single Surface × Un-nested Clean Architecture)
    ========================================================================== */
 
 body.settings-page {
@@ -379,7 +380,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   padding: 9px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--card2);
+  background: rgba(0, 0, 0, 0.2);
   color: var(--text);
   font-size: 13.5px;
   font-weight: 600;
@@ -404,7 +405,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   gap: 6px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--card2);
+  background: rgba(0, 0, 0, 0.2);
   color: var(--text);
   font-size: 13px;
   font-weight: 750;
@@ -522,20 +523,21 @@ body.theme-dark .account-oauth-btn:hover {
   background: #f1f3f4;
 }
 
+/* Eliminate nested box styling in account sections */
 .account-section {
   margin-top: 16px;
-  padding: 18px;
+  padding: 0;
   display: grid;
   gap: 14px;
-  border: 1px solid var(--border2);
-  border-radius: 18px;
-  background: var(--card2);
+  border: none;
+  background: transparent;
 }
 
 .account-section-title {
   color: var(--text);
   font-size: 14px;
   font-weight: 800;
+  margin-bottom: 2px;
 }
 
 .account-actions {
@@ -633,7 +635,7 @@ body.theme-dark .account-oauth-btn:hover {
   gap: 12px;
   border: 1px solid var(--border2);
   border-radius: 15px;
-  background: var(--card2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .account-summary-sync-state,
@@ -670,7 +672,7 @@ body.theme-dark .account-oauth-btn:hover {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--border2);
   border-radius: 15px;
-  background: var(--card2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .account-summary-stat {
@@ -746,7 +748,7 @@ body.theme-dark .account-oauth-btn:hover {
   gap: 8px;
   border: 1px solid var(--border2);
   border-radius: 15px;
-  background: var(--card2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .account-summary-session span {
@@ -942,18 +944,21 @@ body.theme-dark .account-oauth-btn:hover {
     position: sticky;
     top: 24px;
     gap: 4px;
-    padding: 6px;
-    border-radius: 22px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
   }
 
   #settingsModal .settings-category-tab {
     width: 100%;
-    min-height: 46px;
-    padding: 11px 16px;
+    min-height: 44px;
+    padding: 10px 14px;
     text-align: left;
     font-size: 13.5px;
     display: flex;
     align-items: center;
+    border-radius: 12px;
   }
 
   #settingsTabAccount::before { content: "👤"; margin-right: 8px; font-size: 14px; }
@@ -961,6 +966,12 @@ body.theme-dark .account-oauth-btn:hover {
   #settingsTabPronunciation::before { content: "🔊"; margin-right: 8px; font-size: 14px; }
   #settingsTabAi::before { content: "✨"; margin-right: 8px; font-size: 14px; }
   #settingsTabMore::before { content: "⚙️"; margin-right: 8px; font-size: 14px; }
+
+  #settingsModal .settings-category-tab[aria-selected="true"] {
+    background: var(--card) !important;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
 
   #settingsModal .settings-accordion-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
