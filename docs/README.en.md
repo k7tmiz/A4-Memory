@@ -179,6 +179,10 @@ To use, contact the author to obtain `cloud.js`, place it in the `js/` directory
 | [FRONTEND_CONTEXT.md](./FRONTEND_CONTEXT.md) | Frontend architecture, modules, settings UI |
 | [API.md](./API.md) | User-facing API reference (public endpoints) |
 
+## Acknowledgements
+
+- The Liquid Glass look and interaction of the floating dock bar are inspired by [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass) (Apache-2.0), reimplemented in pure CSS/JS without including its source code.
+
 ## Contact
 
 - GitHub: https://github.com/k7tmiz/A4-Memory

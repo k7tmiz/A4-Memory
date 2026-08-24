@@ -180,6 +180,10 @@ npm run build
 | [docs/FRONTEND_CONTEXT.md](./docs/FRONTEND_CONTEXT.md) | 前端架构、模块、设置界面详解 |
 | [docs/API.md](./docs/API.md) | 用户侧 API 参考（公开接口） |
 
+## 致谢
+
+- 悬浮底栏的 Liquid Glass 视觉与交互设计借鉴自 [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass)（Apache-2.0），以纯 CSS / JS 实现，未包含其源码。
+
 ## 联系方式
 
 - GitHub：https://github.com/k7tmiz/A4-Memory
