@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "lint": "eslint js/",
+    "check:version": "node scripts/check-version.mjs",
     "test": "node --test tests/**/*.test.js"
   },
   "devDependencies": {

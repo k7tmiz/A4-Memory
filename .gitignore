@@ -53,6 +53,9 @@ src-tauri/gen/android/app/build/
 src-tauri/gen/android/.gradle/
 src-tauri/gen/android/local.properties
 .playwright-mcp/
+.reasonix/
 .worktrees/
 .superpowers/
 docs/superpowers/previews/
+docs/superpowers/plans/
+docs/superpowers/specs/
