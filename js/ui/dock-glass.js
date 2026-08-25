@@ -11,11 +11,15 @@
     return Math.max(min, Math.min(max, value))
   }
 
-  function attachDockGlass({ documentRef = document, windowRef = window } = {}) {
-    const dock = documentRef.querySelector?.(".app-dock-shell")
-    const nav = dock?.querySelector?.(".app-dock-nav")
-    const indicator = nav?.querySelector?.(".app-dock-indicator")
-    if (!dock || !nav || !indicator) return null
+  function attachGlassSlider({
+    nav,
+    itemSelector,
+    getIndex,
+    onCommit,
+    interceptClick = false,
+    windowRef = window,
+  } = {}) {
+    if (!nav || !itemSelector) return null
 
     let pointerId = null
     let startX = 0
@@ -27,15 +31,18 @@
     let stretchTimer = null
 
     function items() {
-      return Array.from(nav.querySelectorAll(".app-dock-item"))
+      return Array.from(nav.querySelectorAll(itemSelector))
     }
 
     function currentIndex() {
-      return Math.max(0, items().findIndex((item) => item.classList.contains("active")))
+      const maxIndex = Math.max(0, items().length - 1)
+      if (typeof getIndex === "function") return clamp(getIndex(), 0, maxIndex)
+      return 0
     }
 
     function tabWidth() {
-      return Math.max(1, indicator.getBoundingClientRect?.().width || 1)
+      const first = items()[0]
+      return Math.max(1, first?.getBoundingClientRect?.().width || nav.getBoundingClientRect?.().width / Math.max(1, items().length) || 1)
     }
 
     function setVar(name, value) {
@@ -71,7 +78,7 @@
       velocity = velocity * 0.55 + (delta / dt) * 0.45
       lastX = event.clientX
       lastTime = now
-      const maxDrag = tabWidth() * (items().length - 1)
+      const maxDrag = tabWidth() * Math.max(0, items().length - 1)
       dragPx = clamp(event.clientX - startX, -maxDrag, maxDrag)
       if (Math.abs(dragPx) > DRAG_THRESHOLD_PX) {
         if (!nav.classList.contains("is-dragging")) {
@@ -129,10 +136,7 @@
       lastX = 0
       lastTime = 0
 
-      if (wasDragging && target !== from) {
-        const view = items()[target]?.dataset?.a4Route
-        if (view) windowRef.A4Router?.navigate?.(view, { queue: true })
-      }
+      if (wasDragging && target !== from) onCommit?.(target)
     }
 
     function handlePointerCancel(event) {
@@ -149,11 +153,13 @@
         event.stopImmediatePropagation()
         return
       }
-      const item = event.target?.closest?.(".app-dock-item")
-      const route = item?.dataset?.a4Route
-      if (route && windowRef.A4Router) {
+      if (!interceptClick) return
+      const item = event.target?.closest?.(itemSelector)
+      if (!item || !nav.contains(item)) return
+      const index = items().indexOf(item)
+      if (index >= 0) {
         event.preventDefault()
-        windowRef.A4Router.navigate(route, { queue: true })
+        onCommit?.(index)
       }
     }
 
@@ -178,6 +184,27 @@
     })
   }
 
+  function attachDockGlass({ documentRef = document, windowRef = window } = {}) {
+    const dock = documentRef.querySelector?.(".app-dock-shell")
+    const nav = dock?.querySelector?.(".app-dock-nav")
+    const indicator = nav?.querySelector?.(".app-dock-indicator")
+    if (!dock || !nav || !indicator) return null
+
+    return attachGlassSlider({
+      nav,
+      itemSelector: ".app-dock-item",
+      getIndex() {
+        return Math.max(0, Array.from(nav.querySelectorAll(".app-dock-item")).findIndex((item) => item.classList.contains("active")))
+      },
+      onCommit(index) {
+        const view = nav.querySelectorAll(".app-dock-item")[index]?.dataset?.a4Route
+        if (view) windowRef.A4Router?.navigate?.(view, { queue: true })
+      },
+      interceptClick: true,
+      windowRef,
+    })
+  }
+
   let controller = null
 
   function init() {
@@ -192,6 +219,7 @@
 
   window.A4DockGlass = Object.freeze({
     attach: attachDockGlass,
+    attachSlider: attachGlassSlider,
     getController: () => controller,
   })
 })()

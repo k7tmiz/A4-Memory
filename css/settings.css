@@ -50,6 +50,8 @@ body.settings-page #settingsModal .modal-panel {
   background: transparent;
   box-shadow: none;
   animation: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* AI Model Controls */
@@ -71,13 +73,13 @@ body.settings-page #settingsModal .modal-panel {
 /* 1. Header & Page Intro */
 .settings-page-intro {
   min-width: 0;
-  margin-bottom: clamp(24px, 3.5vw, 36px);
+  margin-bottom: clamp(18px, 2.5vw, 24px);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
   color: var(--text);
-  padding-bottom: 8px;
+  padding-bottom: 0;
 }
 
 .settings-page-heading {
@@ -118,14 +120,14 @@ body.settings-page #settingsModal .modal-panel {
 
 .settings-page-status {
   min-height: 36px;
-  padding: 6px 14px;
+  padding: 0;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--card);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--muted);
   font-size: 12px;
   font-weight: 650;
@@ -145,56 +147,94 @@ body.settings-page #settingsModal .modal-panel {
   min-height: 0;
   flex: 0 0 auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
-  align-items: start;
-  gap: clamp(20px, 2.5vw, 32px);
+  align-items: stretch;
+  gap: clamp(16px, 2vw, 22px);
 }
 
 #settingsModal .settings-category-tabs {
+  --settings-tab-index: 0;
   position: relative;
   isolation: isolate;
   overflow: hidden;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 4px;
+  gap: 0;
+  height: 48px;
   padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--card2);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  user-select: none;
+  touch-action: pan-y;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 65%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 20px 48px -10px color-mix(in srgb, var(--text) 16%, transparent),
+    0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
+  transform: translateX(var(--a4-dock-shift, 0px)) scale(var(--a4-dock-sx, 1), var(--a4-dock-sy, 1));
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#settingsModal .settings-category-tabs.is-dragging,
+#settingsModal .settings-category-tabs.is-dragging .settings-category-indicator {
+  transition: none;
+}
+
+#settingsModal .settings-category-tabs.is-lifting .settings-category-indicator,
+#settingsModal .settings-category-tabs.is-dragging .settings-category-indicator {
+  --a4-dock-lift: 1.22;
+  border-color: color-mix(in srgb, var(--border) 30%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -10px 16px color-mix(in srgb, var(--text) 8%, transparent),
+    0 10px 24px color-mix(in srgb, var(--text) 18%, transparent);
+  filter: drop-shadow(0.6px 0 0 rgba(255, 45, 85, 0.22)) drop-shadow(-0.6px 0 0 rgba(0, 210, 255, 0.22));
+}
+
+#settingsModal .settings-category-tabs::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.08) 40%,
+    transparent 64%
+  );
+  pointer-events: none;
 }
 
 body.settings-page #settingsModal .settings-category-tabs {
   position: sticky;
   z-index: 18;
   top: 0;
-  align-self: flex-start;
+  align-self: stretch;
 }
 
 #settingsModal .settings-category-indicator {
   position: absolute;
-  z-index: 0;
-  top: 0;
-  left: 0;
-  width: var(--settings-indicator-width, 0px);
-  height: var(--settings-indicator-height, 0px);
-  border: 1px solid color-mix(in srgb, var(--text) 12%, var(--border));
-  border-radius: 15px;
-  background: var(--card);
-  box-shadow: 0 4px 16px -2px color-mix(in srgb, var(--text) 10%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  z-index: 1;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 5);
+  --a4-dock-lift: 1;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 4px 14px -2px color-mix(in srgb, var(--text) 12%, transparent);
   opacity: 0;
   pointer-events: none;
-  transform: translate3d(
-    var(--settings-indicator-x, 0px),
-    var(--settings-indicator-y, 0px),
-    0
-  );
-  transition:
-    transform var(--motion-duration-page) var(--motion-ease-out),
-    width var(--motion-duration-page) var(--motion-ease-out),
-    height var(--motion-duration-page) var(--motion-ease-out),
-    opacity var(--motion-duration-fast) ease-out;
-  will-change: transform, width, height;
+  transform: translate3d(calc(var(--settings-tab-index, 0) * 100% + var(--a4-dock-drag, 0px)), 0, 0) scale(var(--a4-dock-lift, 1));
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease, opacity var(--motion-duration-fast) ease-out;
+  will-change: transform;
 }
 
 #settingsModal .settings-category-tabs.is-indicator-ready .settings-category-indicator {
@@ -203,17 +243,19 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .settings-category-tab {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  -webkit-user-drag: none;
   min-width: 0;
-  min-height: 44px;
-  padding: 9px 8px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 15px;
+  border-radius: 999px;
   background: transparent;
   box-shadow: none;
   color: var(--muted);
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 760;
   white-space: nowrap;
   transition: color 180ms ease, transform 140ms ease, background 180ms ease;
 }
@@ -268,11 +310,13 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .settings-category-panel > .panel {
   margin: 0;
-  padding: clamp(20px, 2.5vw, 28px);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--card);
-  box-shadow: var(--shadow);
+  padding: 4px 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 #settingsModal .settings-category-panel > .panel .section-title {
@@ -287,25 +331,25 @@ body.settings-page #settingsModal .settings-category-tabs {
   min-width: 0;
   align-self: start;
   overflow: clip;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--card);
-  box-shadow: var(--shadow);
-  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
 }
 
 #settingsModal .settings-accordion-card:hover {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
-  box-shadow: 0 6px 20px -4px color-mix(in srgb, var(--text) 8%, transparent);
-  transform: translateY(-2px);
+  border-color: transparent;
+  box-shadow: none;
+  transform: none;
 }
 
 /* Static Card Section Header */
 #settingsModal .settings-accordion-card > .settings-card-header,
 #settingsModal .settings-accordion-card > summary {
   position: relative;
-  min-height: 50px;
-  padding: 15px 22px;
+  min-height: 44px;
+  padding: 10px 0 12px;
   display: flex;
   align-items: center;
   color: var(--text);
@@ -320,7 +364,7 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .settings-accordion-content {
   display: grid !important;
-  padding: 18px 22px 24px;
+  padding: 12px 0 8px;
   gap: 14px;
   background: transparent;
 }
@@ -417,7 +461,131 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 .account-tabs {
-  margin-top: 0;
+  margin-top: 16px;
+}
+
+#settingsModal .view-tabs.account-tabs {
+  width: min(100%, 420px);
+  height: 44px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 65%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 8px 24px -10px color-mix(in srgb, var(--text) 12%, transparent);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
+}
+
+#settingsModal .view-tabs.account-tabs button {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  transform: none;
+}
+
+#settingsModal .view-tabs.account-tabs button:hover {
+  background: transparent;
+  color: var(--text);
+  transform: none;
+}
+
+#settingsModal .view-tabs.account-tabs button.active {
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 4px 14px -2px color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+#settingsModal .form-control:has(.settings-switch),
+#settingsModal .form-control:has(.settings-compact-select) {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#settingsModal select.settings-compact-select {
+  width: auto;
+  min-width: 5.6em;
+  max-width: 8em;
+  min-height: 36px;
+  padding: 6px 28px 6px 12px;
+}
+
+.settings-switch {
+  width: 52px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.settings-switch:hover,
+.settings-switch:active {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+}
+
+.settings-switch-track {
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 55%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 6px 16px -8px color-mix(in srgb, var(--text) 14%, transparent);
+  backdrop-filter: blur(22px) saturate(160%) brightness(1.04);
+  -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(1.04);
+}
+
+.settings-switch-track::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.08) 40%,
+    transparent 64%
+  );
+  pointer-events: none;
+}
+
+.settings-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 4px 12px -2px color-mix(in srgb, var(--text) 16%, transparent);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-switch[aria-checked="true"] .settings-switch-track {
+  background: color-mix(in srgb, var(--accent) 32%, var(--card));
+}
+
+.settings-switch[aria-checked="true"] .settings-switch-knob {
+  transform: translateX(20px);
 }
 
 .account-panel {
@@ -568,13 +736,13 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary {
   margin-top: 4px;
-  padding: clamp(18px, 2.2vw, 24px);
+  padding: 4px 0 0;
   display: grid;
   gap: 16px;
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  background: var(--card);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .account-summary-head {
@@ -873,10 +1041,10 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-status {
   margin-top: 14px;
-  padding: 12px 18px;
-  border: 1px solid var(--border2);
-  border-radius: 15px;
-  background: var(--card2);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   font-size: 13px;
 }
 
@@ -922,47 +1090,20 @@ body.theme-dark .account-oauth-btn:hover {
 
 @media (min-width: 760px) {
   #settingsModal .settings-shell {
-    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
   }
 
-  body.settings-page #settingsModal .settings-category-tabs,
   #settingsModal .settings-category-tabs {
-    display: flex;
-    flex-direction: column;
-    align-self: flex-start;
-    height: auto;
-    min-height: auto;
-    position: sticky;
-    top: 24px;
-    gap: 4px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    box-shadow: none;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: min(100%, 640px);
   }
 
   #settingsModal .settings-category-tab {
-    width: 100%;
-    min-height: 44px;
-    padding: 10px 14px;
-    text-align: left;
+    min-height: 40px;
+    padding: 8px 12px;
     font-size: 13.5px;
-    display: flex;
-    align-items: center;
-    border-radius: 12px;
-  }
-
-  #settingsTabAccount::before { content: "👤"; margin-right: 8px; font-size: 14px; }
-  #settingsTabLearning::before { content: "🎯"; margin-right: 8px; font-size: 14px; }
-  #settingsTabPronunciation::before { content: "🔊"; margin-right: 8px; font-size: 14px; }
-  #settingsTabAi::before { content: "✨"; margin-right: 8px; font-size: 14px; }
-  #settingsTabMore::before { content: "⚙️"; margin-right: 8px; font-size: 14px; }
-
-  #settingsModal .settings-category-tab[aria-selected="true"] {
-    background: var(--card) !important;
-    border: 1px solid var(--border);
-    color: var(--text);
   }
 
   #settingsModal .settings-accordion-grid {
@@ -1049,8 +1190,8 @@ body.theme-dark .account-oauth-btn:hover {
   }
 
   .settings-page-intro {
-    margin-bottom: 18px;
-    padding: 0 4px 16px;
+    margin-bottom: 14px;
+    padding: 0 2px 0;
     align-items: flex-start;
     flex-direction: column;
     gap: 12px;
@@ -1069,21 +1210,21 @@ body.theme-dark .account-oauth-btn:hover {
   body.settings-page #settingsModal .settings-category-tabs {
     top: max(8px, env(safe-area-inset-top));
     align-self: stretch;
-    margin: 0 -2px;
-    background: var(--card2);
+    width: 100%;
+    margin: 0;
   }
 
   #settingsModal .modal-body {
-    padding-top: 14px;
+    padding-top: 4px;
   }
 
   #settingsModal .settings-category-panel > .panel {
-    padding: 16px;
-    border-radius: 20px;
+    padding: 2px 0 0;
+    border-radius: 0;
   }
 
   #settingsModal .settings-accordion-card {
-    border-radius: 18px;
+    border-radius: 0;
   }
 
   .account-panel .form-row {
@@ -1102,9 +1243,10 @@ body.theme-dark .account-oauth-btn:hover {
   }
 
   .view-tabs.account-tabs {
+    width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 0;
   }
 
   .view-tabs.account-tabs button {
@@ -1115,7 +1257,7 @@ body.theme-dark .account-oauth-btn:hover {
   }
 
   .account-summary {
-    padding: 14px;
+    padding: 2px 0 0;
     gap: 10px;
   }
 

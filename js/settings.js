@@ -508,18 +508,11 @@
     let activeIndex = -1
 
     function refreshIndicator() {
-      const activeTab = tabList[activeIndex]
-      if (!activeTab || !indicator || !tablist) return
-      const width = activeTab.offsetWidth
-      const height = activeTab.offsetHeight
-      if (!width || !height) {
-        tablist.classList.remove("is-indicator-ready")
+      if (!indicator || !tablist || activeIndex < 0) {
+        tablist?.classList.remove("is-indicator-ready")
         return
       }
-      indicator.style.setProperty("--settings-indicator-x", `${activeTab.offsetLeft}px`)
-      indicator.style.setProperty("--settings-indicator-y", `${activeTab.offsetTop}px`)
-      indicator.style.setProperty("--settings-indicator-width", `${width}px`)
-      indicator.style.setProperty("--settings-indicator-height", `${height}px`)
+      tablist.style.setProperty("--settings-tab-index", String(activeIndex))
       tablist.classList.add("is-indicator-ready")
     }
 
@@ -571,7 +564,44 @@
       })
     })
 
-    return { activate, refreshIndicator }
+    const glass = window.A4DockGlass?.attachSlider?.({
+      nav: tablist,
+      itemSelector: ".settings-category-tab",
+      getIndex: () => Math.max(0, activeIndex),
+      onCommit: (index) => activate(index),
+    })
+
+    return { activate, refreshIndicator, detach: () => glass?.detach?.() }
+  }
+
+  function setSwitchChecked(button, checked) {
+    if (!button) return
+    button.setAttribute("aria-checked", checked ? "true" : "false")
+  }
+
+  const DAILY_GOAL_WORD_CHOICES = Object.freeze([0, 10, 20, 30, 40, 50, 75, 100, 150, 200, 250, 300, 400, 500])
+
+  function rangeInclusive(min, max) {
+    const values = []
+    for (let value = min; value <= max; value += 1) values.push(value)
+    return values
+  }
+
+  function numericSelectOptions(values) {
+    return values.map((value) => `<option value="${value}">${value}</option>`).join("")
+  }
+
+  function fillNumericSelect(select, values, current) {
+    if (!select) return
+    const next = Number(current)
+    const list = values.slice()
+    if (Number.isFinite(next) && !list.includes(next)) {
+      list.push(next)
+      list.sort((a, b) => a - b)
+    }
+    const html = numericSelectOptions(list)
+    if (select.innerHTML !== html) select.innerHTML = html
+    select.value = String(Number.isFinite(next) ? next : list[0])
   }
 
   function configureSettingsPresentation(modal, presentation = "modal") {
@@ -823,24 +853,21 @@
             </div>
             <div class="form-row">
               <div class="form-label">每日目标轮次</div>
-              <div class="form-control"><input id="dailyGoalRoundsInput" class="text-input" type="number" min="0" max="20" value="0" /></div>
+              <div class="form-control">
+                <select id="dailyGoalRoundsInput" class="settings-compact-select" aria-label="每日目标轮次">${numericSelectOptions(rangeInclusive(0, 20))}</select>
+              </div>
             </div>
             <div class="form-row">
               <div class="form-label">每日目标单词</div>
-              <div class="form-control"><input id="dailyGoalWordsInput" class="text-input" type="number" min="0" max="500" value="0" /></div>
+              <div class="form-control">
+                <select id="dailyGoalWordsInput" class="settings-compact-select" aria-label="每日目标单词">${numericSelectOptions(DAILY_GOAL_WORD_CHOICES)}</select>
+              </div>
             </div>
             <div class="form-help">填 0 表示不启用该目标；首页与记录页会展示今日进度。</div>
             <div class="form-row">
               <div class="form-label">每轮上限</div>
               <div class="form-control">
-                <div class="select-wrap">
-                  <select id="roundCapInput" aria-label="每轮上限">
-                    <option value="20">20</option><option value="21">21</option><option value="22">22</option>
-                    <option value="23">23</option><option value="24">24</option><option value="25">25</option>
-                    <option value="26">26</option><option value="27">27</option><option value="28">28</option>
-                    <option value="29">29</option><option value="30">30</option>
-                  </select>
-                </div>
+                <select id="roundCapInput" class="settings-compact-select" aria-label="每轮上限">${numericSelectOptions(rangeInclusive(20, 30))}</select>
               </div>
             </div>
             <div class="form-help">可选 20–30。修改后对新一轮生效。</div>
@@ -851,7 +878,7 @@
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">启用轻量复习</div>
-              <div class="form-control"><button class="ghost" id="reviewSystemToggleBtn" type="button">复习：开</button></div>
+              <div class="form-control"><button class="settings-switch" id="reviewSystemToggleBtn" type="button" role="switch" aria-checked="true"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
             <div id="reviewIntervalsPanel">
               <div class="form-row">
@@ -875,12 +902,12 @@
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">持续背书模式</div>
-              <div class="form-control"><button class="ghost" id="continuousStudyModeToggleBtn" type="button">持续背书：关</button></div>
+              <div class="form-control"><button class="settings-switch" id="continuousStudyModeToggleBtn" type="button" role="switch" aria-checked="false"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
             <div class="form-help">开启后，普通学习轮的复习结束会自动继续下一词。</div>
             <div class="form-row">
               <div class="form-label">启用复习卡片翻面</div>
-              <div class="form-control"><button class="ghost" id="reviewCardFlipToggleBtn" type="button">翻面：关</button></div>
+              <div class="form-control"><button class="settings-switch" id="reviewCardFlipToggleBtn" type="button" role="switch" aria-checked="false"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
                   </div>
                 </section>
@@ -894,7 +921,7 @@
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">启用发音</div>
-              <div class="form-control"><button class="ghost" id="pronounceToggleBtn" type="button">发音：开</button></div>
+              <div class="form-control"><button class="settings-switch" id="pronounceToggleBtn" type="button" role="switch" aria-checked="true"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
             <div class="form-row">
               <div class="form-label">发音方式</div>
@@ -920,7 +947,7 @@
             </div>
             <div class="form-row hidden" style="display:none;">
               <div class="form-label">在线兜底开关</div>
-              <div class="form-control"><button class="ghost" id="onlineTtsToggleBtn" type="button">在线兜底：开</button></div>
+              <div class="form-control"><button class="settings-switch" id="onlineTtsToggleBtn" type="button" role="switch" aria-checked="true"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
                   </div>
                 </section>
@@ -1082,7 +1109,7 @@
                   <div class="settings-accordion-content">
             <div class="form-row">
               <div class="form-label">联网补充</div>
-              <div class="form-control"><button class="ghost" id="lookupOnlineToggleBtn" type="button">联网补充：开</button></div>
+              <div class="form-control"><button class="settings-switch" id="lookupOnlineToggleBtn" type="button" role="switch" aria-checked="true"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
             <div class="form-row">
               <div class="form-label">补充来源</div>
@@ -1096,11 +1123,11 @@
             <div class="form-help">选择「自定义 API」后会复用上方「AI 制卡」的 API 配置。</div>
             <div class="form-row">
               <div class="form-label">西语动词变位</div>
-              <div class="form-control"><button class="ghost" id="lookupSpanishToggleBtn" type="button">西语变位：开</button></div>
+              <div class="form-control"><button class="settings-switch" id="lookupSpanishToggleBtn" type="button" role="switch" aria-checked="true"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
             <div class="form-row">
               <div class="form-label">查词缓存</div>
-              <div class="form-control"><button class="ghost" id="lookupCacheToggleBtn" type="button">缓存：开</button></div>
+              <div class="form-control"><button class="settings-switch" id="lookupCacheToggleBtn" type="button" role="switch" aria-checked="true"><span class="settings-switch-track" aria-hidden="true"><span class="settings-switch-knob"></span></span></button></div>
             </div>
             <div class="form-row">
               <div class="form-label">缓存时长（天）</div>
@@ -1358,6 +1385,8 @@
       modal,
       [
         "#themeModeSelect",
+        "#dailyGoalRoundsInput",
+        "#dailyGoalWordsInput",
         "#roundCapInput",
         "#ttsModeSelect",
         "#onlineTtsProviderSelect",
@@ -2028,14 +2057,14 @@
         button.classList.toggle("active", active)
         button.setAttribute("aria-checked", active ? "true" : "false")
       }
-      if (dom.dailyGoalRoundsInput) dom.dailyGoalRoundsInput.value = String(clamp(state?.dailyGoalRounds || 0, 0, 20))
-      if (dom.dailyGoalWordsInput) dom.dailyGoalWordsInput.value = String(clamp(state?.dailyGoalWords || 0, 0, 500))
-      if (dom.roundCapInput) dom.roundCapInput.value = String(normalizeRoundCap(state?.roundCap))
+      fillNumericSelect(dom.dailyGoalRoundsInput, rangeInclusive(0, 20), clamp(state?.dailyGoalRounds || 0, 0, 20))
+      fillNumericSelect(dom.dailyGoalWordsInput, DAILY_GOAL_WORD_CHOICES.slice(), clamp(state?.dailyGoalWords || 0, 0, 500))
+      fillNumericSelect(dom.roundCapInput, rangeInclusive(20, 30), normalizeRoundCap(state?.roundCap))
       const reviewSystemEnabled = typeof state?.reviewSystemEnabled === "boolean" ? state.reviewSystemEnabled : true
       const reviewIntervals = normalizeReviewIntervals(state?.reviewIntervals)
       const continuousStudyMode = typeof state?.continuousStudyMode === "boolean" ? state.continuousStudyMode : false
       const reviewCardFlipEnabled = typeof state?.reviewCardFlipEnabled === "boolean" ? state.reviewCardFlipEnabled : false
-      if (dom.reviewSystemToggleBtn) dom.reviewSystemToggleBtn.textContent = `复习：${reviewSystemEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.reviewSystemToggleBtn, reviewSystemEnabled)
       if (dom.reviewIntervalsPanel) {
         if (reviewSystemEnabled) dom.reviewIntervalsPanel.classList.remove("hidden")
         else dom.reviewIntervalsPanel.classList.add("hidden")
@@ -2043,24 +2072,20 @@
       if (dom.reviewUnknownDaysInput) dom.reviewUnknownDaysInput.value = String(reviewIntervals.unknownDays)
       if (dom.reviewLearningDaysInput) dom.reviewLearningDaysInput.value = String(reviewIntervals.learningDays)
       if (dom.reviewMasteredDaysInput) dom.reviewMasteredDaysInput.value = String(reviewIntervals.masteredDays)
-      if (dom.continuousStudyModeToggleBtn)
-        dom.continuousStudyModeToggleBtn.textContent = `持续背书：${continuousStudyMode ? "开" : "关"}`
-      if (dom.reviewCardFlipToggleBtn)
-        dom.reviewCardFlipToggleBtn.textContent = `翻面：${reviewCardFlipEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.continuousStudyModeToggleBtn, continuousStudyMode)
+      setSwitchChecked(dom.reviewCardFlipToggleBtn, reviewCardFlipEnabled)
       if (dom.accentSelect) dom.accentSelect.value = normalizeAccent(state?.pronunciationAccent)
       if (dom.pronunciationLangSelect)
         dom.pronunciationLangSelect.value = normalizePronunciationLang(state?.pronunciationLang)
       if (dom.voiceModeSelect) dom.voiceModeSelect.value = normalizeVoiceMode(state?.voiceMode)
       renderVoiceSelect()
       renderVoiceModeUi()
-      if (dom.pronounceToggleBtn)
-        dom.pronounceToggleBtn.textContent = `发音：${state?.pronunciationEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.pronounceToggleBtn, !!state?.pronunciationEnabled)
       const normalizeTtsMode = window.A4Common?.normalizeTtsMode
       const ttsMode = normalizeTtsMode ? normalizeTtsMode(state?.ttsMode) : "online"
       const onlineTtsEnabled = ttsMode === "online"
       if (dom.ttsModeSelect) dom.ttsModeSelect.value = ttsMode
-      if (dom.onlineTtsToggleBtn)
-        dom.onlineTtsToggleBtn.textContent = `在线兜底：${onlineTtsEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.onlineTtsToggleBtn, onlineTtsEnabled)
       if (dom.onlineTtsProviderSelect)
         dom.onlineTtsProviderSelect.value = normalizeOnlineTtsProvider(state?.onlineTtsProvider)
       if (dom.onlineTtsProviderRow)
@@ -2087,12 +2112,10 @@
         typeof state?.lookupSpanishConjugationEnabled === "boolean" ? state.lookupSpanishConjugationEnabled : true
       const lookupCacheEnabled = typeof state?.lookupCacheEnabled === "boolean" ? state.lookupCacheEnabled : true
       const lookupCacheDays = clamp(Math.round(Number(state?.lookupCacheDays) || 30), 1, 365)
-      if (dom.lookupOnlineToggleBtn)
-        dom.lookupOnlineToggleBtn.textContent = `联网补充：${lookupOnlineEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.lookupOnlineToggleBtn, lookupOnlineEnabled)
       if (dom.lookupOnlineSourceSelect) dom.lookupOnlineSourceSelect.value = lookupOnlineSource
-      if (dom.lookupSpanishToggleBtn)
-        dom.lookupSpanishToggleBtn.textContent = `西语变位：${lookupSpanishConjugationEnabled ? "开" : "关"}`
-      if (dom.lookupCacheToggleBtn) dom.lookupCacheToggleBtn.textContent = `缓存：${lookupCacheEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.lookupSpanishToggleBtn, lookupSpanishConjugationEnabled)
+      setSwitchChecked(dom.lookupCacheToggleBtn, lookupCacheEnabled)
       if (dom.lookupCacheDaysInput) {
         dom.lookupCacheDaysInput.value = String(lookupCacheDays)
         dom.lookupCacheDaysInput.disabled = !lookupCacheEnabled
@@ -2512,6 +2535,7 @@
     dom.dailyGoalRoundsInput?.addEventListener("change", () => {
       const n = Number(dom.dailyGoalRoundsInput.value)
       const dailyGoalRounds = Number.isFinite(n) ? clamp(Math.round(n), 0, 20) : 0
+      dom.dailyGoalRoundsInput.value = String(dailyGoalRounds)
       setStateSafe({ dailyGoalRounds })
       persistSafe()
       afterChange("dailyGoalRounds")
@@ -2520,6 +2544,7 @@
     dom.dailyGoalWordsInput?.addEventListener("change", () => {
       const n = Number(dom.dailyGoalWordsInput.value)
       const dailyGoalWords = Number.isFinite(n) ? clamp(Math.round(n), 0, 500) : 0
+      dom.dailyGoalWordsInput.value = String(dailyGoalWords)
       setStateSafe({ dailyGoalWords })
       persistSafe()
       afterChange("dailyGoalWords")
@@ -2527,6 +2552,7 @@
 
     dom.roundCapInput?.addEventListener("change", () => {
       const roundCap = normalizeRoundCap(dom.roundCapInput.value)
+      dom.roundCapInput.value = String(roundCap)
       setStateSafe({ roundCap })
       persistSafe()
       afterChange("roundCap")
@@ -2536,7 +2562,7 @@
       const state = getStateSafe()
       const reviewSystemEnabled = !(typeof state?.reviewSystemEnabled === "boolean" ? state.reviewSystemEnabled : true)
       setStateSafe({ reviewSystemEnabled, reviewIntervals: normalizeReviewIntervals(state?.reviewIntervals) })
-      if (dom.reviewSystemToggleBtn) dom.reviewSystemToggleBtn.textContent = `复习：${reviewSystemEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.reviewSystemToggleBtn, reviewSystemEnabled)
       if (dom.reviewIntervalsPanel) {
         if (reviewSystemEnabled) dom.reviewIntervalsPanel.classList.remove("hidden")
         else dom.reviewIntervalsPanel.classList.add("hidden")
@@ -2550,8 +2576,7 @@
       const cur = typeof state?.continuousStudyMode === "boolean" ? state.continuousStudyMode : false
       const continuousStudyMode = !cur
       setStateSafe({ continuousStudyMode, reviewAutoCloseModal: true })
-      if (dom.continuousStudyModeToggleBtn)
-        dom.continuousStudyModeToggleBtn.textContent = `持续背书：${continuousStudyMode ? "开" : "关"}`
+      setSwitchChecked(dom.continuousStudyModeToggleBtn, continuousStudyMode)
       persistSafe()
       afterChange("continuousStudyMode")
     })
@@ -2561,7 +2586,7 @@
       const cur = typeof state?.reviewCardFlipEnabled === "boolean" ? state.reviewCardFlipEnabled : false
       const reviewCardFlipEnabled = !cur
       setStateSafe({ reviewCardFlipEnabled })
-      if (dom.reviewCardFlipToggleBtn) dom.reviewCardFlipToggleBtn.textContent = `翻面：${reviewCardFlipEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.reviewCardFlipToggleBtn, reviewCardFlipEnabled)
       persistSafe()
       afterChange("reviewCardFlipEnabled")
     })
@@ -2579,8 +2604,10 @@
       if (dom.reviewUnknownDaysInput) dom.reviewUnknownDaysInput.value = String(reviewIntervals.unknownDays)
       if (dom.reviewLearningDaysInput) dom.reviewLearningDaysInput.value = String(reviewIntervals.learningDays)
       if (dom.reviewMasteredDaysInput) dom.reviewMasteredDaysInput.value = String(reviewIntervals.masteredDays)
-      if (dom.reviewSystemToggleBtn)
-        dom.reviewSystemToggleBtn.textContent = `复习：${(typeof state?.reviewSystemEnabled === "boolean" ? state.reviewSystemEnabled : true) ? "开" : "关"}`
+      setSwitchChecked(
+        dom.reviewSystemToggleBtn,
+        typeof state?.reviewSystemEnabled === "boolean" ? state.reviewSystemEnabled : true
+      )
     }
 
     dom.reviewUnknownDaysInput?.addEventListener("change", onReviewIntervalsChange)
@@ -2591,7 +2618,7 @@
       const state = getStateSafe()
       const pronunciationEnabled = !state?.pronunciationEnabled
       setStateSafe({ pronunciationEnabled })
-      if (dom.pronounceToggleBtn) dom.pronounceToggleBtn.textContent = `发音：${pronunciationEnabled ? "开" : "关"}`
+      setSwitchChecked(dom.pronounceToggleBtn, pronunciationEnabled)
       persistSafe()
       updateVoiceUi()
       afterChange("pronunciationEnabled")
@@ -3622,6 +3649,7 @@
     createOfflineVoiceTitle,
     listenForAccountStatsBreakpoint,
     shouldExpandAccountStatsByDefault,
+    setSwitchChecked,
     installSettingsCategoryNavigation,
     configureSettingsPresentation,
     normalizeAiWordbook,

@@ -152,43 +152,93 @@ body.records-page .app.records {
   --records-view-index: 0;
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   width: min(100%, 244px);
+  height: 48px;
   margin-bottom: 18px;
   padding: 4px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--card2);
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--text) 5%, transparent);
+  user-select: none;
+  touch-action: pan-y;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 65%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 20px 48px -10px color-mix(in srgb, var(--text) 16%, transparent),
+    0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
+  backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
+  transform: translateX(var(--a4-dock-shift, 0px)) scale(var(--a4-dock-sx, 1), var(--a4-dock-sy, 1));
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.records-view-switch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.08) 40%,
+    transparent 64%
+  );
+  pointer-events: none;
+}
+
+.records-view-switch.is-dragging,
+.records-view-switch.is-dragging .records-view-indicator {
+  transition: none;
+}
+
+.records-view-switch.is-lifting .records-view-indicator,
+.records-view-switch.is-dragging .records-view-indicator {
+  --a4-dock-lift: 1.22;
+  border-color: color-mix(in srgb, var(--border) 30%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -10px 16px color-mix(in srgb, var(--text) 8%, transparent),
+    0 10px 24px color-mix(in srgb, var(--text) 18%, transparent);
+  filter: drop-shadow(0.6px 0 0 rgba(255, 45, 85, 0.22)) drop-shadow(-0.6px 0 0 rgba(0, 210, 255, 0.22));
 }
 
 .records-view-indicator {
   position: absolute;
-  z-index: 0;
-  inset: 4px auto 4px 4px;
+  z-index: 1;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
   width: calc((100% - 8px) / 2);
-  border: 1px solid color-mix(in srgb, var(--text) 10%, var(--border));
-  border-radius: 12px;
-  background: var(--card);
-  box-shadow: 0 4px 13px color-mix(in srgb, var(--text) 8%, transparent);
-  transform: translate3d(calc(var(--records-view-index) * 100%), 0, 0);
-  transition: transform var(--motion-duration-page) var(--motion-ease-out);
+  --a4-dock-lift: 1;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 4px 14px -2px color-mix(in srgb, var(--text) 12%, transparent);
+  pointer-events: none;
+  transform: translate3d(calc(var(--records-view-index) * 100% + var(--a4-dock-drag, 0px)), 0, 0) scale(var(--a4-dock-lift, 1));
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
   will-change: transform;
 }
 
 .records-view-switch button {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   min-width: 0;
-  min-height: 38px;
-  padding: 8px 13px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 13px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 999px;
   background: transparent;
   color: var(--muted);
   font-size: 13px;
   font-weight: 760;
+  -webkit-user-drag: none;
   transition: color 180ms ease-out;
 }
 

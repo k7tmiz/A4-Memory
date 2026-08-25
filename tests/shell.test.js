@@ -271,14 +271,14 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /prefers-reduced-motion[^]*\.settings-category-panel\.settings-panel-enter-forward[^}]*animation:\s*none\s*!important/s)
   })
 
-  it("spreads the five Settings categories across the phone track while retaining the desktop rail", () => {
+  it("keeps the five Settings categories on one liquid-glass track at every width", () => {
     assert.match(
       settingsStyle,
       /@media \(max-width:\s*759px\)\s*\{[^]*?body\.settings-page #settingsModal \.settings-category-tabs\s*\{[^}]*align-self:\s*stretch/s
     )
     assert.match(
       settingsStyle,
-      /@media \(min-width:\s*760px\)\s*\{[^]*?#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/s
+      /@media \(min-width:\s*760px\)\s*\{[^]*?#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/s
     )
   })
 
@@ -304,9 +304,10 @@ describe("responsive application shell", () => {
   })
 
   it("keeps the dock glass interactive with drag, lift and velocity stretch", () => {
-    assert.match(indexMarkup, /<script src="\.\/js\/ui\/dock-glass\.js\?v=20260824-1"><\/script>/)
+    assert.match(indexMarkup, /<script src="\.\/js\/ui\/dock-glass\.js\?v=20260825-1"><\/script>/)
     const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
     assert.match(dockGlassCode, /A4DockGlass/)
+    assert.match(dockGlassCode, /attachSlider/)
     assert.match(dockGlassCode, /--a4-dock-drag/)
     assert.match(dockGlassCode, /--a4-dock-shift/)
     assert.match(dockGlassCode, /A4Router\?\.navigate/)
@@ -326,20 +327,20 @@ describe("responsive application shell", () => {
       assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${styleRevision}"`))
     }
-    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260802-1"/)
-    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260802-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260825-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260825-7"/)
     const scriptRevisions = new Map([
       ["js/core/common.js", "20260802-1"],
       ["js/ui/layers.js", "20260802-1"],
       ["js/ui/router.js", "20260802-1"],
-      ["js/ui/dock-glass.js", "20260824-1"],
+      ["js/ui/dock-glass.js", "20260825-1"],
       ["js/utils.js", "20260802-1"],
       ["js/speech.js", "20260802-1"],
-      ["js/updater.js", "20260802-1"],
-      ["js/settings.js", "20260802-1"],
+      ["js/updater.js", "20260825-1"],
+      ["js/settings.js", "20260825-4"],
       ["js/lookup.js", "20260802-1"],
       ["js/app.js", "20260802-1"],
-      ["js/records.js", "20260802-1"],
+      ["js/records.js", "20260825-1"],
       ["js/settings-page.js", "20260802-1"],
     ])
     for (const [script, revision] of scriptRevisions) {

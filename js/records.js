@@ -1218,6 +1218,12 @@
 
     viewRoundsBtn?.addEventListener("click", () => setView("rounds"))
     viewStatusBtn?.addEventListener("click", () => setView("status"))
+    window.A4DockGlass?.attachSlider?.({
+      nav: viewSwitch,
+      itemSelector: "button[role='tab']",
+      getIndex: () => (currentView === "status" ? 1 : 0),
+      onCommit: (index) => setView(index === 1 ? "status" : "rounds"),
+    })
 
     exportBtn.addEventListener("click", () => {
       const csv = buildCsv(rounds)

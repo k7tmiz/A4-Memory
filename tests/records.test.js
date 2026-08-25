@@ -178,3 +178,13 @@ describe("records print preview lifecycle", () => {
     assert.deepEqual(removedClasses, ["a4-printing"])
   })
 })
+
+describe("records view switch glass", () => {
+  it("uses the shared dock glass slider on the rounds/status switch", () => {
+    const recordsStyle = fs.readFileSync(path.join(__dirname, "..", "css", "records.css"), "utf8")
+    assert.match(recordsCode, /A4DockGlass\?\.attachSlider/)
+    assert.match(recordsStyle, /\.records-view-switch\s*\{[^}]*border-radius:\s*999px[^}]*backdrop-filter:\s*blur\(28px\)/s)
+    assert.match(recordsStyle, /\.records-view-indicator\s*\{[^}]*var\(--a4-dock-drag, 0px\)[^}]*var\(--a4-dock-lift/s)
+    assert.match(recordsStyle, /\.records-view-switch\.is-lifting \.records-view-indicator/s)
+  })
+})

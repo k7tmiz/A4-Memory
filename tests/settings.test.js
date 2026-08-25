@@ -580,10 +580,6 @@ describe("A4Settings responsive category navigation", () => {
     const tabs = panelIds.map((panelId, index) => {
       const tab = createInteractiveElement(`tab-${index}`)
       tab.setAttribute("aria-controls", panelId)
-      tab.offsetLeft = 8 + index * 60
-      tab.offsetTop = 4
-      tab.offsetWidth = 56
-      tab.offsetHeight = 38
       return tab
     })
     const panels = panelIds.map((id) => createInteractiveElement(id))
@@ -597,21 +593,16 @@ describe("A4Settings responsive category navigation", () => {
 
     navigation.activate(0)
     assert.equal(panels[0].classList.contains("settings-panel-enter-initial"), true)
+    assert.equal(tablist.style.getPropertyValue("--settings-tab-index"), "0")
 
     navigation.activate(3)
     assert.equal(panels[3].classList.contains("settings-panel-enter-forward"), true)
+    assert.equal(tablist.style.getPropertyValue("--settings-tab-index"), "3")
     navigation.activate(1)
     assert.equal(panels[1].classList.contains("settings-panel-enter-back"), true)
 
-    tabs[4].offsetLeft = 4
-    tabs[4].offsetTop = 180
-    tabs[4].offsetWidth = 132
-    tabs[4].offsetHeight = 42
     navigation.activate(4)
-    assert.equal(indicator.style.getPropertyValue("--settings-indicator-x"), "4px")
-    assert.equal(indicator.style.getPropertyValue("--settings-indicator-y"), "180px")
-    assert.equal(indicator.style.getPropertyValue("--settings-indicator-width"), "132px")
-    assert.equal(indicator.style.getPropertyValue("--settings-indicator-height"), "42px")
+    assert.equal(tablist.style.getPropertyValue("--settings-tab-index"), "4")
     assert.equal(tablist.classList.contains("is-indicator-ready"), true)
 
     navigation.activate(2)
@@ -627,17 +618,17 @@ describe("A4Settings responsive category navigation", () => {
     assert.doesNotMatch(settingsCode, /insertBefore\(accountPanel,\s*modalBody\.firstElementChild\)/)
   })
 
-  it("uses a dedicated theme-aware phone track and desktop settings rail", () => {
+  it("uses a shared liquid-glass category switch on every width", () => {
     assert.match(
       settingsStyle,
       /body\.settings-page \.settings-page-main\s*\{[^}]*width:\s*min\(100%,\s*1120px\)[^}]*margin:\s*0 auto/s
     )
     assert.match(
       settingsStyle,
-      /#settingsModal \.settings-category-tabs\s*\{[^}]*position:\s*relative[^}]*isolation:\s*isolate[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*background:\s*var\(--card2\)/s
+      /#settingsModal \.settings-category-tabs\s*\{[^}]*position:\s*relative[^}]*isolation:\s*isolate[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*backdrop-filter:\s*blur\(/s
     )
-    assert.match(settingsStyle, /#settingsModal \.settings-category-indicator\s*\{[^}]*--settings-indicator-width[^}]*--settings-indicator-height[^}]*--settings-indicator-x[^}]*--settings-indicator-y[^}]*transition:[^}]*transform\s+var\(--motion-duration-page\)\s+var\(--motion-ease-out\)[^}]*width\s+var\(--motion-duration-page\)[^}]*height\s+var\(--motion-duration-page\)/s)
-    assert.match(settingsStyle, /#settingsModal \.settings-category-tab\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1[^}]*white-space:\s*nowrap/s)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-indicator\s*\{[^}]*width:\s*calc\(\(100% - 8px\) \/ 5\)[^}]*transform:\s*translate3d\(calc\(var\(--settings-tab-index,\s*0\) \* 100% \+ var\(--a4-dock-drag, 0px\)\),\s*0,\s*0\) scale\(var\(--a4-dock-lift/s)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-tab\s*\{[^}]*position:\s*relative[^}]*z-index:\s*2[^}]*white-space:\s*nowrap/s)
 
     const selectedRule = settingsStyle.match(
       /#settingsModal \.settings-category-tab\[aria-selected="true"\]\s*\{([^}]*)\}/s
@@ -656,10 +647,46 @@ describe("A4Settings responsive category navigation", () => {
 
     assert.match(
       settingsStyle,
-      /@media \(min-width:\s*760px\)[\s\S]*?#settingsModal \.settings-shell\s*\{[^}]*grid-template-columns:\s*180px\s+minmax\(0,\s*1fr\)[^}]*\}[\s\S]*?#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/s
+      /@media \(min-width:\s*760px\)[\s\S]*?#settingsModal \.settings-shell\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)[^}]*\}[\s\S]*?#settingsModal \.settings-category-tabs\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/s
+    )
+    assert.match(settingsStyle, /#settingsModal \.settings-category-tabs\.is-lifting \.settings-category-indicator/s)
+    assert.match(settingsCode, /A4DockGlass\?\.attachSlider/)
+    assert.doesNotMatch(
+      settingsStyle,
+      /#settingsModal \.settings-category-tabs\s*\{[^}]*flex-direction:\s*column/s
     )
     assert.match(settingsStyle, /\.account-cloud-action\s*\{[^}]*background:\s*color-mix\([^;]*var\(--card\)[^;]*\)[^}]*border:\s*1px solid var\(--border\)/s)
     assert.match(settingsStyle, /\.account-cloud-action-upload\s*\{[^}]*color:\s*var\(--primary\)/s)
+  })
+
+  it("renders boolean settings as liquid-glass sliding switches", () => {
+    const settings = loadSettingsHelpers()
+    assert.equal(typeof settings.setSwitchChecked, "function")
+    assert.match(settingsCode, /id="dailyGoalRoundsInput"[^>]*class="settings-compact-select"/)
+    assert.match(settingsStyle, /#settingsModal select\.settings-compact-select\s*\{[^}]*min-width:\s*5\.6em/s)
+    assert.match(
+      settingsCode,
+      /id="reviewSystemToggleBtn"[^>]*role="switch"[^>]*aria-checked="true"[^>]*>[\s\S]*?class="settings-switch-knob"/
+    )
+    assert.match(settingsStyle, /\.settings-switch-knob\s*\{[^}]*border-radius:\s*999px/s)
+    assert.match(settingsStyle, /\.settings-switch\[aria-checked="true"\] \.settings-switch-knob\s*\{[^}]*translateX\(20px\)/s)
+    const button = createInteractiveElement("reviewSystemToggleBtn")
+    settings.setSwitchChecked(button, true)
+    assert.equal(button.getAttribute("aria-checked"), "true")
+    settings.setSwitchChecked(button, false)
+    assert.equal(button.getAttribute("aria-checked"), "false")
+    assert.doesNotMatch(settingsCode, /复习：\$\{/)
+  })
+
+  it("clears inherited modal glass filters on the page surface", () => {
+    assert.match(
+      settingsStyle,
+      /body\.settings-page #settingsModal \.modal-panel\s*\{[^}]*backdrop-filter:\s*none[^}]*-webkit-backdrop-filter:\s*none/s
+    )
+    assert.match(
+      settingsStyle,
+      /#settingsModal \.settings-category-panel > \.panel\s*\{[^}]*background:\s*transparent[^}]*backdrop-filter:\s*none[^}]*-webkit-backdrop-filter:\s*none/s
+    )
   })
 })
 
