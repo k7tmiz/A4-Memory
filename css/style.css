@@ -12,7 +12,7 @@ html {
 
 :root {
   --bg: #f8fafc;
-  --bg-gradient: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  --bg-gradient: none;
   --text: #0b1220;
   --muted: #546075;
   --card: rgba(255, 255, 255, 0.9);

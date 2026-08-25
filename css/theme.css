@@ -5,7 +5,7 @@
 /* 1. PAPER THEME (Bespoke Warm Linen & Sage) */
 body.theme-palette-paper {
   --bg: #f7f4ec;
-  --bg-gradient: linear-gradient(180deg, #fdfcf9 0%, #eee9dc 100%);
+  --bg-gradient: none;
   --text: #222d27;
   --muted: #5d6c64;
   --card: rgba(255, 254, 249, 0.9);
@@ -54,7 +54,7 @@ body.theme-dark.theme-palette-paper {
 /* 2. OCEAN THEME (Nordic Twilight & Deep Cyan) */
 body.theme-palette-ocean {
   --bg: #f0f6fa;
-  --bg-gradient: linear-gradient(180deg, #f8fcff 0%, #e3edf5 100%);
+  --bg-gradient: none;
   --text: #0f2334;
   --muted: #4d667a;
   --card: rgba(255, 255, 255, 0.9);
