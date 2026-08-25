@@ -11,6 +11,11 @@
     return Math.max(min, Math.min(max, value))
   }
 
+  function rubberBand(overshoot) {
+    const dampingRange = 120
+    return overshoot * 0.4 * (dampingRange / (dampingRange + overshoot))
+  }
+
   function attachGlassSlider({
     nav,
     itemSelector,
@@ -50,7 +55,7 @@
     }
 
     function resetDragState() {
-      nav.classList.remove("is-lifting", "is-dragging")
+      nav.classList.remove("is-lifting", "is-dragging", "is-clamped")
       setVar("--a4-dock-drag", "0px")
       setVar("--a4-dock-shift", "0px")
       setVar("--a4-dock-sx", "1")
@@ -58,6 +63,8 @@
       setVar("--a4-dock-sweep", "0px")
       setVar("--a4-dock-dir", "0")
       setVar("--a4-dock-motion", "0")
+      setVar("--a4-dock-over", "0")
+      setVar("--a4-dock-glow", "0")
     }
 
     function handlePointerDown(event) {
@@ -82,7 +89,9 @@
       lastX = event.clientX
       lastTime = now
       const maxDrag = tabWidth() * Math.max(0, items().length - 1)
-      dragPx = clamp(event.clientX - startX, -maxDrag, maxDrag)
+      const rawDrag = event.clientX - startX
+      const overshoot = Math.abs(rawDrag) - maxDrag
+      dragPx = overshoot > 0 && maxDrag > 0 ? Math.sign(rawDrag) * (maxDrag + rubberBand(overshoot)) : rawDrag
       if (Math.abs(dragPx) > DRAG_THRESHOLD_PX) {
         if (!nav.classList.contains("is-dragging")) {
           try {
@@ -91,12 +100,17 @@
             void 0
           }
         }
+        const motion = clamp(Math.abs(dragPx) / Math.max(1, tabWidth()), 0, 1)
+        const over = maxDrag > 0 ? clamp(overshoot / 90, 0, 1) : 0
         nav.classList.add("is-dragging")
+        nav.classList.toggle("is-clamped", overshoot > 0 && maxDrag > 0)
         setVar("--a4-dock-drag", `${dragPx}px`)
         setVar("--a4-dock-shift", `${clamp(dragPx * 0.08, -MAX_SHIFT_PX, MAX_SHIFT_PX)}px`)
         setVar("--a4-dock-sweep", `${clamp(dragPx * -0.45, -48, 48).toFixed(1)}px`)
         setVar("--a4-dock-dir", dragPx >= 0 ? "1" : "-1")
-        setVar("--a4-dock-motion", clamp(Math.abs(dragPx) / Math.max(1, tabWidth()), 0, 1).toFixed(3))
+        setVar("--a4-dock-motion", motion.toFixed(3))
+        setVar("--a4-dock-over", over.toFixed(3))
+        setVar("--a4-dock-glow", Math.max(motion, over * 0.75).toFixed(3))
       }
     }
 
@@ -183,7 +197,7 @@
         nav.removeEventListener("pointercancel", handlePointerCancel)
         nav.removeEventListener("click", handleClickCapture, true)
         resetDragState()
-        for (const name of ["--a4-dock-drag", "--a4-dock-shift", "--a4-dock-sx", "--a4-dock-sy", "--a4-dock-sweep", "--a4-dock-dir", "--a4-dock-motion"]) {
+        for (const name of ["--a4-dock-drag", "--a4-dock-shift", "--a4-dock-sx", "--a4-dock-sy", "--a4-dock-sweep", "--a4-dock-dir", "--a4-dock-motion", "--a4-dock-over", "--a4-dock-glow"]) {
           nav.style.removeProperty(name)
         }
       },

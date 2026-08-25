@@ -314,7 +314,7 @@ describe("responsive application shell", () => {
     assert.match(dockGlassCode, /suppressedClick/)
     assert.match(shellStyle, /\.app-dock-nav\s*\{[^}]*touch-action:\s*pan-y[^}]*transform:\s*translateX\(var\(--a4-dock-shift/s)
     assert.match(shellStyle, /\.app-dock-nav\.is-dragging,\s*\.app-dock-nav\.is-dragging \.app-dock-indicator\s*\{[^}]*transition:\s*none/s)
-    assert.match(shellStyle, /\.app-dock-indicator\s*\{[^}]*transform:\s*translate3d\(calc\(var\(--a4-dock-index\) \* 100% \+ var\(--a4-dock-drag, 0px\)\),\s*0,\s*0\) scale\(var\(--a4-dock-lift/s)
+    assert.match(shellStyle, /\.app-dock-indicator\s*\{[^}]*transform:\s*translate3d\(calc\(var\(--a4-dock-index\) \* 100% \+ var\(--a4-dock-drag, 0px\)\),\s*var\(--a4-dock-float, 0px\),\s*0\) scale\(var\(--a4-dock-lift/s)
     assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*--a4-dock-lift:\s*1\.22/s)
     assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*filter:\s*drop-shadow\(calc\(/s)
     assert.match(shellStyle, /\.app-dock-item\s*\{[^}]*-webkit-user-drag:\s*none/s)
@@ -324,24 +324,36 @@ describe("responsive application shell", () => {
   })
 
   it("renders drag-reactive glass optics on the dock and settings tabs", () => {
-    const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
     const settingsStyle = fs.readFileSync(path.join(ROOT, "css", "settings.css"), "utf8")
-    assert.match(dockGlassCode, /setVar\("--a4-dock-sweep"/)
-    assert.match(dockGlassCode, /setVar\("--a4-dock-dir"/)
-    assert.match(dockGlassCode, /setVar\("--a4-dock-motion"/)
-    assert.match(dockGlassCode, /"--a4-dock-drag", "--a4-dock-shift", "--a4-dock-sx", "--a4-dock-sy", "--a4-dock-sweep", "--a4-dock-dir", "--a4-dock-motion"/)
     assert.match(
       shellStyle,
-      /\.app-dock-nav::after\s*\{[^}]*calc\(46% \+ var\(--a4-dock-sweep, 0px\)\)[^}]*inset calc\(var\(--a4-dock-dir, 0\) \* 7px\)[^}]*opacity:\s*var\(--a4-dock-motion, 0\)/s
+      /\.app-dock-nav::after\s*\{[^}]*calc\(46% \+ var\(--a4-dock-sweep, 0px\)\)[^}]*inset calc\(var\(--a4-dock-dir, 0\) \* \(7px \+ var\(--a4-dock-over, 0\) \* 9px\)\)[^}]*opacity:\s*var\(--a4-dock-glow, var\(--a4-dock-motion, 0\)\)/s
     )
     assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator::after,\s*\.app-dock-nav\.is-dragging \.app-dock-indicator::after\s*\{\s*opacity:\s*1/s)
     assert.match(
       settingsStyle,
-      /#settingsModal \.settings-category-tabs::after\s*\{[^}]*calc\(46% \+ var\(--a4-dock-sweep, 0px\)\)[^}]*opacity:\s*var\(--a4-dock-motion, 0\)/s
+      /#settingsModal \.settings-category-tabs::after\s*\{[^}]*calc\(46% \+ var\(--a4-dock-sweep, 0px\)\)[^}]*opacity:\s*var\(--a4-dock-glow, var\(--a4-dock-motion, 0\)\)/s
     )
     assert.match(settingsStyle, /#settingsModal \.settings-category-tabs\.is-lifting \.settings-category-indicator::after,\s*#settingsModal \.settings-category-tabs\.is-dragging \.settings-category-indicator::after\s*\{\s*opacity:\s*1/s)
     for (const style of [shellStyle, settingsStyle]) {
       assert.match(style, /@media \(prefers-reduced-motion: reduce\)\s*\{[^]*?(::after|tabs::after),[^]*?display:\s*none/s)
+    }
+  })
+
+  it("applies rubber-band limits and press feedback to the glass dock", () => {
+    const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
+    const settingsStyle = fs.readFileSync(path.join(ROOT, "css", "settings.css"), "utf8")
+    assert.match(dockGlassCode, /const overshoot = Math\.abs\(rawDrag\) - maxDrag/)
+    assert.match(dockGlassCode, /classList\.toggle\("is-clamped", overshoot > 0 && maxDrag > 0\)/)
+    assert.match(dockGlassCode, /setVar\("--a4-dock-over"/)
+    assert.match(dockGlassCode, /setVar\("--a4-dock-glow"/)
+    assert.match(shellStyle, /\.app-dock-nav\.is-lifting\s*\{[^}]*--a4-dock-press:\s*0\.988/s)
+    assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*--a4-dock-float:\s*-1\.5px/s)
+    assert.match(shellStyle, /\.app-dock-nav\.is-clamped::after/)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-tabs\.is-lifting\s*\{[^}]*--a4-dock-press:\s*0\.988/s)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-tabs\.is-clamped::after/)
+    for (const style of [shellStyle, settingsStyle]) {
+      assert.match(style, /opacity:\s*var\(--a4-dock-glow, var\(--a4-dock-motion, 0\)\)/)
     }
   })
 

@@ -627,7 +627,7 @@ describe("A4Settings responsive category navigation", () => {
       settingsStyle,
       /#settingsModal \.settings-category-tabs\s*\{[^}]*position:\s*relative[^}]*isolation:\s*isolate[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)[^}]*backdrop-filter:\s*blur\(/s
     )
-    assert.match(settingsStyle, /#settingsModal \.settings-category-indicator\s*\{[^}]*width:\s*calc\(\(100% - 8px\) \/ 5\)[^}]*transform:\s*translate3d\(calc\(var\(--settings-tab-index,\s*0\) \* 100% \+ var\(--a4-dock-drag, 0px\)\),\s*0,\s*0\) scale\(var\(--a4-dock-lift/s)
+    assert.match(settingsStyle, /#settingsModal \.settings-category-indicator\s*\{[^}]*width:\s*calc\(\(100% - 8px\) \/ 5\)[^}]*transform:\s*translate3d\(calc\(var\(--settings-tab-index,\s*0\) \* 100% \+ var\(--a4-dock-drag, 0px\)\),\s*var\(--a4-dock-float, 0px\),\s*0\) scale\(var\(--a4-dock-lift/s)
     assert.match(settingsStyle, /#settingsModal \.settings-category-tab\s*\{[^}]*position:\s*relative[^}]*z-index:\s*2[^}]*white-space:\s*nowrap/s)
 
     const selectedRule = settingsStyle.match(
