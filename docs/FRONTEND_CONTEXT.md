@@ -155,7 +155,7 @@ index.html
 持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
 
 ### `js/ui/dock-glass.js`
-悬浮底栏 Liquid Glass 交互层，暴露 `window.A4DockGlass`。按住底栏任意位置时胶囊浮起（放大、高光增强并附带轻微色差投影），横向拖动时胶囊跟手滑动且整条底栏按拖动方向小幅偏移，松手后按位移与甩动速度决定切换相邻视图或阻尼回弹；甩动时底栏产生速度形变并快速复位。拖动产生的点击由捕获阶段拦截，避免与 `data-a4-route` 链接默认导航冲突；`prefers-reduced-motion: reduce` 下不做速度形变，直接拖动与点击仍可用。
+悬浮底栏 Liquid Glass 交互层，暴露 `window.A4DockGlass`。按住底栏任意位置时胶囊浮起（放大、高光增强并附带轻微色差投影），横向拖动时胶囊跟手滑动且整条底栏按拖动方向小幅偏移，并以 `--a4-dock-sweep` / `--a4-dock-dir` / `--a4-dock-motion` 暴露拖动的高光位移、方向与幅度，驱动 shell.css 与 settings.css 中镜面高光扫过、拖动前缘厚度与边缘色散装饰层；松手后按位移与甩动速度决定切换相邻视图或阻尼回弹；甩动时底栏产生速度形变并快速复位。拖动产生的点击由捕获阶段拦截，避免与 `data-a4-route` 链接默认导航冲突；`prefers-reduced-motion: reduce` 下不做速度形变并隐藏装饰光学层，直接拖动与点击仍可用。
 
 ```javascript
 window.A4Router = {

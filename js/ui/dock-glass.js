@@ -55,6 +55,9 @@
       setVar("--a4-dock-shift", "0px")
       setVar("--a4-dock-sx", "1")
       setVar("--a4-dock-sy", "1")
+      setVar("--a4-dock-sweep", "0px")
+      setVar("--a4-dock-dir", "0")
+      setVar("--a4-dock-motion", "0")
     }
 
     function handlePointerDown(event) {
@@ -91,6 +94,9 @@
         nav.classList.add("is-dragging")
         setVar("--a4-dock-drag", `${dragPx}px`)
         setVar("--a4-dock-shift", `${clamp(dragPx * 0.08, -MAX_SHIFT_PX, MAX_SHIFT_PX)}px`)
+        setVar("--a4-dock-sweep", `${clamp(dragPx * -0.45, -48, 48).toFixed(1)}px`)
+        setVar("--a4-dock-dir", dragPx >= 0 ? "1" : "-1")
+        setVar("--a4-dock-motion", clamp(Math.abs(dragPx) / Math.max(1, tabWidth()), 0, 1).toFixed(3))
       }
     }
 
@@ -177,7 +183,7 @@
         nav.removeEventListener("pointercancel", handlePointerCancel)
         nav.removeEventListener("click", handleClickCapture, true)
         resetDragState()
-        for (const name of ["--a4-dock-drag", "--a4-dock-shift", "--a4-dock-sx", "--a4-dock-sy"]) {
+        for (const name of ["--a4-dock-drag", "--a4-dock-shift", "--a4-dock-sx", "--a4-dock-sy", "--a4-dock-sweep", "--a4-dock-dir", "--a4-dock-motion"]) {
           nav.style.removeProperty(name)
         }
       },

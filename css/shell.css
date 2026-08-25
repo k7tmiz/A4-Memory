@@ -380,7 +380,25 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.72),
     inset 0 -10px 16px color-mix(in srgb, var(--text) 8%, transparent),
     0 10px 24px color-mix(in srgb, var(--text) 18%, transparent);
-  filter: drop-shadow(0.6px 0 0 rgba(255, 45, 85, 0.22)) drop-shadow(-0.6px 0 0 rgba(0, 210, 255, 0.22));
+  filter:
+    drop-shadow(calc(0.35px + var(--a4-dock-motion, 0) * 0.85px) 0 0 rgba(255, 45, 85, 0.24))
+    drop-shadow(calc(-0.35px - var(--a4-dock-motion, 0) * 0.85px) 0 0 rgba(0, 210, 255, 0.26));
+}
+
+.app-dock-indicator::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 92% at 50% 108%, rgba(255, 255, 255, 0.34), transparent 58%);
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.app-dock-nav.is-lifting .app-dock-indicator::after,
+.app-dock-nav.is-dragging .app-dock-indicator::after {
+  opacity: 1;
 }
 
 .app-dock-nav::before {
@@ -395,6 +413,26 @@
     rgba(255, 255, 255, 0.08) 40%,
     transparent 64%
   );
+  pointer-events: none;
+}
+
+.app-dock-nav::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 3;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 14%,
+    rgba(255, 255, 255, 0.17) calc(46% + var(--a4-dock-sweep, 0px)),
+    rgba(255, 255, 255, 0.05) calc(54% + var(--a4-dock-sweep, 0px)),
+    transparent 86%
+  );
+  box-shadow:
+    inset calc(var(--a4-dock-dir, 0) * 7px) 0 14px -8px rgba(255, 255, 255, 0.5),
+    inset calc(var(--a4-dock-dir, 0) * -2px) 0 8px -4px color-mix(in srgb, var(--text) 10%, transparent);
+  opacity: var(--a4-dock-motion, 0);
   pointer-events: none;
 }
 
@@ -1235,6 +1273,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-dock-nav::after,
+  .app-dock-indicator::after {
+    display: none;
+  }
+
   #settingsModal .settings-category-indicator {
     transition: none !important;
   }

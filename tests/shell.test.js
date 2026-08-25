@@ -304,7 +304,7 @@ describe("responsive application shell", () => {
   })
 
   it("keeps the dock glass interactive with drag, lift and velocity stretch", () => {
-    assert.match(indexMarkup, /<script src="\.\/js\/ui\/dock-glass\.js\?v=20260825-1"><\/script>/)
+    assert.match(indexMarkup, /<script src="\.\/js\/ui\/dock-glass\.js\?v=20260825-2"><\/script>/)
     const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
     assert.match(dockGlassCode, /A4DockGlass/)
     assert.match(dockGlassCode, /attachSlider/)
@@ -316,8 +316,33 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /\.app-dock-nav\.is-dragging,\s*\.app-dock-nav\.is-dragging \.app-dock-indicator\s*\{[^}]*transition:\s*none/s)
     assert.match(shellStyle, /\.app-dock-indicator\s*\{[^}]*transform:\s*translate3d\(calc\(var\(--a4-dock-index\) \* 100% \+ var\(--a4-dock-drag, 0px\)\),\s*0,\s*0\) scale\(var\(--a4-dock-lift/s)
     assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*--a4-dock-lift:\s*1\.22/s)
-    assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*filter:\s*drop-shadow\(0\.6px/s)
+    assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator,[^}]*filter:\s*drop-shadow\(calc\(/s)
     assert.match(shellStyle, /\.app-dock-item\s*\{[^}]*-webkit-user-drag:\s*none/s)
+    assert.match(dockGlassCode, /--a4-dock-sweep/)
+    assert.match(dockGlassCode, /--a4-dock-dir/)
+    assert.match(dockGlassCode, /--a4-dock-motion/)
+  })
+
+  it("renders drag-reactive glass optics on the dock and settings tabs", () => {
+    const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
+    const settingsStyle = fs.readFileSync(path.join(ROOT, "css", "settings.css"), "utf8")
+    assert.match(dockGlassCode, /setVar\("--a4-dock-sweep"/)
+    assert.match(dockGlassCode, /setVar\("--a4-dock-dir"/)
+    assert.match(dockGlassCode, /setVar\("--a4-dock-motion"/)
+    assert.match(dockGlassCode, /"--a4-dock-drag", "--a4-dock-shift", "--a4-dock-sx", "--a4-dock-sy", "--a4-dock-sweep", "--a4-dock-dir", "--a4-dock-motion"/)
+    assert.match(
+      shellStyle,
+      /\.app-dock-nav::after\s*\{[^}]*calc\(46% \+ var\(--a4-dock-sweep, 0px\)\)[^}]*inset calc\(var\(--a4-dock-dir, 0\) \* 7px\)[^}]*opacity:\s*var\(--a4-dock-motion, 0\)/s
+    )
+    assert.match(shellStyle, /\.app-dock-nav\.is-lifting \.app-dock-indicator::after,\s*\.app-dock-nav\.is-dragging \.app-dock-indicator::after\s*\{\s*opacity:\s*1/s)
+    assert.match(
+      settingsStyle,
+      /#settingsModal \.settings-category-tabs::after\s*\{[^}]*calc\(46% \+ var\(--a4-dock-sweep, 0px\)\)[^}]*opacity:\s*var\(--a4-dock-motion, 0\)/s
+    )
+    assert.match(settingsStyle, /#settingsModal \.settings-category-tabs\.is-lifting \.settings-category-indicator::after,\s*#settingsModal \.settings-category-tabs\.is-dragging \.settings-category-indicator::after\s*\{\s*opacity:\s*1/s)
+    for (const style of [shellStyle, settingsStyle]) {
+      assert.match(style, /@media \(prefers-reduced-motion: reduce\)\s*\{[^]*?(::after|tabs::after),[^]*?display:\s*none/s)
+    }
   })
 
   it("cache-busts every changed shell asset", () => {
@@ -325,15 +350,15 @@ describe("responsive application shell", () => {
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${styleRevision}"`))
-      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=${styleRevision}"`))
+      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=20260825-2"`))
     }
     assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260825-1"/)
-    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260825-7"/)
+    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260825-8"/)
     const scriptRevisions = new Map([
       ["js/core/common.js", "20260802-1"],
       ["js/ui/layers.js", "20260802-1"],
       ["js/ui/router.js", "20260802-1"],
-      ["js/ui/dock-glass.js", "20260825-1"],
+      ["js/ui/dock-glass.js", "20260825-2"],
       ["js/utils.js", "20260802-1"],
       ["js/speech.js", "20260802-1"],
       ["js/updater.js", "20260825-1"],
