@@ -2,12 +2,12 @@
 
 记录 A4 Memory 各版本的用户可感知变更，新版本在前。详细安装步骤见各版本 GitHub Release 页面；历史早期条目由 Release 说明与提交记录整理回填。
 
-## 未发布
+## v2.7.1 - 2026-09-10
 
 ### 工程
 - 设置模块拆分为 `js/settings/` 下的 6 个职责模块（`state-normalize` / `ai` / `account` / `tts` / `dom` / `controller`）与门面 `js/settings.js`：子模块挂载到 `window.A4SettingsInternal`，门面组装并导出 `window.A4Settings`，公开 API、函数签名与设置页行为保持不变
 - 设置相关测试改为按 `index.html` 的加载顺序拼接模块源码后在同一沙箱执行，源码级断言保持有效
-- 同步发布基线与设置模块结构到 `README.md`、`docs/FRONTEND_CONTEXT.md` 与 AI 上下文文件
+- 同步发布基线与设置模块结构到 `README.md` 与 `docs/FRONTEND_CONTEXT.md`
 
 ## v2.7.0 - 2026-08-25
 
