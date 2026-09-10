@@ -1,0 +1,2472 @@
+/**
+ * 设置模块：设置视图控制器。
+ * 组装各设置子模块的导出，并提供 createSettingsModalController。
+ */
+;(function () {
+  const ns = (window.A4SettingsInternal = window.A4SettingsInternal || {})
+  const common = window.A4Common || {}
+
+  const clamp = common.clamp
+  const normalizeThemeMode = common.normalizeThemeMode
+  const normalizeThemePalette = common.normalizeThemePalette || (() => "classic")
+  const normalizeRoundCap = common.normalizeRoundCap
+  const normalizeAccent = common.normalizeAccent
+  const normalizeVoiceMode = common.normalizeVoiceMode
+  const normalizePronunciationLang = common.normalizePronunciationLang
+  const normalizeAiProvider = common.normalizeAiProvider
+  const normalizeOnlineTtsProvider = common.normalizeOnlineTtsProvider
+
+  const {
+    showConfirmDialog = () => Promise.resolve(false),
+    showNoticeDialog = () => Promise.resolve(false),
+    showChoiceDialog = () => Promise.resolve(null),
+    showToast: showAppToast = () => null,
+  } = window.A4Utils || {}
+
+  const {
+    normalizeImportedState,
+    normalizeReviewIntervals,
+  } = ns.stateNormalize || {}
+
+  const {
+    getAiPreset,
+    shouldResetAiApiKey,
+    computeAiConfigOnProviderChange,
+    stripJsonFromText,
+    buildChatCompletionsUrl,
+    buildModelsUrl,
+    parseModelIds,
+    buildAiRequest,
+    normalizeAiWordbook,
+  } = ns.ai || {}
+
+  const {
+    isValidEmail,
+    isValidVerificationCode,
+    isValidUsername,
+    isValidPassword,
+    formatAccountError,
+    isAccountActionSuccess,
+    getAccountRetrySeconds,
+    saveAccountCooldown,
+    loadAccountCooldown,
+    ACCOUNT_REGISTER_CODE_COOLDOWN_KEY,
+    ACCOUNT_RESET_CODE_COOLDOWN_KEY,
+    ACCOUNT_SYNC_META_KEY,
+  } = ns.account || {}
+
+  const {
+    buildTestSpeechOptions,
+    formatTestSpeakResult,
+    buildOfflineVoiceDownloadArgs,
+    createOfflineVoiceTitle,
+  } = ns.tts || {}
+
+  const {
+    buildSettingsModalDom,
+    buildAiPreviewModalDom,
+    installSettingsCategoryNavigation,
+    configureSettingsPresentation,
+    setSwitchChecked,
+    fillNumericSelect,
+    rangeInclusive,
+    listenForAccountStatsBreakpoint,
+    shouldExpandAccountStatsByDefault,
+    DAILY_GOAL_WORD_CHOICES,
+    setModalVisible,
+  } = ns.dom || {}
+
+  function createSettingsModalController({
+    getState,
+    setState,
+    persist,
+    applyTheme,
+    onAfterChange,
+    getWordbookLanguage,
+    presentation = "modal",
+  }) {
+    window.A4Speech?.installSpeech?.({
+      onVoicesChanged: () => {
+        renderVoiceSelect()
+        updateVoiceUi()
+      },
+    })
+
+    let modal = document.getElementById("settingsModal")
+    if (!modal) {
+      modal = buildSettingsModalDom()
+      document.body.appendChild(modal)
+    }
+
+    const pagePresentation = configureSettingsPresentation(modal, presentation)
+
+    const modalBody = modal.querySelector(".modal-body")
+    const settingsNavigation = installSettingsCategoryNavigation({
+      tabs: modal.querySelectorAll(".settings-category-tab"),
+      panels: modal.querySelectorAll(".settings-category-panel"),
+      scrollContainer: modalBody,
+      tablist: modal.querySelector(".settings-category-tabs"),
+      indicator: modal.querySelector(".settings-category-indicator"),
+    })
+    window.addEventListener?.("resize", settingsNavigation.refreshIndicator)
+
+    const dom = {
+      modal,
+      backdrop: modal.querySelector("#settingsBackdrop"),
+      closeBtn: modal.querySelector("#closeSettingsBtn"),
+      themeModeSelect: modal.querySelector("#themeModeSelect"),
+      themePaletteButtons: Array.from(modal.querySelectorAll("[data-theme-palette]")),
+      dailyGoalRoundsInput: modal.querySelector("#dailyGoalRoundsInput"),
+      dailyGoalWordsInput: modal.querySelector("#dailyGoalWordsInput"),
+      roundCapInput: modal.querySelector("#roundCapInput"),
+      reviewSystemToggleBtn: modal.querySelector("#reviewSystemToggleBtn"),
+      reviewIntervalsPanel: modal.querySelector("#reviewIntervalsPanel"),
+      reviewUnknownDaysInput: modal.querySelector("#reviewUnknownDaysInput"),
+      reviewLearningDaysInput: modal.querySelector("#reviewLearningDaysInput"),
+      reviewMasteredDaysInput: modal.querySelector("#reviewMasteredDaysInput"),
+      continuousStudyModeToggleBtn: modal.querySelector("#continuousStudyModeToggleBtn"),
+      reviewCardFlipToggleBtn: modal.querySelector("#reviewCardFlipToggleBtn"),
+      pronounceToggleBtn: modal.querySelector("#pronounceToggleBtn"),
+      ttsModeSelect: modal.querySelector("#ttsModeSelect"),
+      accentSelect: modal.querySelector("#accentSelect"),
+      pronunciationLangSelect: modal.querySelector("#pronunciationLangSelect"),
+      voiceModeSelect: modal.querySelector("#voiceModeSelect"),
+      voiceManualRow: modal.querySelector("#voiceManualRow"),
+      voiceSelect: modal.querySelector("#voiceSelect"),
+      currentVoiceText: modal.querySelector("#currentVoiceText"),
+      voiceHint: modal.querySelector("#voiceHint"),
+      testVoiceBtn: modal.querySelector("#testVoiceBtn"),
+      onlineTtsToggleBtn: modal.querySelector("#onlineTtsToggleBtn"),
+      onlineTtsProviderSelect: modal.querySelector("#onlineTtsProviderSelect"),
+      onlineTtsProviderRow: modal.querySelector("#onlineTtsProviderRow"),
+      onlineTtsPrivacyHint: modal.querySelector("#onlineTtsPrivacyHint"),
+      offlineTtsSection: modal.querySelector("#offlineTtsSection"),
+      offlineTtsCard: modal.querySelector("#offlineTtsCard"),
+      offlineTtsList: modal.querySelector("#offlineTtsList"),
+      offlineTtsRefreshBtn: modal.querySelector("#offlineTtsRefreshBtn"),
+      offlineTtsHint: modal.querySelector("#offlineTtsHint"),
+      offlineTtsStatus: modal.querySelector("#offlineTtsStatus"),
+      offlineTtsStatusMessage: modal.querySelector("#offlineTtsStatusMessage"),
+      offlineTtsStatusDetails: modal.querySelector("#offlineTtsStatusDetails"),
+      offlineTtsStatusDetail: modal.querySelector("#offlineTtsStatusDetail"),
+      lookupOnlineToggleBtn: modal.querySelector("#lookupOnlineToggleBtn"),
+      lookupOnlineSourceSelect: modal.querySelector("#lookupOnlineSourceSelect"),
+      lookupSpanishToggleBtn: modal.querySelector("#lookupSpanishToggleBtn"),
+      lookupCacheToggleBtn: modal.querySelector("#lookupCacheToggleBtn"),
+      lookupCacheDaysInput: modal.querySelector("#lookupCacheDaysInput"),
+      exportBackupBtn: modal.querySelector("#exportBackupBtn"),
+      importBackupBtn: modal.querySelector("#importBackupBtn"),
+      importBackupFile: modal.querySelector("#importBackupFile"),
+      accountTabRegisterBtn: modal.querySelector("#accountTabRegisterBtn"),
+      accountTabLoginBtn: modal.querySelector("#accountTabLoginBtn"),
+      accountTabResetBtn: modal.querySelector("#accountTabResetBtn"),
+      accountRegisterSection: modal.querySelector("#accountRegisterSection"),
+      accountLoginSection: modal.querySelector("#accountLoginSection"),
+      accountResetSection: modal.querySelector("#accountResetSection"),
+      cloudEmailInput: modal.querySelector("#cloudEmailInput"),
+      cloudEmailHint: modal.querySelector("#cloudEmailHint"),
+      cloudRegisterCodeInput: modal.querySelector("#cloudRegisterCodeInput"),
+      cloudRegisterCodeHint: modal.querySelector("#cloudRegisterCodeHint"),
+      cloudSendCodeBtn: modal.querySelector("#cloudSendCodeBtn"),
+      cloudUsernameInput: modal.querySelector("#cloudUsernameInput"),
+      cloudUsernameHint: modal.querySelector("#cloudUsernameHint"),
+      cloudPasswordInput: modal.querySelector("#cloudPasswordInput"),
+      cloudPasswordHint: modal.querySelector("#cloudPasswordHint"),
+      cloudLoginEmailInput: modal.querySelector("#cloudLoginEmailInput"),
+      cloudLoginEmailHint: modal.querySelector("#cloudLoginEmailHint"),
+      cloudLoginPasswordInput: modal.querySelector("#cloudLoginPasswordInput"),
+      cloudLoginPasswordHint: modal.querySelector("#cloudLoginPasswordHint"),
+      cloudRegisterBtn: modal.querySelector("#cloudRegisterBtn"),
+      cloudLoginBtn: modal.querySelector("#cloudLoginBtn"),
+      cloudGoogleLoginBtn: modal.querySelector("#cloudGoogleLoginBtn"),
+      cloudResetEmailInput: modal.querySelector("#cloudResetEmailInput"),
+      cloudResetEmailHint: modal.querySelector("#cloudResetEmailHint"),
+      cloudResetCodeInput: modal.querySelector("#cloudResetCodeInput"),
+      cloudResetCodeHint: modal.querySelector("#cloudResetCodeHint"),
+      cloudResetPasswordInput: modal.querySelector("#cloudResetPasswordInput"),
+      cloudResetPasswordHint: modal.querySelector("#cloudResetPasswordHint"),
+      cloudSendResetCodeBtn: modal.querySelector("#cloudSendResetCodeBtn"),
+      cloudResetPasswordBtn: modal.querySelector("#cloudResetPasswordBtn"),
+      cloudLogoutBtn: modal.querySelector("#cloudLogoutBtn"),
+      cloudUploadBtn: modal.querySelector("#cloudUploadBtn"),
+      cloudUploadLabel: modal.querySelector("#cloudUploadLabel"),
+      cloudDownloadBtn: modal.querySelector("#cloudDownloadBtn"),
+      cloudDownloadLabel: modal.querySelector("#cloudDownloadLabel"),
+      accountLoggedOut: modal.querySelector("#accountLoggedOut"),
+      accountLoggedIn: modal.querySelector("#accountLoggedIn"),
+      accountStatsToggleBtn: modal.querySelector("#accountStatsToggleBtn"),
+      accountStatsDetails: modal.querySelector("#accountStatsDetails"),
+      cloudAccountTitle: modal.querySelector("#cloudAccountTitle"),
+      cloudAccountSubtitle: modal.querySelector("#cloudAccountSubtitle"),
+      cloudBackupStateText: modal.querySelector("#cloudBackupStateText"),
+      cloudLastSyncText: modal.querySelector("#cloudLastSyncText"),
+      cloudRoundsText: modal.querySelector("#cloudRoundsText"),
+      cloudWordsText: modal.querySelector("#cloudWordsText"),
+      cloudTodayWordsText: modal.querySelector("#cloudTodayWordsText"),
+      cloudStreakText: modal.querySelector("#cloudStreakText"),
+      cloudTodayRoundsText: modal.querySelector("#cloudTodayRoundsText"),
+      cloudSessionText: modal.querySelector("#cloudSessionText"),
+      cloudCurrentRoundText: modal.querySelector("#cloudCurrentRoundText"),
+      accountStatus: modal.querySelector("#accountStatus"),
+      cloudSyncStatus: modal.querySelector("#cloudSyncStatus"),
+      aiCustomConfigPanel: modal.querySelector("#aiCustomConfigPanel"),
+      aiProviderSelect: modal.querySelector("#aiProviderSelect"),
+      aiBaseUrlInput: modal.querySelector("#aiBaseUrlInput"),
+      aiApiKeyInput: modal.querySelector("#aiApiKeyInput"),
+      aiModelInput: modal.querySelector("#aiModelInput"),
+      aiModelPickerBtn: modal.querySelector("#aiModelPickerBtn"),
+      aiTypeSelect: modal.querySelector("#aiTypeSelect"),
+      aiCustomTopicInput: modal.querySelector("#aiCustomTopicInput"),
+      aiCountInput: modal.querySelector("#aiCountInput"),
+      aiGenerateBtn: modal.querySelector("#aiGenerateBtn"),
+      aiStatus: modal.querySelector("#aiStatus"),
+      checkUpdateBtn: modal.querySelector("#checkUpdateBtn"),
+      updateStatus: modal.querySelector("#updateStatus"),
+      versionPanel: modal.querySelector("#versionPanel"),
+    }
+
+    // Hide update check on web — only Tauri app needs update prompts
+    const isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
+    if (!isTauri && dom.checkUpdateBtn) dom.checkUpdateBtn.parentElement.classList.add("hidden")
+    window.A4Utils?.installAndroidSelectPicker?.(
+      modal,
+      [
+        "#themeModeSelect",
+        "#dailyGoalRoundsInput",
+        "#dailyGoalWordsInput",
+        "#roundCapInput",
+        "#ttsModeSelect",
+        "#onlineTtsProviderSelect",
+        "#accentSelect",
+        "#pronunciationLangSelect",
+        "#voiceModeSelect",
+        "#voiceSelect",
+        "#aiProviderSelect",
+        "#aiTypeSelect",
+        "#lookupOnlineSourceSelect",
+      ].join(", ")
+    )
+
+    let aiPreviewModal = document.getElementById("aiPreviewModal")
+    if (!aiPreviewModal) {
+      aiPreviewModal = buildAiPreviewModalDom()
+      document.body.appendChild(aiPreviewModal)
+    }
+
+    const aiDom = {
+      modal: aiPreviewModal,
+      backdrop: aiPreviewModal.querySelector("#aiPreviewBackdrop"),
+      closeBtn: aiPreviewModal.querySelector("#closeAiPreviewBtn"),
+      meta: aiPreviewModal.querySelector("#aiPreviewMeta"),
+      list: aiPreviewModal.querySelector("#aiPreviewList"),
+      confirmBtn: aiPreviewModal.querySelector("#aiConfirmBtn"),
+    }
+
+    let pendingAiBook = null
+    let registerCodeCooldownUntil = loadAccountCooldown(ACCOUNT_REGISTER_CODE_COOLDOWN_KEY)
+    let resetCodeCooldownUntil = loadAccountCooldown(ACCOUNT_RESET_CODE_COOLDOWN_KEY)
+    let accountCooldownTimer = 0
+    let accountMode = "login"
+    const accountFieldTouched = {
+      registerEmail: false,
+      registerCode: false,
+      username: false,
+      password: false,
+      loginEmail: false,
+      loginPassword: false,
+      resetEmail: false,
+      resetCode: false,
+      resetPassword: false,
+    }
+    const accountBusy = {
+      sendRegisterCode: false,
+      register: false,
+      login: false,
+      sendResetCode: false,
+      resetPassword: false,
+      uploadState: false,
+      downloadState: false,
+    }
+    const accountStatsWideQuery =
+      typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 431px)") : null
+
+    function setAccountStatsExpanded(expanded) {
+      const isExpanded = !!expanded
+      if (dom.accountStatsToggleBtn) {
+        dom.accountStatsToggleBtn.setAttribute("aria-expanded", isExpanded ? "true" : "false")
+        dom.accountStatsToggleBtn.classList.toggle("is-expanded", isExpanded)
+        dom.accountStatsToggleBtn.textContent = isExpanded ? "收起学习统计" : "更多学习统计"
+      }
+      dom.accountStatsDetails?.classList.toggle("hidden", !isExpanded)
+    }
+
+    listenForAccountStatsBreakpoint(accountStatsWideQuery, setAccountStatsExpanded)
+
+    function getStateSafe() {
+      return typeof getState === "function" ? getState() : {}
+    }
+
+    function setStateSafe(patch) {
+      if (typeof setState === "function") setState(patch)
+    }
+
+    function setFieldHint(input, hint, text) {
+      if (!input || !hint) return
+      const value = String(text || "").trim()
+      input.classList.toggle("is-invalid", !!value)
+      hint.textContent = value
+      hint.classList.toggle("hidden", !value)
+    }
+
+    function setUpdateStatus(text) {
+      if (!dom.updateStatus) return
+      dom.updateStatus.textContent = text
+      dom.updateStatus.classList.toggle("hidden", !text)
+    }
+
+    function getRegisterEmailError(options = {}) {
+      const value = dom.cloudEmailInput?.value?.trim() || ""
+      if (!value) return options.required ? "请输入注册邮箱" : ""
+      return isValidEmail(value) ? "" : "请输入有效邮箱"
+    }
+
+    function getRegisterCodeError(options = {}) {
+      const value = dom.cloudRegisterCodeInput?.value?.trim() || ""
+      if (!value) return options.required ? "请输入注册验证码" : ""
+      return isValidVerificationCode(value) ? "" : "验证码必须是 6 位数字"
+    }
+
+    function getUsernameError(options = {}) {
+      const value = dom.cloudUsernameInput?.value?.trim() || ""
+      if (!value) return options.required ? "请输入用户名" : ""
+      return isValidUsername(value) ? "" : "用户名长度需为 3-32 个字符"
+    }
+
+    function getPasswordError(options = {}) {
+      const value = dom.cloudPasswordInput?.value || ""
+      if (!value) return options.required ? "请输入密码" : ""
+      return isValidPassword(value) ? "" : "密码至少需要 8 位"
+    }
+
+    function getLoginEmailError(options = {}) {
+      const value = dom.cloudLoginEmailInput?.value?.trim() || ""
+      if (!value) return options.required ? "请输入登录邮箱" : ""
+      return isValidEmail(value) ? "" : "请输入有效邮箱"
+    }
+
+    function getLoginPasswordError(options = {}) {
+      const value = dom.cloudLoginPasswordInput?.value || ""
+      if (!value) return options.required ? "请输入密码" : ""
+      return isValidPassword(value) ? "" : "密码至少需要 8 位"
+    }
+
+    function getResetEmailError(options = {}) {
+      const value = dom.cloudResetEmailInput?.value?.trim() || ""
+      if (!value) return options.required ? "请输入重置邮箱" : ""
+      return isValidEmail(value) ? "" : "请输入有效邮箱"
+    }
+
+    function getResetCodeError(options = {}) {
+      const value = dom.cloudResetCodeInput?.value?.trim() || ""
+      if (!value) return options.required ? "请输入重置验证码" : ""
+      return isValidVerificationCode(value) ? "" : "验证码必须是 6 位数字"
+    }
+
+    function getResetPasswordError(options = {}) {
+      const value = dom.cloudResetPasswordInput?.value || ""
+      if (!value) return options.required ? "请输入新密码" : ""
+      return isValidPassword(value) ? "" : "新密码至少需要 8 位"
+    }
+
+    function updateRegisterEmailHint(options = {}) {
+      const show = options.force || accountFieldTouched.registerEmail
+      setFieldHint(dom.cloudEmailInput, dom.cloudEmailHint, show ? getRegisterEmailError({ required: !!options.required }) : "")
+    }
+
+    function updateRegisterCodeHint(options = {}) {
+      const show = options.force || accountFieldTouched.registerCode
+      setFieldHint(
+        dom.cloudRegisterCodeInput,
+        dom.cloudRegisterCodeHint,
+        show ? getRegisterCodeError({ required: !!options.required }) : ""
+      )
+    }
+
+    function updateUsernameHint(options = {}) {
+      const show = options.force || accountFieldTouched.username
+      setFieldHint(dom.cloudUsernameInput, dom.cloudUsernameHint, show ? getUsernameError({ required: !!options.required }) : "")
+    }
+
+    function updatePasswordHint(options = {}) {
+      const show = options.force || accountFieldTouched.password
+      setFieldHint(dom.cloudPasswordInput, dom.cloudPasswordHint, show ? getPasswordError({ required: !!options.required }) : "")
+    }
+
+    function updateLoginEmailHint(options = {}) {
+      const show = options.force || accountFieldTouched.loginEmail
+      setFieldHint(
+        dom.cloudLoginEmailInput,
+        dom.cloudLoginEmailHint,
+        show ? getLoginEmailError({ required: !!options.required }) : ""
+      )
+    }
+
+    function updateLoginPasswordHint(options = {}) {
+      const show = options.force || accountFieldTouched.loginPassword
+      setFieldHint(
+        dom.cloudLoginPasswordInput,
+        dom.cloudLoginPasswordHint,
+        show ? getLoginPasswordError({ required: !!options.required }) : ""
+      )
+    }
+
+    function updateResetEmailHint(options = {}) {
+      const show = options.force || accountFieldTouched.resetEmail
+      setFieldHint(dom.cloudResetEmailInput, dom.cloudResetEmailHint, show ? getResetEmailError({ required: !!options.required }) : "")
+    }
+
+    function updateResetCodeHint(options = {}) {
+      const show = options.force || accountFieldTouched.resetCode
+      setFieldHint(dom.cloudResetCodeInput, dom.cloudResetCodeHint, show ? getResetCodeError({ required: !!options.required }) : "")
+    }
+
+    function updateResetPasswordHint(options = {}) {
+      const show = options.force || accountFieldTouched.resetPassword
+      setFieldHint(
+        dom.cloudResetPasswordInput,
+        dom.cloudResetPasswordHint,
+        show ? getResetPasswordError({ required: !!options.required }) : ""
+      )
+    }
+
+    function validateRegisterFields(options = {}) {
+      const required = options.required !== false
+      accountFieldTouched.registerEmail = true
+      accountFieldTouched.registerCode = true
+      accountFieldTouched.username = true
+      accountFieldTouched.password = true
+      const emailError = getRegisterEmailError({ required })
+      const codeError = getRegisterCodeError({ required })
+      const usernameError = getUsernameError({ required })
+      const passwordError = getPasswordError({ required })
+      updateRegisterEmailHint({ force: true, required })
+      updateRegisterCodeHint({ force: true, required })
+      updateUsernameHint({ force: true, required })
+      updatePasswordHint({ force: true, required })
+      return emailError || codeError || usernameError || passwordError || ""
+    }
+
+    function validateLoginFields() {
+      accountFieldTouched.loginEmail = true
+      accountFieldTouched.loginPassword = true
+      const emailError = getLoginEmailError({ required: true })
+      const passwordError = getLoginPasswordError({ required: true })
+      updateLoginEmailHint({ force: true, required: true })
+      updateLoginPasswordHint({ force: true, required: true })
+      return emailError || passwordError || ""
+    }
+
+    function validateResetFields(options = {}) {
+      const required = options.required !== false
+      accountFieldTouched.resetEmail = true
+      accountFieldTouched.resetCode = true
+      accountFieldTouched.resetPassword = true
+      const emailError = getResetEmailError({ required })
+      const codeError = getResetCodeError({ required })
+      const passwordError = getResetPasswordError({ required })
+      updateResetEmailHint({ force: true, required })
+      updateResetCodeHint({ force: true, required })
+      updateResetPasswordHint({ force: true, required })
+      return emailError || codeError || passwordError || ""
+    }
+
+    function persistSafe() {
+      if (typeof persist === "function") persist()
+    }
+
+    function afterChange(key) {
+      if (typeof onAfterChange === "function") onAfterChange({ key })
+    }
+
+    function getCooldownSecondsLeft(untilMs) {
+      const diff = Number(untilMs) - Date.now()
+      if (!Number.isFinite(diff) || diff <= 0) return 0
+      return Math.ceil(diff / 1000)
+    }
+
+    function stopAccountCooldownTicker() {
+      if (!accountCooldownTimer) return
+      window.clearInterval(accountCooldownTimer)
+      accountCooldownTimer = 0
+      if (getCooldownSecondsLeft(registerCodeCooldownUntil) <= 0) saveAccountCooldown(ACCOUNT_REGISTER_CODE_COOLDOWN_KEY, 0)
+      if (getCooldownSecondsLeft(resetCodeCooldownUntil) <= 0) saveAccountCooldown(ACCOUNT_RESET_CODE_COOLDOWN_KEY, 0)
+    }
+
+    function renderAccountActionButtons() {
+      const registerCooldown = getCooldownSecondsLeft(registerCodeCooldownUntil)
+      const resetCooldown = getCooldownSecondsLeft(resetCodeCooldownUntil)
+
+      if (dom.cloudSendCodeBtn) {
+        dom.cloudSendCodeBtn.disabled = accountBusy.sendRegisterCode || registerCooldown > 0
+        dom.cloudSendCodeBtn.textContent = accountBusy.sendRegisterCode
+          ? "发送中…"
+          : registerCooldown > 0
+            ? `${registerCooldown}s 后可重发`
+            : "发送注册验证码"
+      }
+
+      if (dom.cloudRegisterBtn) {
+        dom.cloudRegisterBtn.disabled = accountBusy.register
+        dom.cloudRegisterBtn.textContent = accountBusy.register ? "注册中…" : "注册并登录"
+      }
+
+      if (dom.cloudLoginBtn) {
+        dom.cloudLoginBtn.disabled = accountBusy.login
+        dom.cloudLoginBtn.textContent = accountBusy.login ? "登录中…" : "登录"
+      }
+
+      if (dom.cloudSendResetCodeBtn) {
+        dom.cloudSendResetCodeBtn.disabled = accountBusy.sendResetCode || resetCooldown > 0
+        dom.cloudSendResetCodeBtn.textContent = accountBusy.sendResetCode
+          ? "发送中…"
+          : resetCooldown > 0
+            ? `${resetCooldown}s 后可重发`
+            : "发送重置验证码"
+      }
+
+      if (dom.cloudResetPasswordBtn) {
+        dom.cloudResetPasswordBtn.disabled = accountBusy.resetPassword
+        dom.cloudResetPasswordBtn.textContent = accountBusy.resetPassword ? "重置中…" : "重置密码"
+      }
+
+      const syncBusy = accountBusy.uploadState || accountBusy.downloadState
+      if (dom.cloudUploadBtn) {
+        dom.cloudUploadBtn.disabled = syncBusy
+        if (dom.cloudUploadLabel) dom.cloudUploadLabel.textContent = accountBusy.uploadState ? "上传中…" : "上传云端"
+      }
+      if (dom.cloudDownloadBtn) {
+        dom.cloudDownloadBtn.disabled = syncBusy
+        if (dom.cloudDownloadLabel) dom.cloudDownloadLabel.textContent = accountBusy.downloadState ? "恢复中…" : "恢复本机"
+      }
+    }
+
+    function setAccountMode(mode) {
+      accountMode = mode === "login" || mode === "reset" ? mode : "register"
+      if (dom.accountRegisterSection) dom.accountRegisterSection.classList.toggle("hidden", accountMode !== "register")
+      if (dom.accountLoginSection) dom.accountLoginSection.classList.toggle("hidden", accountMode !== "login")
+      if (dom.accountResetSection) dom.accountResetSection.classList.toggle("hidden", accountMode !== "reset")
+      if (dom.accountTabRegisterBtn) {
+        dom.accountTabRegisterBtn.classList.toggle("active", accountMode === "register")
+        dom.accountTabRegisterBtn.setAttribute("aria-selected", accountMode === "register" ? "true" : "false")
+      }
+      if (dom.accountTabLoginBtn) {
+        dom.accountTabLoginBtn.classList.toggle("active", accountMode === "login")
+        dom.accountTabLoginBtn.setAttribute("aria-selected", accountMode === "login" ? "true" : "false")
+      }
+      if (dom.accountTabResetBtn) {
+        dom.accountTabResetBtn.classList.toggle("active", accountMode === "reset")
+        dom.accountTabResetBtn.setAttribute("aria-selected", accountMode === "reset" ? "true" : "false")
+      }
+    }
+
+    function ensureAccountCooldownTicker() {
+      if (accountCooldownTimer) return
+      accountCooldownTimer = window.setInterval(() => {
+        renderAccountActionButtons()
+        const registerCooldown = getCooldownSecondsLeft(registerCodeCooldownUntil)
+        const resetCooldown = getCooldownSecondsLeft(resetCodeCooldownUntil)
+        if (registerCooldown <= 0 && resetCooldown <= 0) stopAccountCooldownTicker()
+      }, 1000)
+    }
+
+    function startRegisterCodeCooldown(seconds) {
+      const n = Math.max(1, Math.min(600, Math.round(Number(seconds) || 60)))
+      registerCodeCooldownUntil = Date.now() + n * 1000
+      saveAccountCooldown(ACCOUNT_REGISTER_CODE_COOLDOWN_KEY, registerCodeCooldownUntil)
+      renderAccountActionButtons()
+      ensureAccountCooldownTicker()
+    }
+
+    function startResetCodeCooldown(seconds) {
+      const n = Math.max(1, Math.min(600, Math.round(Number(seconds) || 60)))
+      resetCodeCooldownUntil = Date.now() + n * 1000
+      saveAccountCooldown(ACCOUNT_RESET_CODE_COOLDOWN_KEY, resetCodeCooldownUntil)
+      renderAccountActionButtons()
+      ensureAccountCooldownTicker()
+    }
+
+    function tryStartCooldownFromError(kind, errorText) {
+      const text = String(errorText || "")
+      const m = text.match(/(\d+)\s*seconds?/i)
+      if (!m) return
+      const seconds = Number(m[1])
+      if (kind === "register") startRegisterCodeCooldown(seconds)
+      if (kind === "reset") startResetCodeCooldown(seconds)
+    }
+
+    function applyAccountRateLimit(kind, result, fallbackSeconds = 60) {
+      const seconds = getAccountRetrySeconds(result, fallbackSeconds)
+      if (seconds <= 0) return
+      if (kind === "register") startRegisterCodeCooldown(seconds)
+      if (kind === "reset") startResetCodeCooldown(seconds)
+    }
+
+    function getWordbookLang() {
+      if (typeof getWordbookLanguage === "function") return getWordbookLanguage()
+      const state = getStateSafe()
+      return String(state?.wordbookLanguage || "")
+    }
+
+    function getResolvedVoice() {
+      const state = getStateSafe()
+      return window.A4Speech?.resolveVoice?.({
+        pronunciationEnabled: !!state?.pronunciationEnabled,
+        pronunciationLang: state?.pronunciationLang,
+        wordbookLanguage: getWordbookLang(),
+        accent: state?.pronunciationAccent,
+        voiceMode: state?.voiceMode,
+        voiceURI: state?.voiceURI,
+      }) || { ok: false, reason: "no_support", voice: null }
+    }
+
+    function renderVoiceSelect() {
+      const select = dom.voiceSelect
+      if (!select) return
+      const voices = window.A4Speech?.getVoicesSorted?.() || []
+      const state = getStateSafe()
+      const selected = String(state?.voiceURI || "")
+      select.innerHTML = ""
+      for (const v of voices) {
+        const opt = document.createElement("option")
+        opt.value = String(v?.voiceURI || "")
+        opt.textContent = window.A4Speech?.getVoiceLabel?.(v) || "Voice"
+        select.appendChild(opt)
+      }
+      if (selected && voices.some((v) => String(v?.voiceURI || "") === selected)) select.value = selected
+      window.A4Utils?.refreshAndroidSelectPickers?.(dom.modal)
+    }
+
+    function renderVoiceModeUi() {
+      const state = getStateSafe()
+      let mode = normalizeVoiceMode(state?.voiceMode)
+      const voices = window.A4Speech?.getVoicesSorted?.() || []
+      if (
+        mode === "manual" &&
+        state?.voiceURI &&
+        !voices.some((v) => String(v?.voiceURI || "") === String(state.voiceURI || ""))
+      ) {
+        mode = "auto"
+        setStateSafe({ voiceMode: "auto", voiceURI: "" })
+        persistSafe()
+      }
+      if (dom.voiceModeSelect) dom.voiceModeSelect.value = mode
+      if (dom.voiceManualRow) {
+        if (mode === "manual") dom.voiceManualRow.classList.remove("hidden")
+        else dom.voiceManualRow.classList.add("hidden")
+      }
+    }
+
+    function getRowOf(el) {
+      return el?.closest?.(".form-row") || el?.parentElement?.parentElement || null
+    }
+
+    function updateVoiceUi() {
+      const state = getStateSafe()
+      const normalizeTtsMode = window.A4Common?.normalizeTtsMode
+      const ttsMode = normalizeTtsMode ? normalizeTtsMode(state?.ttsMode) : "online"
+      if (ttsMode === "online") {
+        if (dom.currentVoiceText) dom.currentVoiceText.textContent = state.onlineTtsProvider === "google" ? "在线 TTS (Google)" : "在线 TTS (Microsoft Edge)"
+        if (dom.voiceHint) dom.voiceHint.textContent = "当前使用在线发音，无需选择本地系统语音。"
+
+        getRowOf(dom.accentSelect)?.classList.add("hidden")
+        getRowOf(dom.pronunciationLangSelect)?.classList.add("hidden")
+        getRowOf(dom.voiceModeSelect)?.classList.add("hidden")
+        if (dom.voiceManualRow) dom.voiceManualRow.classList.add("hidden")
+
+      } else if (ttsMode === "offline") {
+        if (dom.currentVoiceText) dom.currentVoiceText.textContent = "离线 TTS（设备本地）"
+        if (dom.voiceHint) dom.voiceHint.textContent = "缺失模型或合成失败时仅回退系统语音，不会联网。"
+        getRowOf(dom.accentSelect)?.classList.add("hidden")
+        getRowOf(dom.pronunciationLangSelect)?.classList.add("hidden")
+        getRowOf(dom.voiceModeSelect)?.classList.add("hidden")
+        if (dom.voiceManualRow) dom.voiceManualRow.classList.add("hidden")
+      } else {
+        const resolved = getResolvedVoice()
+        if (dom.currentVoiceText) dom.currentVoiceText.textContent = window.A4Speech?.getCurrentVoiceLabel?.(resolved) || "—"
+        if (dom.voiceHint) dom.voiceHint.textContent = window.A4Speech?.getVoiceStatusText?.(resolved, state) || "语音状态未知。"
+
+        getRowOf(dom.accentSelect)?.classList.remove("hidden")
+        getRowOf(dom.pronunciationLangSelect)?.classList.remove("hidden")
+        getRowOf(dom.voiceModeSelect)?.classList.remove("hidden")
+        renderVoiceModeUi()
+      }
+    }
+
+    const offlineUiState = { manifest: null, manifestErr: "", loading: false, downloading: new Set() }
+
+    function setOfflineTtsStatus(message, { detail = "", kind = "info" } = {}) {
+      if (!dom.offlineTtsStatus || !dom.offlineTtsStatusMessage) return
+      const text = String(message || "").trim()
+      const technicalDetail = String(detail || "").trim()
+      dom.offlineTtsStatusMessage.textContent = text
+      dom.offlineTtsStatus.classList.toggle("hidden", !text)
+      dom.offlineTtsStatus.classList.toggle("is-error", !!text && kind === "error")
+      dom.offlineTtsStatus.classList.toggle("is-success", !!text && kind === "success")
+      if (dom.offlineTtsStatusDetail) dom.offlineTtsStatusDetail.textContent = technicalDetail
+      if (dom.offlineTtsStatusDetails) {
+        dom.offlineTtsStatusDetails.classList.toggle("hidden", !technicalDetail)
+        if (!technicalDetail) dom.offlineTtsStatusDetails.open = false
+      }
+    }
+
+    function setOfflineTtsError(action, error) {
+      setOfflineTtsStatus(`${action}失败，请重试。`, {
+        detail: String(error || "未知错误"),
+        kind: "error",
+      })
+    }
+
+    function formatBytes(n) {
+      const x = Number(n) || 0
+      if (x >= 1024 * 1024) return `${(x / 1024 / 1024).toFixed(1)} MB`
+      if (x >= 1024) return `${(x / 1024).toFixed(0)} KB`
+      return `${x} B`
+    }
+
+    async function refreshOfflineManifest({ force = false } = {}) {
+      if (!force && offlineUiState.manifest) return offlineUiState.manifest
+      const invoke = window.A4Utils?.getTauriInvoke?.()
+      if (typeof invoke !== "function") {
+        offlineUiState.manifestErr = "仅桌面端和 Android 应用可用"
+        offlineUiState.manifest = { voices: [] }
+        return offlineUiState.manifest
+      }
+      offlineUiState.loading = true
+      try {
+        const m = await invoke("a4_offline_voices_manifest_fetch")
+        offlineUiState.manifest = m && Array.isArray(m.voices) ? m : { voices: [] }
+        offlineUiState.manifestErr = ""
+      } catch (e) {
+        offlineUiState.manifest = { voices: [] }
+        offlineUiState.manifestErr = String(e || "manifest 获取失败")
+      } finally {
+        offlineUiState.loading = false
+      }
+      return offlineUiState.manifest
+    }
+
+    async function renderOfflineVoiceList() {
+      const list = dom.offlineTtsList
+      if (!list) return
+      const invoke = window.A4Utils?.getTauriInvoke?.()
+      if (typeof invoke !== "function") {
+        list.innerHTML = '<div class="form-help">离线 TTS 仅在桌面端和 Android 应用可用。</div>'
+        return
+      }
+      list.innerHTML = '<div class="form-help">加载中…</div>'
+      const [manifest, installed] = await Promise.all([
+        refreshOfflineManifest(),
+        (async () => {
+          try { return await invoke("a4_offline_voices_installed") } catch { return [] }
+        })(),
+      ])
+      const installedMap = new Map((installed || []).map((v) => [String(v?.id || ""), v]))
+      const voices = manifest?.voices || []
+      list.innerHTML = ""
+      const currentMode = window.A4Common?.normalizeTtsMode?.(getStateSafe()?.ttsMode) || "online"
+      if (currentMode === "offline" && installedMap.size === 0) {
+        const warning = document.createElement("div")
+        warning.className = "form-help offline-voice-warning"
+        warning.textContent = "离线模式尚未安装语音包，请先下载至少一个对应语言模型。"
+        list.appendChild(warning)
+      }
+      if (offlineUiState.manifestErr) {
+        setOfflineTtsError("加载语音列表", offlineUiState.manifestErr)
+      }
+      if (!voices.length && !offlineUiState.manifestErr) {
+        list.innerHTML = '<div class="form-help">暂无可用语音。</div>'
+        return
+      }
+      const state = getStateSafe()
+      const offlineMap = state?.offlineVoiceByLang && typeof state.offlineVoiceByLang === "object" ? state.offlineVoiceByLang : {}
+      for (const v of voices) {
+        const id = String(v?.id || "")
+        const isInstalled = installedMap.has(id)
+        const isDownloading = offlineUiState.downloading.has(id)
+        const langBase = String(v?.lang || "").toLowerCase().split("-")[0]
+        const isDefault = String(offlineMap[langBase] || "") === id
+        const row = document.createElement("div")
+        row.className = "offline-voice-row"
+        const head = document.createElement("div")
+        head.className = "offline-voice-head"
+        const title = createOfflineVoiceTitle({ voice: v, id, sizeText: formatBytes(v?.size) })
+        head.appendChild(title)
+        const actions = document.createElement("div")
+        actions.className = "offline-voice-actions"
+        let progLabel = null
+        if (isInstalled) {
+          const setDefaultBtn = document.createElement("button")
+          setDefaultBtn.type = "button"
+          setDefaultBtn.className = "ghost"
+          setDefaultBtn.textContent = isDefault ? `${langBase} 默认 ✓` : `设为 ${langBase} 默认`
+          setDefaultBtn.disabled = isDefault
+          setDefaultBtn.addEventListener("click", () => {
+            const cur = getStateSafe()
+            const next = { ...(cur?.offlineVoiceByLang || {}) }
+            next[langBase] = id
+            setStateSafe({ offlineVoiceByLang: next })
+            persistSafe()
+            renderOfflineVoiceList()
+            afterChange("offlineVoiceByLang")
+          })
+          actions.appendChild(setDefaultBtn)
+          const delBtn = document.createElement("button")
+          delBtn.type = "button"
+          delBtn.className = "ghost"
+          delBtn.textContent = "删除"
+          delBtn.addEventListener("click", async () => {
+            setOfflineTtsStatus("")
+            delBtn.disabled = true
+            try {
+              await invoke("a4_offline_voices_delete", { voiceId: id })
+              if (window.A4Speech?.invalidateOfflineCache) window.A4Speech.invalidateOfflineCache()
+              setOfflineTtsStatus("语音包已删除。", { kind: "success" })
+              renderOfflineVoiceList()
+            } catch (e) {
+              setOfflineTtsError("删除语音包", e)
+            } finally {
+              delBtn.disabled = false
+            }
+          })
+          actions.appendChild(delBtn)
+        } else {
+          const dlBtn = document.createElement("button")
+          dlBtn.type = "button"
+          dlBtn.className = "primary"
+          dlBtn.textContent = isDownloading ? "下载中…" : "下载"
+          dlBtn.disabled = isDownloading
+          progLabel = document.createElement("div")
+          progLabel.className = "form-help offline-voice-progress"
+          dlBtn.addEventListener("click", async () => {
+            const ChannelCtor = window.__TAURI__?.core?.Channel || window.__TAURI__?.Channel
+            if (!ChannelCtor) {
+              setOfflineTtsStatus("当前版本无法下载语音包，请更新应用后重试。", {
+                detail: "当前 Tauri 环境不支持下载进度通道。",
+                kind: "error",
+              })
+              return
+            }
+            setOfflineTtsStatus("")
+            offlineUiState.downloading.add(id)
+            dlBtn.disabled = true
+            dlBtn.textContent = "下载中…"
+            try {
+              const channel = new ChannelCtor((evt) => {
+                if (!evt) return
+                const phase = String(evt.phase || "")
+                const total = Number(evt.total) || 0
+                const downloaded = Number(evt.downloaded) || 0
+                const pct = total > 0 ? Math.min(100, Math.round((downloaded / total) * 100)) : 0
+                progLabel.textContent = phase === "downloading" ? `${pct}% (${formatBytes(downloaded)}/${formatBytes(total)})` : phase
+              })
+              await invoke("a4_offline_voices_download", buildOfflineVoiceDownloadArgs(id, channel))
+              if (window.A4Speech?.invalidateOfflineCache) window.A4Speech.invalidateOfflineCache()
+              const cur = getStateSafe()
+              const offlineMapCur = cur?.offlineVoiceByLang && typeof cur.offlineVoiceByLang === "object" ? cur.offlineVoiceByLang : {}
+              if (!offlineMapCur[langBase]) {
+                setStateSafe({ offlineVoiceByLang: { ...offlineMapCur, [langBase]: id } })
+                persistSafe()
+                afterChange("offlineVoiceByLang")
+              }
+              setOfflineTtsStatus("语音包下载完成。", { kind: "success" })
+            } catch (e) {
+              setOfflineTtsError("下载语音包", e)
+            } finally {
+              offlineUiState.downloading.delete(id)
+              renderOfflineVoiceList()
+            }
+          })
+          actions.appendChild(dlBtn)
+        }
+        head.appendChild(actions)
+        row.appendChild(head)
+        if (progLabel) row.appendChild(progLabel)
+        list.appendChild(row)
+      }
+    }
+
+    function render() {
+      const state = getStateSafe()
+      if (dom.themeModeSelect) dom.themeModeSelect.value = normalizeThemeMode(state?.themeMode)
+      const themePalette = normalizeThemePalette(state?.themePalette)
+      for (const button of dom.themePaletteButtons) {
+        const active = button.dataset.themePalette === themePalette
+        button.classList.toggle("active", active)
+        button.setAttribute("aria-checked", active ? "true" : "false")
+      }
+      fillNumericSelect(dom.dailyGoalRoundsInput, rangeInclusive(0, 20), clamp(state?.dailyGoalRounds || 0, 0, 20))
+      fillNumericSelect(dom.dailyGoalWordsInput, DAILY_GOAL_WORD_CHOICES.slice(), clamp(state?.dailyGoalWords || 0, 0, 500))
+      fillNumericSelect(dom.roundCapInput, rangeInclusive(20, 30), normalizeRoundCap(state?.roundCap))
+      const reviewSystemEnabled = typeof state?.reviewSystemEnabled === "boolean" ? state.reviewSystemEnabled : true
+      const reviewIntervals = normalizeReviewIntervals(state?.reviewIntervals)
+      const continuousStudyMode = typeof state?.continuousStudyMode === "boolean" ? state.continuousStudyMode : false
+      const reviewCardFlipEnabled = typeof state?.reviewCardFlipEnabled === "boolean" ? state.reviewCardFlipEnabled : false
+      setSwitchChecked(dom.reviewSystemToggleBtn, reviewSystemEnabled)
+      if (dom.reviewIntervalsPanel) {
+        if (reviewSystemEnabled) dom.reviewIntervalsPanel.classList.remove("hidden")
+        else dom.reviewIntervalsPanel.classList.add("hidden")
+      }
+      if (dom.reviewUnknownDaysInput) dom.reviewUnknownDaysInput.value = String(reviewIntervals.unknownDays)
+      if (dom.reviewLearningDaysInput) dom.reviewLearningDaysInput.value = String(reviewIntervals.learningDays)
+      if (dom.reviewMasteredDaysInput) dom.reviewMasteredDaysInput.value = String(reviewIntervals.masteredDays)
+      setSwitchChecked(dom.continuousStudyModeToggleBtn, continuousStudyMode)
+      setSwitchChecked(dom.reviewCardFlipToggleBtn, reviewCardFlipEnabled)
+      if (dom.accentSelect) dom.accentSelect.value = normalizeAccent(state?.pronunciationAccent)
+      if (dom.pronunciationLangSelect)
+        dom.pronunciationLangSelect.value = normalizePronunciationLang(state?.pronunciationLang)
+      if (dom.voiceModeSelect) dom.voiceModeSelect.value = normalizeVoiceMode(state?.voiceMode)
+      renderVoiceSelect()
+      renderVoiceModeUi()
+      setSwitchChecked(dom.pronounceToggleBtn, !!state?.pronunciationEnabled)
+      const normalizeTtsMode = window.A4Common?.normalizeTtsMode
+      const ttsMode = normalizeTtsMode ? normalizeTtsMode(state?.ttsMode) : "online"
+      const onlineTtsEnabled = ttsMode === "online"
+      if (dom.ttsModeSelect) dom.ttsModeSelect.value = ttsMode
+      setSwitchChecked(dom.onlineTtsToggleBtn, onlineTtsEnabled)
+      if (dom.onlineTtsProviderSelect)
+        dom.onlineTtsProviderSelect.value = normalizeOnlineTtsProvider(state?.onlineTtsProvider)
+      if (dom.onlineTtsProviderRow)
+        dom.onlineTtsProviderRow.classList.toggle("hidden", ttsMode !== "online")
+      if (dom.onlineTtsPrivacyHint)
+        dom.onlineTtsPrivacyHint.classList.toggle("hidden", ttsMode !== "online")
+      if (dom.offlineTtsSection) {
+        dom.offlineTtsSection.classList.remove("hidden")
+        dom.offlineTtsSection.classList.toggle("is-secondary", ttsMode !== "offline")
+      }
+      if (dom.offlineTtsCard && ttsMode === "offline") dom.offlineTtsCard.open = true
+      if (dom.offlineTtsHint) {
+        dom.offlineTtsHint.textContent =
+          ttsMode === "online"
+            ? "在线发音不可用时，会按已安装离线语音包 → 系统语音兜底；模型可在桌面端和 Android 应用中管理。"
+            : ttsMode === "offline"
+              ? "离线模式只使用已安装模型，并在失败时回退系统语音，不会联网。"
+              : "当前首选系统语音；可在此预先管理离线模型，供离线模式和在线发音兜底使用。"
+      }
+      renderOfflineVoiceList()
+      const lookupOnlineEnabled = typeof state?.lookupOnlineEnabled === "boolean" ? state.lookupOnlineEnabled : true
+      const lookupOnlineSource = String(state?.lookupOnlineSource || "").trim().toLowerCase() === "custom" ? "custom" : "builtin"
+      const lookupSpanishConjugationEnabled =
+        typeof state?.lookupSpanishConjugationEnabled === "boolean" ? state.lookupSpanishConjugationEnabled : true
+      const lookupCacheEnabled = typeof state?.lookupCacheEnabled === "boolean" ? state.lookupCacheEnabled : true
+      const lookupCacheDays = clamp(Math.round(Number(state?.lookupCacheDays) || 30), 1, 365)
+      setSwitchChecked(dom.lookupOnlineToggleBtn, lookupOnlineEnabled)
+      if (dom.lookupOnlineSourceSelect) dom.lookupOnlineSourceSelect.value = lookupOnlineSource
+      setSwitchChecked(dom.lookupSpanishToggleBtn, lookupSpanishConjugationEnabled)
+      setSwitchChecked(dom.lookupCacheToggleBtn, lookupCacheEnabled)
+      if (dom.lookupCacheDaysInput) {
+        dom.lookupCacheDaysInput.value = String(lookupCacheDays)
+        dom.lookupCacheDaysInput.disabled = !lookupCacheEnabled
+      }
+      if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.value = String(state?.aiConfig?.baseUrl || "")
+      if (dom.aiApiKeyInput) dom.aiApiKeyInput.value = String(state?.aiConfig?.apiKey || "")
+      if (dom.aiModelInput) dom.aiModelInput.value = String(state?.aiConfig?.model || "")
+      if (dom.aiStatus) dom.aiStatus.textContent = ""
+      updateVoiceUi()
+      renderAiProviderUi()
+      setAccountMode(accountMode)
+      renderAccountActionButtons()
+      window.A4Utils?.refreshAndroidSelectPickers?.(dom.modal)
+      if (getCooldownSecondsLeft(registerCodeCooldownUntil) > 0 || getCooldownSecondsLeft(resetCodeCooldownUntil) > 0) {
+        ensureAccountCooldownTicker()
+      }
+      updateAccountUi()
+    }
+
+    function normalizeAiProviderLocal(value) {
+      return normalizeAiProvider(value)
+    }
+
+    function getAiConfigFromState(state) {
+      const s = state && typeof state === "object" ? state : {}
+      const cfg = s.aiConfig && typeof s.aiConfig === "object" ? s.aiConfig : {}
+      return {
+        provider: normalizeAiProviderLocal(cfg.provider),
+        baseUrl: String(cfg.baseUrl || "").trim(),
+        apiKey: String(cfg.apiKey || "").trim(),
+        model: String(cfg.model || "").trim(),
+      }
+    }
+
+    function patchAiConfig(patch, { syncInputs } = {}) {
+      const state = getStateSafe()
+      const prev = getAiConfigFromState(state)
+      const nextProvider = patch.provider != null ? normalizeAiProviderLocal(patch.provider) : prev.provider
+      const nextBaseUrl = patch.baseUrl != null ? String(patch.baseUrl || "").trim() : prev.baseUrl
+      const next = {
+        provider: nextProvider,
+        baseUrl: nextBaseUrl,
+        apiKey:
+          patch.apiKey != null
+            ? String(patch.apiKey || "").trim()
+            : shouldResetAiApiKey({ prevConfig: prev, nextProvider, nextBaseUrl })
+              ? ""
+              : prev.apiKey,
+        model: patch.model != null ? String(patch.model || "").trim() : prev.model,
+      }
+      setStateSafe({ aiConfig: next })
+      if (syncInputs) {
+        if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.value = next.baseUrl
+        if (dom.aiApiKeyInput) dom.aiApiKeyInput.value = next.apiKey
+        if (dom.aiModelInput) dom.aiModelInput.value = next.model
+      }
+      persistSafe()
+      afterChange("aiConfig")
+    }
+
+    function renderAiProviderUi() {
+      const state = getStateSafe()
+      const cfg = getAiConfigFromState(state)
+      const preset = getAiPreset(cfg.provider)
+      if (dom.aiProviderSelect) dom.aiProviderSelect.value = cfg.provider
+      if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.placeholder = preset.baseUrl || "https://api.example.com/v1"
+      if (dom.aiModelInput) dom.aiModelInput.placeholder = "可直接输入或获取实时模型"
+    }
+
+    function setAiStatus(text) {
+      if (!dom.aiStatus) return
+      dom.aiStatus.textContent = String(text || "")
+    }
+
+    function setAiBusy(busy) {
+      if (!dom.aiGenerateBtn) return
+      dom.aiGenerateBtn.disabled = !!busy
+    }
+
+    let modelDiscoveryAbortController = null
+    let modelDiscoveryBusy = false
+
+    function setModelDiscoveryBusy(busy) {
+      modelDiscoveryBusy = !!busy
+      if (!dom.aiModelPickerBtn) return
+      dom.aiModelPickerBtn.disabled = modelDiscoveryBusy
+      dom.aiModelPickerBtn.textContent = modelDiscoveryBusy ? "获取中…" : "获取模型"
+    }
+
+    function abortModelDiscovery() {
+      if (!modelDiscoveryAbortController) return
+      try {
+        modelDiscoveryAbortController.abort()
+      } catch { /* ignore */ }
+      modelDiscoveryAbortController = null
+    }
+
+    async function requestAiModels({ endpoint, apiKey, signal }) {
+      const res = await fetch(endpoint, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${String(apiKey || "").trim()}` },
+        signal,
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      let payload
+      try {
+        payload = await res.json()
+      } catch {
+        throw new Error("返回内容不是有效 JSON")
+      }
+      const models = parseModelIds(payload)
+      if (!models.length) throw new Error("接口没有返回可用模型")
+      return models
+    }
+
+    async function requestAiChatCompletion({ endpoint, apiKey, model, system, user, stream, signal }) {
+      const headers = { "Content-Type": "application/json" }
+      if (String(apiKey || "").trim()) headers.Authorization = `Bearer ${apiKey}`
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers,
+        signal,
+        body: JSON.stringify({
+          model,
+          stream: !!stream,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      })
+      return res
+    }
+
+    function normalizeAiWordEntry(raw) {
+      const term = String(raw?.term || "").trim()
+      const pos = String(raw?.pos || "").trim()
+      const meaning = String(raw?.meaning || "").trim()
+      if (!term || !pos || !meaning) return null
+      const example = String(raw?.example || "").trim()
+      const tags = Array.isArray(raw?.tags) ? raw.tags.map((t) => String(t || "").trim()).filter(Boolean) : []
+      return { term, pos, meaning, example, tags }
+    }
+
+    function createAiStreamPreviewer() {
+      const state = {
+        raw: "",
+        scanIndex: 0,
+        wordsStartIndex: -1,
+        inString: false,
+        escape: false,
+        collecting: false,
+        braceDepth: 0,
+        objStart: 0,
+        seen: new Set(),
+        words: [],
+      }
+
+      function findWordsArrayStartIndex(text) {
+        const raw = String(text || "")
+        const key = '"words"'
+        const idx = raw.indexOf(key)
+        if (idx < 0) return -1
+        const bracket = raw.indexOf("[", idx + key.length)
+        return bracket >= 0 ? bracket + 1 : -1
+      }
+
+      function push(delta) {
+        if (!delta) return
+        state.raw += String(delta || "")
+        if (state.wordsStartIndex < 0) {
+          state.wordsStartIndex = findWordsArrayStartIndex(state.raw)
+          if (state.wordsStartIndex >= 0) state.scanIndex = state.wordsStartIndex
+        }
+        if (state.wordsStartIndex < 0) return
+
+        const s = state.raw
+        for (let i = state.scanIndex; i < s.length; i++) {
+          const ch = s[i]
+          if (state.inString) {
+            if (state.escape) {
+              state.escape = false
+            } else if (ch === "\\") {
+              state.escape = true
+            } else if (ch === '"') {
+              state.inString = false
+            }
+            continue
+          }
+          if (ch === '"') {
+            state.inString = true
+            continue
+          }
+          if (!state.collecting) {
+            if (ch === "{") {
+              state.collecting = true
+              state.braceDepth = 1
+              state.objStart = i
+            } else if (ch === "]") {
+              state.scanIndex = i + 1
+              return
+            }
+            continue
+          }
+          if (ch === "{") state.braceDepth += 1
+          else if (ch === "}") {
+            state.braceDepth -= 1
+            if (state.braceDepth === 0) {
+              const objText = s.slice(state.objStart, i + 1)
+              state.collecting = false
+              state.objStart = 0
+              let parsed
+              try {
+                parsed = JSON.parse(objText)
+              } catch {
+                continue
+              }
+              const entry = normalizeAiWordEntry(parsed)
+              if (!entry) continue
+              const key = entry.term.toLowerCase()
+              if (state.seen.has(key)) continue
+              state.seen.add(key)
+              state.words.push(entry)
+            }
+          }
+        }
+        state.scanIndex = s.length
+      }
+
+      function getPartialBook() {
+        return { name: "AI 词书", description: "", language: "auto", words: state.words }
+      }
+
+      function getRaw() {
+        return state.raw
+      }
+
+      return { push, getPartialBook, getRaw }
+    }
+
+    async function readChatCompletionsStream(res, { onDelta } = {}) {
+      const reader = res?.body?.getReader?.()
+      if (!reader) return ""
+      const decoder = new TextDecoder("utf-8")
+      let buf = ""
+      let content = ""
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buf += decoder.decode(value, { stream: true })
+
+        let idx = 0
+        while (true) {
+          const sep = buf.indexOf("\n\n", idx)
+          if (sep < 0) break
+          const chunk = buf.slice(idx, sep)
+          idx = sep + 2
+
+          const lines = chunk
+            .split("\n")
+            .map((l) => String(l || "").trim())
+            .filter(Boolean)
+          for (const line of lines) {
+            if (!line.startsWith("data:")) continue
+            const dataStr = String(line.slice(5) || "").trim()
+            if (!dataStr) continue
+            if (dataStr === "[DONE]") return content
+            let obj
+            try {
+              obj = JSON.parse(dataStr)
+            } catch {
+              continue
+            }
+            const delta =
+              String(obj?.choices?.[0]?.delta?.content || "") ||
+              String(obj?.choices?.[0]?.delta?.text || "") ||
+              String(obj?.choices?.[0]?.message?.content || "")
+            if (!delta) continue
+            content += delta
+            if (typeof onDelta === "function") onDelta(delta)
+          }
+        }
+        buf = buf.slice(idx)
+      }
+      return content
+    }
+
+    function open({ trigger = document.activeElement || null } = {}) {
+      settingsNavigation.activate(0)
+      // Show version panel only in Tauri (desktop/Android), not on web
+      if (dom.versionPanel) {
+        const isTauri = !!(window.__TAURI_INTERNALS__ || window.__TAURI__)
+        dom.versionPanel.classList.toggle("hidden", !isTauri)
+      }
+      setAccountStatsExpanded(shouldExpandAccountStatsByDefault(accountStatsWideQuery))
+      render()
+      renderAiProviderUi()
+      if (pagePresentation) {
+        dom.modal.classList.remove("hidden", "a4-layer-closing")
+        dom.modal.setAttribute("aria-hidden", "false")
+      } else {
+        setModalVisible(dom.modal, true, { trigger, motion: "origin" })
+      }
+      const refreshNavigationIndicator = () => settingsNavigation.refreshIndicator()
+      if (typeof window.requestAnimationFrame === "function") {
+        window.requestAnimationFrame(refreshNavigationIndicator)
+      } else {
+        refreshNavigationIndicator()
+      }
+    }
+
+    function close() {
+      abortModelDiscovery()
+      setModelDiscoveryBusy(false)
+      if (pagePresentation) return
+      setModalVisible(dom.modal, false)
+    }
+
+    dom.backdrop?.addEventListener("click", () => close())
+    dom.closeBtn?.addEventListener("click", () => close())
+    dom.accountStatsToggleBtn?.addEventListener("click", () => {
+      const expanded = dom.accountStatsToggleBtn.getAttribute("aria-expanded") === "true"
+      setAccountStatsExpanded(!expanded)
+    })
+
+    dom.themeModeSelect?.addEventListener("change", () => {
+      const themeMode = normalizeThemeMode(dom.themeModeSelect.value)
+      setStateSafe({ themeMode })
+      if (typeof applyTheme === "function") applyTheme()
+      persistSafe()
+      afterChange("themeMode")
+    })
+
+    for (const button of dom.themePaletteButtons) {
+      button.addEventListener("click", () => {
+        const themePalette = normalizeThemePalette(button.dataset.themePalette)
+        setStateSafe({ themePalette })
+        if (typeof applyTheme === "function") applyTheme()
+        render()
+        persistSafe()
+        afterChange("themePalette")
+      })
+    }
+
+    const sanitizeVerificationCodeInput = (input) => {
+      if (!input) return
+      const raw = String(input.value || "")
+      const next = raw.replaceAll(/\D/g, "").slice(0, 6)
+      if (next !== raw) input.value = next
+    }
+
+    dom.cloudEmailInput?.addEventListener("blur", () => {
+      accountFieldTouched.registerEmail = true
+      updateRegisterEmailHint()
+    })
+    dom.cloudEmailInput?.addEventListener("input", () => updateRegisterEmailHint())
+
+    dom.cloudRegisterCodeInput?.addEventListener("blur", () => {
+      accountFieldTouched.registerCode = true
+      updateRegisterCodeHint()
+    })
+    dom.cloudRegisterCodeInput?.addEventListener("input", () => {
+      sanitizeVerificationCodeInput(dom.cloudRegisterCodeInput)
+      updateRegisterCodeHint()
+    })
+
+    dom.cloudUsernameInput?.addEventListener("blur", () => {
+      accountFieldTouched.username = true
+      updateUsernameHint()
+    })
+    dom.cloudUsernameInput?.addEventListener("input", () => updateUsernameHint())
+
+    dom.cloudPasswordInput?.addEventListener("blur", () => {
+      accountFieldTouched.password = true
+      updatePasswordHint()
+    })
+    dom.cloudPasswordInput?.addEventListener("input", () => updatePasswordHint())
+
+    dom.cloudLoginEmailInput?.addEventListener("blur", () => {
+      accountFieldTouched.loginEmail = true
+      updateLoginEmailHint()
+    })
+    dom.cloudLoginEmailInput?.addEventListener("input", () => updateLoginEmailHint())
+
+    dom.cloudLoginPasswordInput?.addEventListener("blur", () => {
+      accountFieldTouched.loginPassword = true
+      updateLoginPasswordHint()
+    })
+    dom.cloudLoginPasswordInput?.addEventListener("input", () => updateLoginPasswordHint())
+
+    dom.cloudResetEmailInput?.addEventListener("blur", () => {
+      accountFieldTouched.resetEmail = true
+      updateResetEmailHint()
+    })
+    dom.cloudResetEmailInput?.addEventListener("input", () => updateResetEmailHint())
+
+    dom.cloudResetCodeInput?.addEventListener("blur", () => {
+      accountFieldTouched.resetCode = true
+      updateResetCodeHint()
+    })
+    dom.cloudResetCodeInput?.addEventListener("input", () => {
+      sanitizeVerificationCodeInput(dom.cloudResetCodeInput)
+      updateResetCodeHint()
+    })
+
+    dom.cloudResetPasswordInput?.addEventListener("blur", () => {
+      accountFieldTouched.resetPassword = true
+      updateResetPasswordHint()
+    })
+    dom.cloudResetPasswordInput?.addEventListener("input", () => updateResetPasswordHint())
+
+    dom.accountTabRegisterBtn?.addEventListener("click", () => setAccountMode("register"))
+    dom.accountTabLoginBtn?.addEventListener("click", () => setAccountMode("login"))
+    dom.accountTabResetBtn?.addEventListener("click", () => setAccountMode("reset"))
+
+    dom.dailyGoalRoundsInput?.addEventListener("change", () => {
+      const n = Number(dom.dailyGoalRoundsInput.value)
+      const dailyGoalRounds = Number.isFinite(n) ? clamp(Math.round(n), 0, 20) : 0
+      dom.dailyGoalRoundsInput.value = String(dailyGoalRounds)
+      setStateSafe({ dailyGoalRounds })
+      persistSafe()
+      afterChange("dailyGoalRounds")
+    })
+
+    dom.dailyGoalWordsInput?.addEventListener("change", () => {
+      const n = Number(dom.dailyGoalWordsInput.value)
+      const dailyGoalWords = Number.isFinite(n) ? clamp(Math.round(n), 0, 500) : 0
+      dom.dailyGoalWordsInput.value = String(dailyGoalWords)
+      setStateSafe({ dailyGoalWords })
+      persistSafe()
+      afterChange("dailyGoalWords")
+    })
+
+    dom.roundCapInput?.addEventListener("change", () => {
+      const roundCap = normalizeRoundCap(dom.roundCapInput.value)
+      dom.roundCapInput.value = String(roundCap)
+      setStateSafe({ roundCap })
+      persistSafe()
+      afterChange("roundCap")
+    })
+
+    dom.reviewSystemToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const reviewSystemEnabled = !(typeof state?.reviewSystemEnabled === "boolean" ? state.reviewSystemEnabled : true)
+      setStateSafe({ reviewSystemEnabled, reviewIntervals: normalizeReviewIntervals(state?.reviewIntervals) })
+      setSwitchChecked(dom.reviewSystemToggleBtn, reviewSystemEnabled)
+      if (dom.reviewIntervalsPanel) {
+        if (reviewSystemEnabled) dom.reviewIntervalsPanel.classList.remove("hidden")
+        else dom.reviewIntervalsPanel.classList.add("hidden")
+      }
+      persistSafe()
+      afterChange("reviewSystemEnabled")
+    })
+
+    dom.continuousStudyModeToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const cur = typeof state?.continuousStudyMode === "boolean" ? state.continuousStudyMode : false
+      const continuousStudyMode = !cur
+      setStateSafe({ continuousStudyMode, reviewAutoCloseModal: true })
+      setSwitchChecked(dom.continuousStudyModeToggleBtn, continuousStudyMode)
+      persistSafe()
+      afterChange("continuousStudyMode")
+    })
+
+    dom.reviewCardFlipToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const cur = typeof state?.reviewCardFlipEnabled === "boolean" ? state.reviewCardFlipEnabled : false
+      const reviewCardFlipEnabled = !cur
+      setStateSafe({ reviewCardFlipEnabled })
+      setSwitchChecked(dom.reviewCardFlipToggleBtn, reviewCardFlipEnabled)
+      persistSafe()
+      afterChange("reviewCardFlipEnabled")
+    })
+
+    const onReviewIntervalsChange = () => {
+      const state = getStateSafe()
+      const reviewIntervals = normalizeReviewIntervals({
+        unknownDays: dom.reviewUnknownDaysInput?.value,
+        learningDays: dom.reviewLearningDaysInput?.value,
+        masteredDays: dom.reviewMasteredDaysInput?.value,
+      })
+      setStateSafe({ reviewIntervals })
+      persistSafe()
+      afterChange("reviewIntervals")
+      if (dom.reviewUnknownDaysInput) dom.reviewUnknownDaysInput.value = String(reviewIntervals.unknownDays)
+      if (dom.reviewLearningDaysInput) dom.reviewLearningDaysInput.value = String(reviewIntervals.learningDays)
+      if (dom.reviewMasteredDaysInput) dom.reviewMasteredDaysInput.value = String(reviewIntervals.masteredDays)
+      setSwitchChecked(
+        dom.reviewSystemToggleBtn,
+        typeof state?.reviewSystemEnabled === "boolean" ? state.reviewSystemEnabled : true
+      )
+    }
+
+    dom.reviewUnknownDaysInput?.addEventListener("change", onReviewIntervalsChange)
+    dom.reviewLearningDaysInput?.addEventListener("change", onReviewIntervalsChange)
+    dom.reviewMasteredDaysInput?.addEventListener("change", onReviewIntervalsChange)
+
+    dom.pronounceToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const pronunciationEnabled = !state?.pronunciationEnabled
+      setStateSafe({ pronunciationEnabled })
+      setSwitchChecked(dom.pronounceToggleBtn, pronunciationEnabled)
+      persistSafe()
+      updateVoiceUi()
+      afterChange("pronunciationEnabled")
+    })
+
+    dom.accentSelect?.addEventListener("change", () => {
+      const pronunciationAccent = normalizeAccent(dom.accentSelect.value)
+      setStateSafe({ pronunciationAccent })
+      persistSafe()
+      updateVoiceUi()
+      afterChange("pronunciationAccent")
+    })
+
+    dom.pronunciationLangSelect?.addEventListener("change", () => {
+      const pronunciationLang = normalizePronunciationLang(dom.pronunciationLangSelect.value)
+      setStateSafe({ pronunciationLang })
+      persistSafe()
+      updateVoiceUi()
+      afterChange("pronunciationLang")
+    })
+
+    dom.voiceModeSelect?.addEventListener("change", () => {
+      const state = getStateSafe()
+      const next = normalizeVoiceMode(dom.voiceModeSelect.value)
+      const voices = window.A4Speech?.getVoicesSorted?.() || []
+      if (next === "manual") {
+        const resolved =
+          window.A4Speech?.resolveVoice?.({
+            pronunciationEnabled: true,
+            pronunciationLang: state?.pronunciationLang,
+            wordbookLanguage: getWordbookLang(),
+            accent: state?.pronunciationAccent,
+            voiceMode: "auto",
+            voiceURI: "",
+          }) || { ok: false, voice: null }
+        const chosen = resolved.voice || window.A4Speech?.getSystemDefaultVoice?.(voices) || voices[0] || null
+        setStateSafe({ voiceMode: "manual", voiceURI: chosen ? String(chosen.voiceURI || "") : "" })
+      } else {
+        setStateSafe({ voiceMode: "auto", voiceURI: "" })
+      }
+      renderVoiceSelect()
+      renderVoiceModeUi()
+      persistSafe()
+      updateVoiceUi()
+      afterChange("voiceMode")
+    })
+
+    dom.voiceSelect?.addEventListener("change", () => {
+      const id = String(dom.voiceSelect.value || "")
+      const voices = window.A4Speech?.getVoicesSorted?.() || []
+      const v = window.A4Speech?.findVoiceByURI?.(id, voices)
+      if (!v) {
+        setStateSafe({ voiceMode: "auto", voiceURI: "" })
+      } else {
+        setStateSafe({ voiceMode: "manual", voiceURI: id })
+      }
+      renderVoiceSelect()
+      renderVoiceModeUi()
+      persistSafe()
+      updateVoiceUi()
+      afterChange("voiceURI")
+    })
+
+    dom.testVoiceBtn?.addEventListener("click", async () => {
+      const state = getStateSafe()
+      const wordbookLanguage = getWordbookLang()
+      const base =
+        window.A4Speech?.getCurrentLanguageBase?.({
+          pronunciationLang: state?.pronunciationLang,
+          wordbookLanguage,
+        }) || "en"
+      const sample =
+        base === "es"
+          ? "Hola"
+          : base === "ja"
+            ? "こんにちは"
+            : base === "ko"
+              ? "안녕하세요"
+              : base === "pt"
+                ? "Olá"
+                : base === "fr"
+                  ? "Bonjour"
+                  : base === "de"
+                    ? "Hallo"
+                    : base === "it"
+                      ? "Ciao"
+                      : base === "eo"
+                        ? "Saluton"
+                        : "Hello"
+      if (dom.testVoiceBtn) {
+        dom.testVoiceBtn.disabled = true
+        dom.testVoiceBtn.textContent = "测试中..."
+      }
+      if (dom.voiceHint) dom.voiceHint.textContent = "正在测试发音..."
+      try {
+        const ok = await window.A4Speech?.speak?.(buildTestSpeechOptions({
+          text: sample,
+          state,
+          wordbookLanguage,
+          languageBase: base,
+        }))
+        const result = window.A4Speech?.getLastSpeakResult?.()
+        if (dom.voiceHint) dom.voiceHint.textContent = formatTestSpeakResult(ok, result)
+      } finally {
+        if (dom.testVoiceBtn) {
+          dom.testVoiceBtn.disabled = false
+          dom.testVoiceBtn.textContent = "测试发音"
+        }
+      }
+    })
+
+    dom.ttsModeSelect?.addEventListener("change", () => {
+      const normalizeTtsMode = window.A4Common?.normalizeTtsMode
+      const ttsMode = normalizeTtsMode ? normalizeTtsMode(dom.ttsModeSelect.value) : "online"
+      const onlineTtsEnabled = ttsMode === "online"
+      setStateSafe({ ttsMode, onlineTtsEnabled })
+      persistSafe()
+      render()
+      afterChange("ttsMode")
+    })
+
+    dom.offlineTtsRefreshBtn?.addEventListener("click", async () => {
+      setOfflineTtsStatus("")
+      dom.offlineTtsRefreshBtn.disabled = true
+      try {
+        await refreshOfflineManifest({ force: true })
+        await renderOfflineVoiceList()
+      } finally {
+        dom.offlineTtsRefreshBtn.disabled = false
+      }
+    })
+
+    dom.onlineTtsToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const prev = typeof state?.onlineTtsEnabled === "boolean" ? state.onlineTtsEnabled : true
+      setStateSafe({ onlineTtsEnabled: !prev })
+      persistSafe()
+      render()
+      afterChange("onlineTtsEnabled")
+    })
+
+    dom.onlineTtsProviderSelect?.addEventListener("change", () => {
+      const onlineTtsProvider = normalizeOnlineTtsProvider(dom.onlineTtsProviderSelect.value)
+      setStateSafe({ onlineTtsProvider })
+      persistSafe()
+      render()
+      afterChange("onlineTtsProvider")
+    })
+
+    dom.lookupOnlineToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const prev = typeof state?.lookupOnlineEnabled === "boolean" ? state.lookupOnlineEnabled : true
+      setStateSafe({ lookupOnlineEnabled: !prev })
+      persistSafe()
+      render()
+      afterChange("lookupOnlineEnabled")
+    })
+
+    dom.lookupOnlineSourceSelect?.addEventListener("change", () => {
+      const v = String(dom.lookupOnlineSourceSelect.value || "").trim().toLowerCase()
+      const lookupOnlineSource = v === "custom" ? "custom" : "builtin"
+      setStateSafe({ lookupOnlineSource })
+      persistSafe()
+      render()
+      afterChange("lookupOnlineSource")
+    })
+
+    dom.lookupSpanishToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const prev =
+        typeof state?.lookupSpanishConjugationEnabled === "boolean" ? state.lookupSpanishConjugationEnabled : true
+      setStateSafe({ lookupSpanishConjugationEnabled: !prev })
+      persistSafe()
+      render()
+      afterChange("lookupSpanishConjugationEnabled")
+    })
+
+    dom.lookupCacheToggleBtn?.addEventListener("click", () => {
+      const state = getStateSafe()
+      const prev = typeof state?.lookupCacheEnabled === "boolean" ? state.lookupCacheEnabled : true
+      setStateSafe({ lookupCacheEnabled: !prev })
+      persistSafe()
+      render()
+      afterChange("lookupCacheEnabled")
+    })
+
+    dom.lookupCacheDaysInput?.addEventListener("change", () => {
+      const next = clamp(Math.round(Number(dom.lookupCacheDaysInput.value) || 30), 1, 365)
+      setStateSafe({ lookupCacheDays: next })
+      persistSafe()
+      render()
+      afterChange("lookupCacheDays")
+    })
+
+    dom.aiBaseUrlInput?.addEventListener("change", () => {
+      patchAiConfig({ baseUrl: dom.aiBaseUrlInput.value }, { syncInputs: true })
+      render()
+    })
+    dom.aiApiKeyInput?.addEventListener("change", () => {
+      patchAiConfig({ apiKey: dom.aiApiKeyInput.value })
+      render()
+    })
+    dom.aiModelInput?.addEventListener("change", () => {
+      patchAiConfig({ model: dom.aiModelInput.value })
+      render()
+    })
+
+    dom.aiModelPickerBtn?.addEventListener("click", async (event) => {
+      if (modelDiscoveryBusy) return
+      const savedConfig = getAiConfigFromState(getStateSafe())
+      const baseUrl = String(dom.aiBaseUrlInput?.value || savedConfig.baseUrl || "").trim()
+      const apiKey = String(dom.aiApiKeyInput?.value || savedConfig.apiKey || "").trim()
+      const endpoint = buildModelsUrl(baseUrl)
+      if (!endpoint) {
+        setAiStatus("请先填写有效的 HTTPS API Base URL。")
+        return
+      }
+      if (!apiKey) {
+        setAiStatus("请先填写 API Key。")
+        return
+      }
+
+      patchAiConfig({ baseUrl, apiKey })
+      abortModelDiscovery()
+      const requestController = new AbortController()
+      modelDiscoveryAbortController = requestController
+      setModelDiscoveryBusy(true)
+      setAiStatus("正在获取模型…")
+
+      let models
+      try {
+        models = await requestAiModels({ endpoint, apiKey, signal: requestController.signal })
+      } catch (error) {
+        if (error?.name === "AbortError") return
+        setAiStatus(`获取模型失败：${String(error?.message || "网络或接口错误")}`)
+        return
+      } finally {
+        if (modelDiscoveryAbortController === requestController) {
+          modelDiscoveryAbortController = null
+          setModelDiscoveryBusy(false)
+        }
+      }
+
+      setAiStatus(`已获取 ${models.length} 个模型。`)
+      const selected = await showChoiceDialog({
+        title: "选择模型",
+        options: models.map((model) => ({ value: model, label: model })),
+        value: String(dom.aiModelInput?.value || savedConfig.model || ""),
+        trigger: event.currentTarget,
+        searchPlaceholder: "搜索模型",
+        emptyText: "没有匹配的模型",
+      })
+      if (selected == null) return
+      if (dom.aiModelInput) dom.aiModelInput.value = selected
+      patchAiConfig({ model: selected })
+      render()
+    })
+
+    dom.aiProviderSelect?.addEventListener("change", () => {
+      abortModelDiscovery()
+      setModelDiscoveryBusy(false)
+      const state = getStateSafe()
+      const prev = getAiConfigFromState(state)
+      const next = computeAiConfigOnProviderChange({ prevConfig: prev, nextProvider: dom.aiProviderSelect.value })
+      patchAiConfig(next, { syncInputs: true })
+      renderAiProviderUi()
+      render()
+    })
+
+    let aiAbortController = null
+    let aiPreviewer = null
+    let aiPreviewRenderReq = 0
+    let lastPreviewWordCount = -1
+    let lastPreviewMeta = ""
+
+    function setAiPreviewConfirmEnabled(enabled) {
+      if (!aiDom.confirmBtn) return
+      aiDom.confirmBtn.disabled = !enabled
+    }
+
+    function renderAiPreviewModal({ book, meta }) {
+      pendingAiBook = book
+      const metaText = String(meta || "")
+      if (aiDom.meta && metaText !== lastPreviewMeta) {
+        aiDom.meta.textContent = metaText
+        lastPreviewMeta = metaText
+      }
+      const words = Array.isArray(book?.words) ? book.words : []
+      const count = words.length
+      if (count === lastPreviewWordCount) return
+      lastPreviewWordCount = count
+      if (aiDom.list) aiDom.list.innerHTML = ""
+      if (aiDom.list) {
+        for (const w of words.slice(0, 200)) {
+          const row = document.createElement("div")
+          row.className = "word-row"
+          const left = document.createElement("div")
+          left.className = "w"
+          left.textContent = w.term
+          const right = document.createElement("div")
+          right.className = "m"
+          right.textContent = `${w.pos} ${w.meaning}`
+          row.appendChild(left)
+          row.appendChild(right)
+          aiDom.list.appendChild(row)
+        }
+      }
+    }
+
+    function openAiPreviewModal({ book, meta, trigger = document.activeElement || null }) {
+      lastPreviewWordCount = -1
+      lastPreviewMeta = ""
+      renderAiPreviewModal({ book, meta })
+      setModalVisible(aiDom.modal, true, { trigger, motion: "origin" })
+    }
+
+    function scheduleAiPreviewRender(meta) {
+      if (aiPreviewRenderReq) return
+      aiPreviewRenderReq = requestAnimationFrame(() => {
+        aiPreviewRenderReq = 0
+        if (!aiPreviewer) return
+        const partial = aiPreviewer.getPartialBook()
+        renderAiPreviewModal({
+          book: partial,
+          meta,
+        })
+      })
+    }
+
+    function closeAiPreviewModal() {
+      if (aiAbortController) {
+        try {
+          aiAbortController.abort()
+        } catch { /* ignore */ }
+      }
+      setModalVisible(aiDom.modal, false)
+    }
+
+    dom.aiGenerateBtn?.addEventListener("click", async (event) => {
+      setAiStatus("")
+      const state = getStateSafe()
+      const cfg = getAiConfigFromState(state)
+      const endpoint = buildChatCompletionsUrl(cfg.baseUrl)
+
+      if (!endpoint) return setAiStatus("请先填写 API Base URL。")
+      if (!cfg.model) return setAiStatus("请先填写 Model。")
+      if (!cfg.apiKey) return setAiStatus("请先填写 API Key。")
+
+      const type = String(dom.aiTypeSelect?.value || "custom")
+      const customTopic = String(dom.aiCustomTopicInput?.value || "").trim()
+      const count = Number(dom.aiCountInput?.value || 120)
+      const { system, user } = buildAiRequest({ type, customTopic, count })
+
+      setAiBusy(true)
+      setAiStatus("生成中…")
+      setAiPreviewConfirmEnabled(false)
+      aiPreviewer = createAiStreamPreviewer()
+      aiAbortController = new AbortController()
+      openAiPreviewModal({
+        book: aiPreviewer.getPartialBook(),
+        meta: "生成中… · 已解析 0 个词条",
+        trigger: event.currentTarget,
+      })
+
+      let content
+      try {
+        const res = await requestAiChatCompletion({
+          endpoint,
+          apiKey: cfg.apiKey,
+          model: cfg.model,
+          system,
+          user,
+          stream: true,
+          signal: aiAbortController.signal,
+        })
+        if (!res.ok) return setAiStatus(`生成失败：HTTP ${res.status}`)
+        const ct = String(res.headers?.get?.("content-type") || "").toLowerCase()
+        if (ct.includes("text/event-stream")) {
+          content = await readChatCompletionsStream(res, {
+            onDelta: (delta) => {
+              aiPreviewer?.push?.(delta)
+              const n = aiPreviewer?.getPartialBook?.()?.words?.length || 0
+              scheduleAiPreviewRender(`生成中… · 已解析 ${n} 个词条`)
+            },
+          })
+        } else {
+          const data = await res.json()
+          content = String(data?.choices?.[0]?.message?.content || "")
+          aiPreviewer?.push?.(content)
+          const n = aiPreviewer?.getPartialBook?.()?.words?.length || 0
+          scheduleAiPreviewRender(`生成中… · 已解析 ${n} 个词条`)
+        }
+      } catch (e) {
+        if (String(e?.name || "") === "AbortError") {
+          setAiStatus("已取消生成。")
+          scheduleAiPreviewRender("已取消生成。")
+          return
+        }
+        return setAiStatus("生成失败：网络或接口错误。")
+      } finally {
+        setAiBusy(false)
+        aiAbortController = null
+      }
+
+      let parsed
+      try {
+        parsed = JSON.parse(stripJsonFromText(content))
+      } catch {
+        return setAiStatus("生成失败：AI 返回内容不是合法 JSON。")
+      }
+
+      const normalized = normalizeAiWordbook(parsed)
+      if (!normalized) return setAiStatus("生成失败：词书结构不符合要求。")
+      if (!normalized.words.length) return setAiStatus("生成失败：没有可用词条。")
+
+      const meta = [
+        `名称：${normalized.name}`,
+        normalized.description ? `简介：${normalized.description}` : "",
+        `语言：${normalized.language}`,
+        `词条：${normalized.words.length}`,
+        normalized.removedDup ? `已自动移除 ${normalized.removedDup} 个重复单词` : "",
+        normalized.removedEmpty ? `已自动移除 ${normalized.removedEmpty} 个空词条` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")
+
+      aiPreviewer = null
+      openAiPreviewModal({ book: normalized, meta })
+      setAiPreviewConfirmEnabled(true)
+      setAiStatus("已生成：请在预览中确认保存。")
+    })
+
+    aiDom.backdrop?.addEventListener("click", () => closeAiPreviewModal())
+    aiDom.closeBtn?.addEventListener("click", () => closeAiPreviewModal())
+
+    aiDom.confirmBtn?.addEventListener("click", () => {
+      if (!pendingAiBook) return
+      const id = `ai-${Date.now()}-${window.A4Common.makeUuid()}`
+      const wordbook = {
+        id,
+        name: pendingAiBook.name,
+        description: pendingAiBook.description,
+        language: pendingAiBook.language,
+        words: pendingAiBook.words,
+      }
+
+      const state = getStateSafe()
+      const nextBooks = Array.isArray(state?.customWordbooks) ? [...state.customWordbooks] : []
+      nextBooks.push(wordbook)
+      setStateSafe({ customWordbooks: nextBooks })
+      persistSafe()
+      afterChange("customWordbooks")
+
+      pendingAiBook = null
+      closeAiPreviewModal()
+      close()
+      showAppToast({ message: "已保存到本地词书。", kind: "success" })
+    })
+
+    dom.exportBackupBtn?.addEventListener("click", () => {
+      persistSafe()
+      const state = window.A4Storage?.readStateRaw?.()
+      if (!state) {
+        showNoticeDialog({ title: "导出失败", message: "没有可用数据。" })
+        return
+      }
+      const payload = { exportedAt: new Date().toISOString(), state }
+      window.A4Utils?.downloadJsonFile?.({ filename: `a4-memory-backup-${Date.now()}.json`, data: payload })
+    })
+
+    dom.importBackupBtn?.addEventListener("click", () => {
+      if (!dom.importBackupFile) return
+      dom.importBackupFile.value = ""
+      dom.importBackupFile.click()
+    })
+
+    window.addEventListener("a4-update-check-failed", () => {
+      setUpdateStatus("检查失败：网络错误或 GitHub API 不可用")
+    })
+
+    dom.checkUpdateBtn?.addEventListener("click", async () => {
+      if (!window.A4Updater) {
+        setUpdateStatus("更新检测未加载")
+        return
+      }
+      setUpdateStatus("正在检查...")
+      let cached = null
+      try { cached = JSON.parse(localStorage.getItem("a4-memory:update-check:v1") || "null") } catch { /* ignore */ }
+      // Clear cache to force re-check
+      try { localStorage.removeItem("a4-memory:update-check:v1") } catch { /* ignore */ }
+      try { localStorage.removeItem("a4-memory:update-skip:v1") } catch { /* ignore */ }
+      const result = await window.A4Updater.checkUpdate()
+      if (result === "error") {
+        // status already set by a4-update-check-failed event
+        return
+      }
+      if (result === "update") {
+        setUpdateStatus("")
+        return
+      }
+      setUpdateStatus("已是最新版本")
+      if (cached) {
+        try { localStorage.setItem("a4-memory:update-check:v1", JSON.stringify(cached)) } catch { /* ignore */ }
+      }
+    })
+
+    dom.importBackupFile?.addEventListener("change", async () => {
+      const file = dom.importBackupFile.files && dom.importBackupFile.files[0]
+      if (!file) return
+      const MAX_SIZE = 10 * 1024 * 1024
+      if (file.size > MAX_SIZE) {
+        await showNoticeDialog({ title: "导入失败", message: "文件过大（上限 10 MB）。" })
+        return
+      }
+      let rawText
+      try {
+        rawText = await file.text()
+      } catch {
+        await showNoticeDialog({ title: "导入失败", message: "无法读取文件。" })
+        return
+      }
+      let parsed
+      try {
+        parsed = JSON.parse(rawText)
+      } catch {
+        await showNoticeDialog({ title: "导入失败", message: "不是合法 JSON。" })
+        return
+      }
+      const extracted = parsed && typeof parsed === "object" && parsed.state && typeof parsed.state === "object" ? parsed.state : parsed
+      const normalized = normalizeImportedState(extracted)
+      if (!normalized) {
+        await showNoticeDialog({ title: "导入失败", message: "数据结构不正确。" })
+        return
+      }
+      const ok = window.A4Storage?.writeStateRaw?.(normalized)
+      if (!ok) {
+        await showNoticeDialog({ title: "导入失败", message: "保存到本地失败。" })
+        return
+      }
+      await showNoticeDialog({ title: "导入成功", message: "学习记录与设置已恢复。" })
+      window.location.reload()
+    })
+
+    // 账号 & 云端备份
+    function setAccountStatus(text, kind = "info") {
+      if (!dom.accountStatus) return
+      const value = String(text || "").trim()
+      dom.accountStatus.textContent = value
+      dom.accountStatus.classList.remove("hidden", "is-info", "is-success", "is-error")
+      if (!value) {
+        dom.accountStatus.classList.add("hidden")
+        return
+      }
+      const statusKind = kind === "success" || kind === "error" ? kind : "info"
+      dom.accountStatus.classList.add(`is-${statusKind}`)
+    }
+
+    function formatLoginTime(value) {
+      const time = value ? new Date(value) : null
+      if (!time || Number.isNaN(time.getTime())) return "当前浏览器会话"
+      try {
+        return time.toLocaleString("zh-CN", {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      } catch {
+        return "当前浏览器会话"
+      }
+    }
+
+    function formatSyncTime(value) {
+      if (!value) return ""
+      // Normalize to UTC: ensure ISO 8601 with Z suffix
+      let s = String(value).trim()
+      if (!s) return ""
+      // Replace space separator with T
+      s = s.replace(" ", "T")
+      // Append Z if no timezone indicator
+      if (!/[+\-Zz]/.test(s.slice(-6))) {
+        s += "Z"
+      }
+      const time = new Date(s)
+      if (!time || Number.isNaN(time.getTime())) return ""
+      try {
+        return time.toLocaleString("zh-CN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      } catch {
+        return ""
+      }
+    }
+
+    function handleTokenError(result) {
+      const msg = String(result?.error || "").toLowerCase()
+      if (!msg) return
+      const isTokenError =
+        /invalid or expired token/i.test(msg) ||
+        /token.*expired/i.test(msg) ||
+        /unauthorized/i.test(msg) ||
+        (result?.status === 401)
+      if (isTokenError) {
+        window.A4Cloud?.logout?.()
+        updateAccountUi()
+        if (dom.cloudSyncStatus) {
+          dom.cloudSyncStatus.textContent = "登录已过期，请重新登录后再试"
+        }
+      }
+    }
+
+    function loadAccountSyncMeta() {
+      try {
+        const raw = localStorage.getItem(ACCOUNT_SYNC_META_KEY)
+        const parsed = raw ? JSON.parse(raw) : null
+        return parsed && typeof parsed === "object" ? parsed : null
+      } catch {
+        return null
+      }
+    }
+
+    function saveAccountSyncMeta(meta) {
+      try {
+        if (!meta || typeof meta !== "object") {
+          localStorage.removeItem(ACCOUNT_SYNC_META_KEY)
+          return
+        }
+        localStorage.setItem(ACCOUNT_SYNC_META_KEY, JSON.stringify(meta))
+      } catch { /* ignore */ }
+    }
+
+    function buildLearningSummary() {
+      const state = getStateSafe()
+      const rounds = Array.isArray(state?.rounds) ? state.rounds : []
+      const stats = window.A4Common?.computeStudyStats?.(rounds) || {
+        totalWords: 0,
+        todayWords: 0,
+        completedRounds: 0,
+        todayCompletedRounds: 0,
+        streak: 0,
+      }
+      const currentRoundId = String(state?.currentRoundId || "")
+      const currentRound = rounds.find((round) => String(round?.id || "") === currentRoundId) || null
+      const currentItems = Array.isArray(currentRound?.items) ? currentRound.items.length : 0
+      const roundLabel = currentRound ? `${currentItems} 词` : "未开始"
+      return {
+        roundsCount: rounds.length,
+        totalWords: stats.totalWords,
+        todayWords: stats.todayWords,
+        streak: stats.streak,
+        todayCompletedRounds: stats.todayCompletedRounds,
+        completedRounds: stats.completedRounds,
+        currentRoundLabel: roundLabel,
+      }
+    }
+
+    function updateAccountUi() {
+      const loggedIn = window.A4Cloud?.isLoggedIn?.() || false
+      const profile = window.A4Cloud?.getProfile?.() || null
+      const syncMeta = loadAccountSyncMeta()
+      const summary = buildLearningSummary()
+      if (dom.accountLoggedOut) dom.accountLoggedOut.classList.toggle("hidden", loggedIn)
+      if (dom.accountLoggedIn) dom.accountLoggedIn.classList.toggle("hidden", !loggedIn)
+      if (loggedIn) {
+        const username = String(profile?.username || "").trim() || "未命名用户"
+        const email = String(profile?.email || "").trim()
+        if (dom.cloudAccountTitle) dom.cloudAccountTitle.textContent = username
+        const loginTimeText = formatLoginTime(profile?.loggedInAt)
+        if (dom.cloudAccountSubtitle) {
+          dom.cloudAccountSubtitle.textContent = email
+            ? email
+            : "已登录，可上传或恢复学习数据"
+        }
+        if (dom.cloudBackupStateText) dom.cloudBackupStateText.textContent = "已启用"
+        if (dom.cloudRoundsText) dom.cloudRoundsText.textContent = String(summary.roundsCount)
+        if (dom.cloudWordsText) dom.cloudWordsText.textContent = String(summary.totalWords)
+        if (dom.cloudTodayWordsText) dom.cloudTodayWordsText.textContent = String(summary.todayWords)
+        if (dom.cloudStreakText) dom.cloudStreakText.textContent = `${summary.streak || 0} 天`
+        if (dom.cloudTodayRoundsText) dom.cloudTodayRoundsText.textContent = `${summary.todayCompletedRounds || 0} 轮`
+        if (dom.cloudSessionText) dom.cloudSessionText.textContent = loginTimeText || "刚刚开始"
+        if (dom.cloudCurrentRoundText) dom.cloudCurrentRoundText.textContent = summary.currentRoundLabel
+        if (dom.cloudLastSyncText) {
+          const timeText = formatSyncTime(syncMeta?.at)
+          const syncText = syncMeta?.label
+            ? timeText
+              ? `${syncMeta.label} · ${timeText}`
+              : String(syncMeta.label)
+            : "尚未同步"
+          dom.cloudLastSyncText.textContent = syncText
+        }
+        if (dom.cloudSyncStatus) {
+          const cur = String(dom.cloudSyncStatus.textContent || "").trim()
+          if (!cur || cur === "登录已过期，请重新登录后再试") {
+            dom.cloudSyncStatus.textContent = "可上传或恢复学习数据。"
+          }
+        }
+      } else {
+        if (dom.cloudAccountTitle) dom.cloudAccountTitle.textContent = "已退出登录"
+        if (dom.cloudAccountSubtitle) dom.cloudAccountSubtitle.textContent = "登录后即可启用云端备份"
+        if (dom.cloudBackupStateText) dom.cloudBackupStateText.textContent = "-"
+        if (dom.cloudLastSyncText) dom.cloudLastSyncText.textContent = "-"
+        if (dom.cloudRoundsText) dom.cloudRoundsText.textContent = "-"
+        if (dom.cloudWordsText) dom.cloudWordsText.textContent = "-"
+        if (dom.cloudTodayWordsText) dom.cloudTodayWordsText.textContent = "-"
+        if (dom.cloudStreakText) dom.cloudStreakText.textContent = "-"
+        if (dom.cloudTodayRoundsText) dom.cloudTodayRoundsText.textContent = "-"
+        if (dom.cloudSessionText) dom.cloudSessionText.textContent = "-"
+        if (dom.cloudCurrentRoundText) dom.cloudCurrentRoundText.textContent = "-"
+        if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = ""
+      }
+      renderAccountActionButtons()
+    }
+
+    dom.cloudSendCodeBtn?.addEventListener("click", async () => {
+      const email = dom.cloudEmailInput?.value?.trim() || ""
+      setAccountMode("register")
+      accountFieldTouched.registerEmail = true
+      updateRegisterEmailHint({ force: true, required: true })
+      if (!isValidEmail(email)) {
+        setAccountStatus(getRegisterEmailError({ required: true }), "error")
+        return
+      }
+      accountBusy.sendRegisterCode = true
+      renderAccountActionButtons()
+      setAccountStatus("发送注册验证码中…", "info")
+      try {
+        const result = await window.A4Cloud?.sendVerificationCode?.(email)
+        if (isAccountActionSuccess(result)) {
+          setFieldHint(dom.cloudEmailInput, dom.cloudEmailHint, "")
+          startRegisterCodeCooldown(60)
+          setAccountStatus("验证码已发送，请检查邮箱。60 秒后可重发。", "success")
+        } else {
+          tryStartCooldownFromError("register", result?.error)
+          applyAccountRateLimit("register", result, 60)
+          if (/email already registered/i.test(String(result?.error || ""))) {
+            accountFieldTouched.registerEmail = true
+            setFieldHint(dom.cloudEmailInput, dom.cloudEmailHint, "该邮箱已注册")
+          }
+          setAccountStatus("发送失败：" + formatAccountError(result?.error), "error")
+        }
+      } finally {
+        accountBusy.sendRegisterCode = false
+        renderAccountActionButtons()
+      }
+    })
+
+    dom.cloudRegisterBtn?.addEventListener("click", async () => {
+      const email = dom.cloudEmailInput?.value?.trim() || ""
+      const code = dom.cloudRegisterCodeInput?.value?.trim() || ""
+      const username = dom.cloudUsernameInput?.value?.trim() || ""
+      const password = dom.cloudPasswordInput?.value || ""
+      setAccountMode("register")
+      const validationError = validateRegisterFields({ required: true })
+      if (validationError) {
+        setAccountStatus(validationError, "error")
+        return
+      }
+      accountBusy.register = true
+      renderAccountActionButtons()
+      setAccountStatus("注册中…", "info")
+      try {
+        const result = await window.A4Cloud?.registerWithEmail?.(email, code, username, password)
+        if (isAccountActionSuccess(result)) {
+          if (dom.cloudRegisterCodeInput) dom.cloudRegisterCodeInput.value = ""
+          setFieldHint(dom.cloudEmailInput, dom.cloudEmailHint, "")
+          setFieldHint(dom.cloudRegisterCodeInput, dom.cloudRegisterCodeHint, "")
+          setFieldHint(dom.cloudUsernameInput, dom.cloudUsernameHint, "")
+          setFieldHint(dom.cloudPasswordInput, dom.cloudPasswordHint, "")
+          setAccountStatus("注册成功，已自动登录", "success")
+          updateAccountUi()
+        } else {
+          const errorText = String(result?.error || "")
+          if (/invalid or expired code|too many failed attempts/i.test(errorText)) {
+            accountFieldTouched.registerCode = true
+            setFieldHint(dom.cloudRegisterCodeInput, dom.cloudRegisterCodeHint, formatAccountError(errorText))
+          }
+          if (/email already registered/i.test(errorText)) {
+            accountFieldTouched.registerEmail = true
+            setFieldHint(dom.cloudEmailInput, dom.cloudEmailHint, "该邮箱已注册")
+          }
+          if (/username already exists/i.test(errorText)) {
+            accountFieldTouched.username = true
+            setFieldHint(dom.cloudUsernameInput, dom.cloudUsernameHint, "用户名已存在")
+          }
+          if (/password must be at least 8 characters/i.test(errorText)) {
+            accountFieldTouched.password = true
+            setFieldHint(dom.cloudPasswordInput, dom.cloudPasswordHint, "密码至少需要 8 位")
+          }
+          setAccountStatus("注册失败：" + formatAccountError(result?.error), "error")
+        }
+      } finally {
+        accountBusy.register = false
+        renderAccountActionButtons()
+      }
+    })
+
+    dom.cloudLoginBtn?.addEventListener("click", async () => {
+      const email = dom.cloudLoginEmailInput?.value?.trim() || ""
+      const password = dom.cloudLoginPasswordInput?.value || ""
+      const validationError = validateLoginFields()
+      if (validationError) {
+        setAccountMode("login")
+        setAccountStatus(validationError, "error")
+        return
+      }
+      accountBusy.login = true
+      renderAccountActionButtons()
+      setAccountStatus("登录中…", "info")
+      try {
+        const result = await window.A4Cloud?.login?.(email, password)
+        if (isAccountActionSuccess(result)) {
+          setAccountStatus("登录成功", "success")
+          setFieldHint(dom.cloudLoginEmailInput, dom.cloudLoginEmailHint, "")
+          setFieldHint(dom.cloudLoginPasswordInput, dom.cloudLoginPasswordHint, "")
+          updateAccountUi()
+        } else {
+          if (/invalid (email|username) or password/i.test(String(result?.error || ""))) {
+            accountFieldTouched.loginEmail = true
+            accountFieldTouched.loginPassword = true
+            setFieldHint(dom.cloudLoginEmailInput, dom.cloudLoginEmailHint, "邮箱或密码错误")
+            setFieldHint(dom.cloudLoginPasswordInput, dom.cloudLoginPasswordHint, "邮箱或密码错误")
+          }
+          setAccountMode("login")
+          setAccountStatus("登录失败：" + formatAccountError(result?.error), "error")
+        }
+      } finally {
+        accountBusy.login = false
+        renderAccountActionButtons()
+      }
+    })
+
+    dom.cloudGoogleLoginBtn?.addEventListener("click", () => {
+      setAccountStatus("Google 登录暂未接入，后续版本开放", "info")
+    })
+
+    dom.cloudSendResetCodeBtn?.addEventListener("click", async () => {
+      const email = dom.cloudResetEmailInput?.value?.trim() || ""
+      setAccountMode("reset")
+      accountFieldTouched.resetEmail = true
+      updateResetEmailHint({ force: true, required: true })
+      if (!isValidEmail(email)) {
+        setAccountStatus(getResetEmailError({ required: true }), "error")
+        return
+      }
+      accountBusy.sendResetCode = true
+      renderAccountActionButtons()
+      setAccountStatus("发送重置验证码中…", "info")
+      try {
+        const result = await window.A4Cloud?.requestPasswordReset?.(email)
+        if (isAccountActionSuccess(result)) {
+          setFieldHint(dom.cloudResetEmailInput, dom.cloudResetEmailHint, "")
+          startResetCodeCooldown(60)
+          setAccountStatus("重置验证码已发送，请检查邮箱。60 秒后可重发。", "success")
+        } else {
+          tryStartCooldownFromError("reset", result?.error)
+          applyAccountRateLimit("reset", result, 60)
+          if (/email not found/i.test(String(result?.error || ""))) {
+            accountFieldTouched.resetEmail = true
+            setFieldHint(dom.cloudResetEmailInput, dom.cloudResetEmailHint, "该邮箱未注册")
+          }
+          setAccountStatus("发送失败：" + formatAccountError(result?.error), "error")
+        }
+      } finally {
+        accountBusy.sendResetCode = false
+        renderAccountActionButtons()
+      }
+    })
+
+    dom.cloudResetPasswordBtn?.addEventListener("click", async () => {
+      const email = dom.cloudResetEmailInput?.value?.trim() || ""
+      const code = dom.cloudResetCodeInput?.value?.trim() || ""
+      const newPassword = dom.cloudResetPasswordInput?.value || ""
+      setAccountMode("reset")
+      const validationError = validateResetFields({ required: true })
+      if (validationError) {
+        setAccountStatus(validationError, "error")
+        return
+      }
+      accountBusy.resetPassword = true
+      renderAccountActionButtons()
+      setAccountStatus("重置密码中…", "info")
+      try {
+        const result = await window.A4Cloud?.resetPassword?.(email, code, newPassword)
+        if (isAccountActionSuccess(result)) {
+          setFieldHint(dom.cloudResetEmailInput, dom.cloudResetEmailHint, "")
+          setFieldHint(dom.cloudResetCodeInput, dom.cloudResetCodeHint, "")
+          setFieldHint(dom.cloudResetPasswordInput, dom.cloudResetPasswordHint, "")
+          setAccountStatus("密码已重置，请使用新密码登录", "success")
+          if (dom.cloudPasswordInput) dom.cloudPasswordInput.value = ""
+          if (dom.cloudResetPasswordInput) dom.cloudResetPasswordInput.value = ""
+          if (dom.cloudResetCodeInput) dom.cloudResetCodeInput.value = ""
+        } else {
+          const errorText = String(result?.error || "")
+          if (/invalid or expired code|too many failed attempts/i.test(errorText)) {
+            accountFieldTouched.resetCode = true
+            setFieldHint(dom.cloudResetCodeInput, dom.cloudResetCodeHint, formatAccountError(errorText))
+          }
+          if (/password must be at least 8 characters/i.test(errorText)) {
+            accountFieldTouched.resetPassword = true
+            setFieldHint(dom.cloudResetPasswordInput, dom.cloudResetPasswordHint, "新密码至少需要 8 位")
+          }
+          setAccountStatus("重置失败：" + formatAccountError(result?.error), "error")
+        }
+      } finally {
+        accountBusy.resetPassword = false
+        renderAccountActionButtons()
+      }
+    })
+
+    dom.cloudLogoutBtn?.addEventListener("click", () => {
+      window.A4Cloud?.logout?.()
+      if (dom.cloudEmailInput) dom.cloudEmailInput.value = ""
+      if (dom.cloudRegisterCodeInput) dom.cloudRegisterCodeInput.value = ""
+      if (dom.cloudUsernameInput) dom.cloudUsernameInput.value = ""
+      if (dom.cloudPasswordInput) dom.cloudPasswordInput.value = ""
+      if (dom.cloudLoginEmailInput) dom.cloudLoginEmailInput.value = ""
+      if (dom.cloudLoginPasswordInput) dom.cloudLoginPasswordInput.value = ""
+      if (dom.cloudResetEmailInput) dom.cloudResetEmailInput.value = ""
+      if (dom.cloudResetCodeInput) dom.cloudResetCodeInput.value = ""
+      if (dom.cloudResetPasswordInput) dom.cloudResetPasswordInput.value = ""
+      setFieldHint(dom.cloudEmailInput, dom.cloudEmailHint, "")
+      setFieldHint(dom.cloudRegisterCodeInput, dom.cloudRegisterCodeHint, "")
+      setFieldHint(dom.cloudUsernameInput, dom.cloudUsernameHint, "")
+      setFieldHint(dom.cloudPasswordInput, dom.cloudPasswordHint, "")
+      setFieldHint(dom.cloudLoginEmailInput, dom.cloudLoginEmailHint, "")
+      setFieldHint(dom.cloudLoginPasswordInput, dom.cloudLoginPasswordHint, "")
+      setFieldHint(dom.cloudResetEmailInput, dom.cloudResetEmailHint, "")
+      setFieldHint(dom.cloudResetCodeInput, dom.cloudResetCodeHint, "")
+      setFieldHint(dom.cloudResetPasswordInput, dom.cloudResetPasswordHint, "")
+      setAccountMode("login")
+      setAccountStatus("已退出登录", "info")
+      updateAccountUi()
+    })
+
+    dom.cloudUploadBtn?.addEventListener("click", async () => {
+      if (accountBusy.uploadState || accountBusy.downloadState) return
+      if (!window.A4Cloud?.isLoggedIn?.()) {
+        if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "请先登录"
+        return
+      }
+      accountBusy.uploadState = true
+      renderAccountActionButtons()
+      try {
+        if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "上传中…"
+        const result = await window.A4Cloud?.uploadState?.()
+        if (result?.success) {
+          const savedAt = result.savedAt || new Date().toISOString()
+          saveAccountSyncMeta({ label: "上传成功", at: savedAt })
+          if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "上传成功：" + formatSyncTime(savedAt)
+          updateAccountUi()
+        } else {
+          saveAccountSyncMeta({ label: "上传失败", at: new Date().toISOString() })
+          if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "上传失败：" + (result?.error || "未知错误")
+          handleTokenError(result)
+          updateAccountUi()
+        }
+      } finally {
+        accountBusy.uploadState = false
+        renderAccountActionButtons()
+      }
+    })
+
+    dom.cloudDownloadBtn?.addEventListener("click", async () => {
+      if (accountBusy.uploadState || accountBusy.downloadState) return
+      if (!window.A4Cloud?.isLoggedIn?.()) {
+        if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "请先登录"
+        return
+      }
+      const confirmed = await showConfirmDialog({
+        message: "恢复本机会用云端学习数据覆盖当前浏览器本地数据。建议先导出完整学习数据作为备份。确定继续吗？",
+        trigger: dom.cloudDownloadBtn,
+      })
+      if (confirmed !== true) return
+      accountBusy.downloadState = true
+      renderAccountActionButtons()
+      try {
+        if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "下载中…"
+        const result = await window.A4Cloud?.downloadState?.()
+        if (result?.success) {
+          const savedAt = result.savedAt || new Date().toISOString()
+          saveAccountSyncMeta({ label: "恢复成功", at: savedAt })
+          if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "恢复成功：" + formatSyncTime(savedAt)
+          window.location.reload()
+        } else {
+          saveAccountSyncMeta({ label: "恢复失败", at: new Date().toISOString() })
+          if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "恢复失败：" + (result?.error || "未知错误")
+          handleTokenError(result)
+          updateAccountUi()
+        }
+      } finally {
+        accountBusy.downloadState = false
+        renderAccountActionButtons()
+      }
+    })
+
+    return { open, close, render, updateVoiceUi, renderVoiceSelect, renderVoiceModeUi, updateAccountUi }
+  }
+
+  ns.controller = { createSettingsModalController }
+})()

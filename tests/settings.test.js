@@ -6,7 +6,8 @@ const assert = require("node:assert/strict")
 
 const ROOT = path.join(__dirname, "..")
 const commonCode = fs.readFileSync(path.join(ROOT, "js", "core", "common.js"), "utf8")
-const settingsCode = fs.readFileSync(path.join(ROOT, "js", "settings.js"), "utf8")
+const { readSettingsBundle } = require("./helpers/settings-source")
+const settingsCode = readSettingsBundle()
 const lookupCode = fs.readFileSync(path.join(ROOT, "js", "lookup.js"), "utf8")
 const settingsStylePath = path.join(ROOT, "css", "settings.css")
 const settingsStyle = fs.existsSync(settingsStylePath) ? fs.readFileSync(settingsStylePath, "utf8") : ""

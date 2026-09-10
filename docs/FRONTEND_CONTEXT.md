@@ -34,12 +34,19 @@ A4-Memory/
 │   │   ├── motion.js      # 完整文档导航的兼容动效
 │   │   ├── route-entry.js # 记录 / 设置深链入口
 │   │   └── router.js      # App Shell 路由、生命周期与焦点/滚动恢复
+│   ├── settings/
+│   │   ├── state-normalize.js  # 状态归一化（备份导入 / 云恢复清洗规则）
+│   │   ├── ai.js           # AI 提供商预设、请求构建与模型解析
+│   │   ├── account.js      # 账号表单校验、错误文案与验证码冷却
+│   │   ├── tts.js          # 发音测试选项与离线语音展示辅助
+│   │   ├── dom.js          # 设置面板 DOM 模板与类别导航
+│   │   └── controller.js   # 设置视图控制器 createSettingsModalController
 │   ├── __cloud_stub.js    # cloud.js 占位（仅公开仓库构建时使用）
 │   ├── app.js             # 学习视图控制器
 │   ├── lookup.js          # 查词弹窗控制器
 │   ├── records.js         # 记录视图控制器
 │   ├── settings-page.js   # 设置视图状态与生命周期接线
-│   ├── settings.js        # 设置界面与行为控制器
+│   ├── settings.js        # 设置模块门面（组装 js/settings/ 子模块）
 │   ├── speech.js          # 语音合成封装
 │   ├── storage.js         # localStorage 读写封装
 │   ├── updater.js         # GitHub 版本更新检测、平台安装包选择与通知
@@ -118,6 +125,12 @@ index.html
   → js/cloud.js              ← 可选私有模块
   → js/speech.js
   → js/updater.js
+  → js/settings/state-normalize.js
+  → js/settings/ai.js
+  → js/settings/account.js
+  → js/settings/tts.js
+  → js/settings/dom.js
+  → js/settings/controller.js
   → js/settings.js
   → js/lookup.js
   → js/app.js
@@ -232,8 +245,19 @@ window.A4Speech = {
 }
 ```
 
-### `js/settings.js`
-设置界面控制器，暴露 `window.A4Settings`；设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口为界面占位，点击只显示暂未接入提示，不调用私有登录桥接。AI 模型输入支持自由填写；“获取模型”使用当前 Base URL 和内存态 API Key 请求标准 `/models` 接口，成功结果通过带本地搜索的应用内选择面板填入。模型列表不内置、不缓存、不回退，获取失败不打开选择面板：
+### `js/settings/` 与 `js/settings.js`
+设置模块由 `js/settings/` 下的 6 个子模块与门面 `js/settings.js` 组成：子模块按 `index.html` 的顺序加载，各自把导出挂到统一的 `window.A4SettingsInternal`；门面读取这些导出、组装并暴露 `window.A4Settings`，同时保留原有的顶层面板挂载时序。
+
+| 文件 | 职责 |
+|------|------|
+| `js/settings/state-normalize.js` | 状态归一化：备份导入 / 云恢复清洗规则、`pageIndex` 按 `roundCap` 补分、`aiConfig.apiKey` 强制清空 |
+| `js/settings/ai.js` | AI 提供商预设、Base URL / origin 归一化、请求构建与模型列表解析 |
+| `js/settings/account.js` | 账号表单校验、错误文案映射、验证码冷却读写与 429 退避解析 |
+| `js/settings/tts.js` | 发音测试选项构造与离线语音展示辅助 |
+| `js/settings/dom.js` | 设置面板 DOM 模板、类别导航与数值下拉辅助 |
+| `js/settings/controller.js` | `createSettingsModalController`：设置表单、账号、发音、AI 与云同步行为 |
+
+设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口为界面占位，点击只显示暂未接入提示，不调用私有登录桥接。AI 模型输入支持自由填写；“获取模型”使用当前 Base URL 和内存态 API Key 请求标准 `/models` 接口，成功结果通过带本地搜索的应用内选择面板填入。模型列表不内置、不缓存、不回退，获取失败不打开选择面板：
 ```javascript
 window.A4Settings = {
   createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation }),

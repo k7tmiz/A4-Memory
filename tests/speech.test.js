@@ -6,7 +6,8 @@ const assert = require("node:assert/strict")
 
 const commonCode = fs.readFileSync(path.join(__dirname, "..", "js", "core", "common.js"), "utf8")
 const speechCode = fs.readFileSync(path.join(__dirname, "..", "js", "speech.js"), "utf8")
-const settingsCode = fs.readFileSync(path.join(__dirname, "..", "js", "settings.js"), "utf8")
+const { readSettingsBundle } = require("./helpers/settings-source")
+const settingsCode = readSettingsBundle()
 const styleCode = fs.readFileSync(path.join(__dirname, "..", "css", "style.css"), "utf8")
 
 function createBaseSandbox() {

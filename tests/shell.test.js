@@ -13,7 +13,8 @@ const recordsMarkup = fs.readFileSync(path.join(ROOT, "records.html"), "utf8")
 const settingsMarkup = readOptional("settings.html")
 const appCode = fs.readFileSync(path.join(ROOT, "js", "app.js"), "utf8")
 const recordsCode = fs.readFileSync(path.join(ROOT, "js", "records.js"), "utf8")
-const settingsCode = fs.readFileSync(path.join(ROOT, "js", "settings.js"), "utf8")
+const { readSettingsBundle } = require("./helpers/settings-source")
+const settingsCode = readSettingsBundle()
 const settingsPageCode = readOptional("js/settings-page.js")
 const lookupCode = fs.readFileSync(path.join(ROOT, "js", "lookup.js"), "utf8")
 const routerCode = fs.readFileSync(path.join(ROOT, "js", "ui", "router.js"), "utf8")
@@ -374,7 +375,13 @@ describe("responsive application shell", () => {
       ["js/utils.js", "20260802-1"],
       ["js/speech.js", "20260802-1"],
       ["js/updater.js", "20260825-1"],
-      ["js/settings.js", "20260825-4"],
+      ["js/settings/state-normalize.js", "20260910-1"],
+      ["js/settings/ai.js", "20260910-1"],
+      ["js/settings/account.js", "20260910-1"],
+      ["js/settings/tts.js", "20260910-1"],
+      ["js/settings/dom.js", "20260910-1"],
+      ["js/settings/controller.js", "20260910-1"],
+      ["js/settings.js", "20260910-1"],
       ["js/lookup.js", "20260802-1"],
       ["js/app.js", "20260802-1"],
       ["js/records.js", "20260825-1"],
