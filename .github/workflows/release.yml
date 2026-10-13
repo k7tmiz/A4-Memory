@@ -292,6 +292,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # runner 的 cmdline-tools 16 软件源已移除旧版 tools 包，只安装 platform-tools（NDK 由后续步骤安装）
+          packages: platform-tools
 
       - name: Install Android NDK
         run: |

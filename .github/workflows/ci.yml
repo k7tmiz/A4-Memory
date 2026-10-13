@@ -34,6 +34,9 @@ jobs:
           targets: aarch64-linux-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # runner 的 cmdline-tools 16 软件源已移除旧版 tools 包，只安装 platform-tools（NDK 由后续步骤安装）
+          packages: platform-tools
       - name: Configure Android NDK linker
         run: |
           NDK_VER=$(ls "$ANDROID_HOME/ndk" 2>/dev/null | head -1)
