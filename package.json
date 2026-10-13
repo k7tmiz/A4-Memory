@@ -10,6 +10,8 @@
     "tauri": "tauri",
     "lint": "eslint js/",
     "check:version": "node scripts/check-version.mjs",
+    "cache-bust": "node scripts/cache-bust.mjs",
+    "check:cache": "node scripts/cache-bust.mjs --check",
     "test": "node --test tests/**/*.test.js"
   },
   "devDependencies": {

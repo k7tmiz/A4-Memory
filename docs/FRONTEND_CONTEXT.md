@@ -56,7 +56,8 @@ A4-Memory/
 │   ├── updater.js         # GitHub 版本更新检测、平台安装包选择与通知
 │   └── utils.js           # 文件下载与清洗工具
 ├── scripts/
-│   ├── build.mjs          # 生产构建脚本（复制文件到 dist/，Android 构建时准备原生 TTS）
+│   ├── build.mjs          # 生产构建脚本（复制文件到 dist/，按 dist 内容重算缓存版本号，Android 构建时准备原生 TTS）
+│   ├── cache-bust.mjs     # 以文件内容哈希改写 HTML 入口中的 ?v= 缓存版本号（--check 只检查）
 │   └── prepare-android-tts.mjs # 幂等安装 Android TTS AAR、桥接、Gradle 与 ProGuard 配置
 ├── eslint.config.mjs      # ESLint 代码规范配置
 ├── src-tauri/             # Tauri 桌面端脚手架（Rust）
@@ -147,6 +148,8 @@ index.html
 `records.html` 与 `settings.html` 是 CSP 兼容的深链入口，只加载样式和 `js/ui/route-entry.js`，分别使用 `location.replace()` 进入 `index.html?view=records|settings`。App Shell 启动后通过 `replaceState` 规范化为 `records.html` 或 `settings.html` 的整洁地址；站内带 `data-a4-route` 的入口不经过该重定向。
 
 `cloud.js` 只在 App Shell 中固定引用；缺失时浏览器会 404，但不影响其他脚本加载。
+
+各 HTML 入口引用的 CSS/JS 均带 `?v=<内容哈希前 10 位>` 缓存版本号，由 `npm run cache-bust` 生成；`cloud.js` 不在公开仓库中，其版本号手动维护。
 
 ---
 

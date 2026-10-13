@@ -1,6 +1,7 @@
 import { cp, rm, mkdir, readFile, writeFile, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { prepareAndroidTtsForBuild } from './prepare-android-tts.mjs';
+import { applyRevisions } from './cache-bust.mjs';
 
 const DIST = 'dist';
 
@@ -66,5 +67,9 @@ if (existsSync(updaterDist)) {
   await writeFile(updaterDist, content);
   console.log(`✅  updater.js → APP_VERSION = ${pkg.version}`);
 }
+
+// dist 中的 updater.js 与 cloud.js 已替换，按 dist 实际内容重算缓存版本号
+applyRevisions(DIST);
+console.log('✅  cache-bust revisions synced in dist/');
 
 console.log('✅  Build complete → dist/');

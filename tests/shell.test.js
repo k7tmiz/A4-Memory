@@ -1,5 +1,6 @@
 const fs = require("node:fs")
 const path = require("node:path")
+const { pathToFileURL } = require("node:url")
 const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
 
@@ -306,7 +307,7 @@ describe("responsive application shell", () => {
   })
 
   it("keeps the dock glass interactive with drag, lift and velocity stretch", () => {
-    assert.match(indexMarkup, /<script src="\.\/js\/ui\/dock-glass\.js\?v=20260825-2"><\/script>/)
+    assert.match(indexMarkup, /<script src="\.\/js\/ui\/dock-glass\.js\?v=[\w-]+"><\/script>/)
     const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
     assert.match(dockGlassCode, /A4DockGlass/)
     assert.match(dockGlassCode, /attachSlider/)
@@ -359,41 +360,16 @@ describe("responsive application shell", () => {
     }
   })
 
-  it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20261013-4"
-    const themeRevision = "20261013-2"
+  it("cache-busts every shell asset by content hash", async () => {
+    const { findStaleAssets, MANUAL_REVISION_ASSETS } = await import(
+      pathToFileURL(path.join(ROOT, "scripts", "cache-bust.mjs")).href
+    )
+    const stale = findStaleAssets(ROOT).map(({ html, asset }) => `${html}: ${asset}`)
+    assert.deepEqual(stale, [], "缓存版本号已过期，请运行 npm run cache-bust")
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
-      assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
-      assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${themeRevision}"`))
-      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=20261013-2"`))
-    }
-    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20261013-1"/)
-    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20261013-1"/)
-    const scriptRevisions = new Map([
-      ["js/core/common.js", "20260802-1"],
-      ["js/ui/layers.js", "20260802-1"],
-      ["js/ui/router.js", "20260802-1"],
-      ["js/ui/dock-glass.js", "20260825-2"],
-      ["js/utils.js", "20260802-1"],
-      ["js/speech.js", "20260802-1"],
-      ["js/updater.js", "20260825-1"],
-      ["js/settings/state-normalize.js", "20260910-1"],
-      ["js/settings/ai.js", "20260910-1"],
-      ["js/settings/account.js", "20260910-1"],
-      ["js/settings/tts.js", "20260910-1"],
-      ["js/settings/dom.js", "20261013-1"],
-      ["js/settings/controller.js", "20260910-1"],
-      ["js/settings.js", "20260910-1"],
-      ["js/lookup.js", "20260802-1"],
-      ["js/app/wordbook-io.js", "20261013-1"],
-      ["js/app/study-helpers.js", "20261013-1"],
-      ["js/app.js", "20261013-4"],
-      ["js/records.js", "20261013-1"],
-      ["js/settings-page.js", "20260802-1"],
-    ])
-    for (const [script, revision] of scriptRevisions) {
-      const escapedScript = script.replaceAll(".", "\\.")
-      assert.match(indexMarkup, new RegExp(`src="\\./${escapedScript}\\?v=${revision}"`))
+      for (const [, asset, query] of markup.matchAll(/(?:src|href)="\.\/((?:css|js|data)\/[\w./-]+?\.(?:css|js))(\?v=[\w-]+)?"/g)) {
+        assert.ok(query || MANUAL_REVISION_ASSETS.has(asset), `${asset} 缺少 ?v= 版本号`)
+      }
     }
   })
 })
