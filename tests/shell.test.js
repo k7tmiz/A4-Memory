@@ -360,7 +360,7 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20261013-3"
+    const styleRevision = "20261013-4"
     const themeRevision = "20261013-2"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
@@ -427,5 +427,18 @@ describe("study paper bounds and intro focus", () => {
   it("wraps round status counts only between items", () => {
     assert.match(appCode, /part\.className = "status-meta-part"/)
     assert.match(fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8"), /\.status-meta-part\s*\{\s*white-space:\s*nowrap;/)
+  })
+})
+
+describe("bundled fonts", () => {
+  it("serves Plus Jakarta Sans locally without external font services", () => {
+    const sharedCss = fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8")
+    for (const file of ["plus-jakarta-sans-latin.woff2", "plus-jakarta-sans-latin-ext.woff2", "OFL.txt"]) {
+      assert.ok(fs.existsSync(path.join(ROOT, "assets", "fonts", file)), file)
+    }
+    assert.match(sharedCss, /@font-face\s*\{[^}]*font-family:\s*"Plus Jakarta Sans"[^}]*font-weight:\s*400 800[^}]*plus-jakarta-sans-latin\.woff2/s)
+    assert.match(indexMarkup, /<link rel="preload" href="\.\/assets\/fonts\/plus-jakarta-sans-latin\.woff2" as="font"/)
+    assert.doesNotMatch(indexMarkup, /fonts\.googleapis\.com|fonts\.gstatic\.com/)
+    assert.match(indexMarkup, /font-src 'self';/)
   })
 })
