@@ -41,6 +41,9 @@ A4-Memory/
 │   │   ├── tts.js          # 发音测试选项与离线语音展示辅助
 │   │   ├── dom.js          # 设置面板 DOM 模板与类别导航
 │   │   └── controller.js   # 设置视图控制器 createSettingsModalController
+│   ├── app/
+│   │   ├── wordbook-io.js  # 词书解析、语言/名称推断与 GitHub 词书列表
+│   │   └── study-helpers.js # 纸面排版、发音文本与复习滑动辅助函数
 │   ├── __cloud_stub.js    # cloud.js 占位（仅公开仓库构建时使用）
 │   ├── app.js             # 学习视图控制器
 │   ├── lookup.js          # 查词弹窗控制器
@@ -133,6 +136,8 @@ index.html
   → js/settings/controller.js
   → js/settings.js
   → js/lookup.js
+  → js/app/wordbook-io.js
+  → js/app/study-helpers.js
   → js/app.js
   → js/records.js
   → js/settings-page.js
@@ -277,8 +282,15 @@ window.A4Lookup = {
 ```
 App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每个视图获得一个打开句柄，打开时切换到该视图的状态、持久化与词书语言上下文。学习视图的查词上下文提供“加入当前轮”能力，记录视图的查词上下文不提供该操作。查词面板在视口中心基础上略向上偏移，Android 的查词语言选择使用应用内底部面板。功能包括本地词书检索、在线补充（MyMemory + dictionaryapi.dev）、西语动词变位、AI 补充和查词缓存。
 
-### `js/app.js`
-学习视图控制器（UI 层，不含核心业务逻辑）。负责：
+### `js/app/` 与 `js/app.js`
+`js/app/` 下的学习视图子模块先于 `js/app.js` 加载，各自把导出挂到 `window.A4AppInternal`，由 `js/app.js` 解构使用：
+
+| 文件 | 职责 |
+|------|------|
+| `js/app/wordbook-io.js` | `wordbookIo`：TXT/CSV/TSV/JSON 词条解析、词书对象归一化、语言与名称推断、远程 JSON 词书结构提取、GitHub 仓库 JSON 文件列表与排序 |
+| `js/app/study-helpers.js` | `studyHelpers`：洗牌、纸面碰撞检测、单词元素构建、西语阴阳性简写展开、复习滑动阈值与橡皮筋阻尼 |
+
+`js/app.js` 是学习视图控制器（UI 层，不含核心业务逻辑）。负责：
 - A4 排版与单词放置
 - 当前轮恢复
 - 首页词书选择；Android 环境使用应用内底部面板，iOS/macOS/桌面浏览器保留原生 `<select>`
