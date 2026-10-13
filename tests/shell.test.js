@@ -359,10 +359,11 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20261013-1"
+    const styleRevision = "20261013-2"
+    const themeRevision = "20261013-1"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
-      assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${styleRevision}"`))
+      assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${themeRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=20261013-1"`))
     }
     assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260825-1"/)
@@ -385,7 +386,7 @@ describe("responsive application shell", () => {
       ["js/lookup.js", "20260802-1"],
       ["js/app/wordbook-io.js", "20261013-1"],
       ["js/app/study-helpers.js", "20261013-1"],
-      ["js/app.js", "20261013-2"],
+      ["js/app.js", "20261013-3"],
       ["js/records.js", "20260825-1"],
       ["js/settings-page.js", "20260802-1"],
     ])
@@ -393,5 +394,25 @@ describe("responsive application shell", () => {
       const escapedScript = script.replaceAll(".", "\\.")
       assert.match(indexMarkup, new RegExp(`src="\\./${escapedScript}\\?v=${revision}"`))
     }
+  })
+})
+
+describe("study paper bounds and intro focus", () => {
+  it("keeps rendered and revealed words inside the paper without rewriting saved positions", () => {
+    assert.match(appCode, /function fitWordElementInPaper\(el\)[^]*?clamp\(left, 0, Math\.max\(0, paperW - w\)\)[^]*?clamp\(top, 0, Math\.max\(0, paperH - h\)\)/)
+    assert.match(appCode, /function renderCurrentRound[^]*?box: fitWordElementInPaper\(el\)/)
+    assert.match(appCode, /function updateMeaningToggle\(\)[^]*?fitPlacedWordsInPaper\(\)\n\}/)
+    assert.match(appCode, /classList\.toggle\("reveal"\)\n[^]*?fitWordElementInPaper\(itemEl\)/)
+    assert.match(appCode, /const maxX = Math\.max\(0, m\.paperW - m\.w - margin \* 2\)/)
+    assert.match(appCode, /const maxY = Math\.max\(0, m\.paperH - m\.h - margin \* 2\)/)
+  })
+
+  it("opens the intro at the top by focusing its close button", () => {
+    assert.match(indexMarkup, /id="closeIntroBtn"[^>]*data-autofocus/)
+  })
+
+  it("wraps round status counts only between items", () => {
+    assert.match(appCode, /part\.className = "status-meta-part"/)
+    assert.match(fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8"), /\.status-meta-part\s*\{\s*white-space:\s*nowrap;/)
   })
 })

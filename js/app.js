@@ -990,6 +990,27 @@ function getPaperInnerSize() {
   return { w: rect.width || 1, h: rect.height || 1 }
 }
 
+// 单词尺寸随字号、释义显示和纸面尺寸变化，只修正显示位置，不改写已保存的归一化坐标。
+function fitWordElementInPaper(el) {
+  const paperW = dom.paperInner.clientWidth || getPaperInnerSize().w
+  const paperH = dom.paperInner.clientHeight || getPaperInnerSize().h
+  const w = el.offsetWidth
+  const h = el.offsetHeight
+  const left = parseFloat(el.style.left) || 0
+  const top = parseFloat(el.style.top) || 0
+  const x = clamp(left, 0, Math.max(0, paperW - w))
+  const y = clamp(top, 0, Math.max(0, paperH - h))
+  if (x !== left) el.style.left = `${x}px`
+  if (y !== top) el.style.top = `${y}px`
+  return { x, y, w, h }
+}
+
+function fitPlacedWordsInPaper() {
+  for (const placed of appState.placed) {
+    if (placed?.el?.isConnected) placed.box = fitWordElementInPaper(placed.el)
+  }
+}
+
 function getCurrentRound() {
   return appState.rounds.find((r) => r.id === appState.currentRoundId) || null
 }
@@ -1128,11 +1149,10 @@ function renderCurrentRound({ transition = "" } = {}) {
     el.style.left = `${x}px`
     el.style.top = `${y}px`
     dom.paperInner.appendChild(el)
-    const rect = el.getBoundingClientRect()
     appState.placed.push({
       word: item.word,
       roundItem: item,
-      box: { x, y, w: rect.width, h: rect.height },
+      box: fitWordElementInPaper(el),
       el,
       fontSize: item.fontSize || "",
       pos: item.pos,
@@ -1260,7 +1280,14 @@ function renderStats() {
       `不会 ${counts.unknown}`,
       `待复习 ${dueCount}`,
     ]
-    dom.roundStatusCounts.textContent = parts.join(" · ")
+    dom.roundStatusCounts.replaceChildren(
+      ...parts.flatMap((text, index) => {
+        const part = document.createElement("span")
+        part.className = "status-meta-part"
+        part.textContent = text
+        return index ? [" · ", part] : [part]
+      }),
+    )
   }
 }
 
@@ -1273,6 +1300,7 @@ function updateMeaningToggle() {
   } else {
     dom.paper.classList.remove("show-meaning")
   }
+  fitPlacedWordsInPaper()
 }
 
 function getWordbookLanguageForSpeech() {
@@ -1800,8 +1828,8 @@ function placeWordElement(word) {
     el.style.fontSize = `${size}px`
     const m = measureElementInPaper(el)
 
-    const maxX = Math.max(0, m.paperW - m.w)
-    const maxY = Math.max(0, m.paperH - m.h)
+    const maxX = Math.max(0, m.paperW - m.w - margin * 2)
+    const maxY = Math.max(0, m.paperH - m.h - margin * 2)
 
     let attempts = 0
     while (attempts < 240) {
@@ -2494,6 +2522,8 @@ dom.paperInner.addEventListener("click", (e) => {
   if (!itemEl) return
   if (appState.showMeaning) itemEl.classList.toggle("hide-meaning")
   else itemEl.classList.toggle("reveal")
+  const placed = appState.placed.find((p) => p.el === itemEl)
+  if (placed) placed.box = fitWordElementInPaper(itemEl)
 })
 
 function toggleImmersiveMode() {

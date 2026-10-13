@@ -142,6 +142,10 @@ body.modal-open {
   line-height: 1.2;
 }
 
+.status-meta-part {
+  white-space: nowrap;
+}
+
 .status-progress {
   width: 220px;
   height: 6px;
