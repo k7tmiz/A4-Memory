@@ -287,7 +287,6 @@ const dom = {
   roundBadge: document.getElementById("roundBadge"),
   roundProgress: document.getElementById("roundProgress"),
   roundStatusCounts: document.getElementById("roundStatusCounts"),
-  settingsBtn: document.getElementById("settingsBtn"),
   nextBtn: document.getElementById("nextBtn"),
   reviewBtn: document.getElementById("reviewBtn"),
   newRoundBtn: document.getElementById("newRoundBtn"),

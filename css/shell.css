@@ -29,28 +29,6 @@
   stroke-linejoin: round;
 }
 
-@keyframes a4-screen-enter {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes a4-screen-exit {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.995);
-  }
-}
-
 @keyframes a4-dock-enter {
   from {
     opacity: 0;
@@ -59,17 +37,6 @@
   to {
     opacity: 1;
     transform: translate(-50%, 0) scale(1);
-  }
-}
-
-@keyframes a4-dock-exit {
-  from {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, 7px) scale(0.98);
   }
 }
 
@@ -858,11 +825,6 @@
 @media (max-width: 700px) {
   .mobile-only {
     display: flex;
-  }
-
-  body:not(.records-page) > .app-header,
-  body.records-page > .app-header {
-    display: none;
   }
 
   body:not(.records-page) .app {

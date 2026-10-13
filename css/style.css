@@ -12,7 +12,6 @@ html {
 
 :root {
   --bg: #f8fafc;
-  --bg-gradient: none;
   --text: #0b1220;
   --muted: #546075;
   --card: rgba(255, 255, 255, 0.9);
@@ -33,7 +32,6 @@ html {
   --paper: #ffffff;
   --paperShadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 12px 36px -8px rgba(15, 23, 42, 0.07), 0 28px 56px -14px rgba(15, 23, 42, 0.04);
   --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-ease-in: cubic-bezier(0.4, 0, 1, 1);
   --motion-duration-fast: 180ms;
   --motion-duration-page: 300ms;
 }
@@ -45,7 +43,6 @@ body {
 
 body.theme-dark {
   --bg: #09090b;
-  --bg-gradient: none;
   --text: #f4f4f6;
   --muted: #a1a1aa;
   --card: rgba(255, 255, 255, 0.04);
@@ -122,28 +119,6 @@ body.modal-open {
   right: 0;
 }
 
-.app-header {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: space-between;
-  padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 8px
-    calc(16px + env(safe-area-inset-left));
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
-.title h1 {
-  margin: 0;
-  font-size: 20px;
-}
-
-.subtitle {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .badge {
   padding: 6px 10px;
   border-radius: 999px;
@@ -152,28 +127,12 @@ body.modal-open {
   font-size: 13px;
 }
 
-.status {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  min-width: 220px;
-}
-
 .status-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   width: 100%;
-}
-
-.status-entry {
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 13px;
-  line-height: 1;
-  white-space: nowrap;
 }
 
 .status-meta {
@@ -306,10 +265,6 @@ body.modal-open {
     grid-area: toggles;
     justify-content: flex-end;
   }
-}
-
-.spacer {
-  flex: 1;
 }
 
 button {
@@ -537,16 +492,6 @@ body.android-wordbook-picker .wordbook-picker-btn {
 }
 
 @media (max-width: 520px) {
-  .app-header {
-    flex-wrap: wrap;
-  }
-
-  .status {
-    min-width: 0;
-    width: 100%;
-    align-items: flex-start;
-  }
-
   .status-top {
     justify-content: space-between;
     flex-wrap: wrap;
@@ -568,18 +513,6 @@ body.android-wordbook-picker .wordbook-picker-btn {
   .home-controls .button-link,
   .home-controls select {
     padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .status-top #settingsBtn {
-    padding: 6px 10px;
-    font-size: 13px;
-  }
-
-  .records-page .status-top #openSettingsBtn,
-  .records-page .status-top #lookupBtn,
-  .records-page .status-top .button-link {
-    padding: 6px 10px;
     font-size: 13px;
   }
 
@@ -1652,12 +1585,6 @@ body.theme-dark .paper {
   font-size: 13px;
 }
 
-.review-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
 .review-card {
   border: 1px solid var(--border);
   background: var(--card2);
@@ -1963,60 +1890,10 @@ body.theme-dark .paper {
   font-size: 13px;
 }
 
-.review-item {
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--card2);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.review-item-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.review-item .t {
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.review-item .m {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.review-item-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.review-item-actions button {
-  padding: 6px 8px;
-  border-radius: 10px;
-  font-size: 12px;
-}
-
-.review-item-actions button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accentText);
-}
-
 @media (min-width: 920px) {
   .paper {
     width: min(60vw, 620px);
     height: calc(min(60vw, 620px) * 297 / 210);
-  }
-
-  .review-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .review-card-term {
@@ -2454,16 +2331,6 @@ body.theme-dark .offline-tts-status.is-error {
   overflow-wrap: anywhere;
 }
 
-.account-summary-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.account-summary-actions > * {
-  min-width: 0;
-}
-
 .account-sync-note {
   margin-top: 0;
 }
@@ -2547,10 +2414,6 @@ body.theme-dark .account-badge {
   .view-tabs.account-tabs button {
     flex: 1 1 0;
   }
-
-  .account-summary-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 430px) {
@@ -2627,23 +2490,6 @@ body.theme-dark .account-badge {
 
   .account-summary-stat strong {
     font-size: 13px;
-  }
-
-  .account-summary-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .account-summary-actions #cloudLogoutBtn {
-    grid-column: 1 / -1;
-    min-height: 32px;
-    padding: 6px 8px;
-    border-color: transparent;
-    color: var(--muted);
-  }
-
-  .account-summary-actions button {
-    width: 100%;
   }
 
   .account-sync-note {
@@ -3092,10 +2938,6 @@ body.theme-dark .account-badge {
   font-size: 13px;
 }
 
-.immersive .subtitle {
-  display: none;
-}
-
 .immersive .immersive-hide {
   display: none !important;
 }
@@ -3112,22 +2954,6 @@ body.theme-dark .account-badge {
 }
 
 @media (max-width: 560px) {
-  .app-header {
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-
-  .title {
-    min-width: 0;
-    flex: 1 1 100%;
-  }
-
-  .status {
-    min-width: 0;
-    align-items: flex-start;
-    width: 100%;
-  }
-
   .status-meta {
     text-align: left;
   }

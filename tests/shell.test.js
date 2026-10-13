@@ -359,11 +359,11 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20260802-1"
+    const styleRevision = "20261013-1"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${styleRevision}"`))
-      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=20260825-2"`))
+      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=20261013-1"`))
     }
     assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260825-1"/)
     assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260825-8"/)
@@ -383,7 +383,7 @@ describe("responsive application shell", () => {
       ["js/settings/controller.js", "20260910-1"],
       ["js/settings.js", "20260910-1"],
       ["js/lookup.js", "20260802-1"],
-      ["js/app.js", "20260802-1"],
+      ["js/app.js", "20261013-1"],
       ["js/records.js", "20260825-1"],
       ["js/settings-page.js", "20260802-1"],
     ])
