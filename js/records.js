@@ -745,6 +745,7 @@
       goalTarget,
       goalPercent,
       goalText,
+      goalPending: goalParts.length > 0 && !goalDone,
       totalText: `累计 ${stats.totalWords} 个词 · 完成 ${stats.completedRounds} 轮`,
     }
   }
@@ -1143,7 +1144,12 @@
       kicker.className = "records-focus-kicker"
       kicker.textContent = "今日复习"
       const title = document.createElement("h2")
-      title.textContent = summary.dueWords > 0 ? `${summary.dueWords} 个单词等你复习` : "今天的复习已经完成"
+      title.textContent =
+        summary.dueWords > 0
+          ? `${summary.dueWords} 个单词等你复习`
+          : summary.goalPending
+            ? "没有待复习的单词"
+            : "今天的复习已经完成"
       const description = document.createElement("p")
       description.textContent =
         summary.dueWords > 0 ? `${summary.goalText}。趁记忆还热，完成今天最重要的一组。` : summary.goalText
@@ -1182,6 +1188,13 @@
           navigateToStudy()
         })
         focusActions.appendChild(reviewDueBtn)
+      } else if (summary.goalPending) {
+        const continueBtn = document.createElement("button")
+        continueBtn.className = "records-focus-action"
+        continueBtn.type = "button"
+        continueBtn.textContent = "继续学习"
+        continueBtn.addEventListener("click", () => navigateToStudy())
+        focusActions.appendChild(continueBtn)
       } else {
         const done = document.createElement("span")
         done.className = "records-focus-done"

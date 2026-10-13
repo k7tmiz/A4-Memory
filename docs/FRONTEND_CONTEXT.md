@@ -108,9 +108,9 @@ A4-Memory/
 
 `index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。设置是一级 App Shell 路由，其页面呈现不使用弹窗式标题或返回头。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。页面退出时只有活动视图接收 `exit` 生命周期，非活动控制器不会用旧的完整状态快照覆盖存储。
 
-App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；底栏为 Liquid Glass 玻璃质感，按住浮起、横向拖动可切换视图；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
+App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。排版规范统一定义在 `css/style.css` 的 `:root`：`--font-sans` 字体栈（Plus Jakarta Sans 优先，中文依次回退苹方、冬青黑体、微软雅黑与思源黑体），`--fs-3xs`～`--fs-6xl` 字号层级（10–34px）与页面大标题 `--fs-display` / `--fs-display-compact`，`--fw-regular`～`--fw-heavy` 五档字重（400–800）；各样式文件只引用这些变量，仅打印、极小屏释义和动态数字字号保留局部取值。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；底栏为 Liquid Glass 玻璃质感，按住浮起、横向拖动可切换视图；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
-学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，A4 纸面在视口水平居中；左侧词书/工具与右侧轮次进度相对纸面两侧固定排布。手机端低频工具收在 `.mobile-more-tools` 下拉菜单（与记录页 `.records-tools` 同构），桌面端使用 `.desktop-tools-popover`；两者与记录工具菜单共用 `a4-menu-enter` 弹出动效。手机沉浸模式的纸面高度使用动态视口与安全区计算，纸面底部和悬浮底栏顶部保持 15px 间距；模式切换后按归一化坐标重新渲染当前页单词。查词弹窗由 `js/lookup.js` 构建为 `.lookup-modal`，采用圆形关闭钮与搜索行布局；词书选择底部面板为 `.wordbook-picker-panel`。
+学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，A4 纸面在视口水平居中，宽度由 `--desktop-paper-w` 按视口高度伸缩（456–600px，沉浸模式 470–680px）并为两侧工具栏预留空间；左侧词书/工具与右侧轮次进度相对纸面两侧固定排布。手机端低频工具收在 `.mobile-more-tools` 下拉菜单（与记录页 `.records-tools` 同构），桌面端使用 `.desktop-tools-popover`；两者与记录工具菜单共用 `a4-menu-enter` 弹出动效。手机沉浸模式的纸面高度使用动态视口与安全区计算，纸面底部和悬浮底栏顶部保持 15px 间距；模式切换后按归一化坐标重新渲染当前页单词。查词弹窗由 `js/lookup.js` 构建为 `.lookup-modal`，采用圆形关闭钮与搜索行布局；词书选择底部面板为 `.wordbook-picker-panel`。
 
 ### App Shell（index.html）
 
@@ -291,7 +291,7 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 | `js/app/study-helpers.js` | `studyHelpers`：洗牌、纸面碰撞检测、单词元素构建、西语阴阳性简写展开、复习滑动阈值与橡皮筋阻尼 |
 
 `js/app.js` 是学习视图控制器（UI 层，不含核心业务逻辑）。负责：
-- A4 排版与单词放置
+- A4 排版与单词放置：放置与限位按显示释义时的完整尺寸测量，新词在纸面边距内随机取位，纸面已满时退回重叠面积最小的位置；按归一化坐标重新渲染时把单词限制在纸面内并就近避让重叠，只调整显示位置，不改写已保存的坐标
 - 当前轮恢复
 - 首页词书选择；Android 环境使用应用内底部面板，iOS/macOS/桌面浏览器保留原生 `<select>`
 - 复习弹窗（swipe/drag 标记）
@@ -303,7 +303,7 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 ### `js/records.js`
 记录视图控制器（UI 层）。进入视图时重新读取存储并刷新统计与列表，离开后仍保持控制器和 DOM 挂载。负责：
 - 轮次视图与状态视图切换
-- 统计计算与今日复习焦点；显示今日单词、待复习、连续学习、累计进度和每日目标
+- 统计计算与今日复习焦点；显示今日单词、待复习、连续学习、累计进度和每日目标；没有待复习单词但每日目标未达成时提供「继续学习」入口
 - 轮次摘要先通过纯展示模型计算；单词详情在首次展开时创建，A4 排版只在独立预览开关展开时创建
 - 单页 A4 预览不显示分页控件，多页预览保留上一页、下一页和页码状态
 - CSV/PDF 导出；PDF 会生成隐藏的 A4 打印输出层，桌面端走 Tauri WebView 打印权限，Android 端走原生打印桥接；离开记录路由会移除预览、打印输出与其窗口/键盘/触摸监听

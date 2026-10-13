@@ -76,7 +76,8 @@ describe("responsive application shell", () => {
     assert.match(indexMarkup, /maximum-scale=1, user-scalable=no/)
     assert.match(sharedStyle, /html\s*\{[^}]*overflow-x:\s*clip[^}]*overscroll-behavior-x:\s*none/s)
     assert.match(sharedStyle, /body\.home-page\s*\{[^}]*overflow-x:\s*clip[^}]*touch-action:\s*pan-y[^}]*overscroll-behavior-x:\s*none/s)
-    assert.match(shellStyle, /body\.home-page \.paper\s*\{[^}]*width:\s*456px[^}]*aspect-ratio:\s*210 \/ 297/s)
+    assert.match(shellStyle, /body\.home-page \.paper\s*\{[^}]*width:\s*var\(--desktop-paper-w\)[^}]*aspect-ratio:\s*210 \/ 297/s)
+    assert.match(shellStyle, /--desktop-paper-w:\s*max\(456px,\s*min\(600px,[^;]*100dvh[^;]*100vw - 540px/)
   })
 
   it("positions the shared lookup panel slightly above visual center", () => {
@@ -293,7 +294,7 @@ describe("responsive application shell", () => {
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.home-page \.home-controls\s*\{[^}]*position:\s*fixed/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*\.desktop-status-stack\s*\{[^}]*position:\s*fixed/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*\.paper-toolbar\s*\{[^}]*display:\s*flex/s)
-    assert.match(shellStyle, /body\.home-page \.paper\s*\{[^}]*width:\s*456px[^}]*max-width:\s*100%[^}]*aspect-ratio:\s*210 \/ 297/s)
+    assert.match(shellStyle, /body\.home-page \.paper\s*\{[^}]*width:\s*var\(--desktop-paper-w\)[^}]*max-width:\s*100%[^}]*aspect-ratio:\s*210 \/ 297/s)
   })
 
   it("renders Records and Settings as desktop page surfaces above the shared dock", () => {
@@ -359,15 +360,15 @@ describe("responsive application shell", () => {
   })
 
   it("cache-busts every changed shell asset", () => {
-    const styleRevision = "20261013-2"
-    const themeRevision = "20261013-1"
+    const styleRevision = "20261013-3"
+    const themeRevision = "20261013-2"
     for (const markup of [indexMarkup, recordsMarkup, settingsMarkup]) {
       assert.match(markup, new RegExp(`href="\\./css/style\\.css\\?v=${styleRevision}"`))
       assert.match(markup, new RegExp(`href="\\./css/theme\\.css\\?v=${themeRevision}"`))
-      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=20261013-1"`))
+      assert.match(markup, new RegExp(`href="\\./css/shell\\.css\\?v=20261013-2"`))
     }
-    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20260825-1"/)
-    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20260825-8"/)
+    assert.match(indexMarkup, /href="\.\/css\/records\.css\?v=20261013-1"/)
+    assert.match(indexMarkup, /href="\.\/css\/settings\.css\?v=20261013-1"/)
     const scriptRevisions = new Map([
       ["js/core/common.js", "20260802-1"],
       ["js/ui/layers.js", "20260802-1"],
@@ -386,8 +387,8 @@ describe("responsive application shell", () => {
       ["js/lookup.js", "20260802-1"],
       ["js/app/wordbook-io.js", "20261013-1"],
       ["js/app/study-helpers.js", "20261013-1"],
-      ["js/app.js", "20261013-3"],
-      ["js/records.js", "20260825-1"],
+      ["js/app.js", "20261013-4"],
+      ["js/records.js", "20261013-1"],
       ["js/settings-page.js", "20260802-1"],
     ])
     for (const [script, revision] of scriptRevisions) {
@@ -409,6 +410,18 @@ describe("study paper bounds and intro focus", () => {
 
   it("opens the intro at the top by focusing its close button", () => {
     assert.match(indexMarkup, /id="closeIntroBtn"[^>]*data-autofocus/)
+  })
+
+  it("reserves meaning space when placing and fitting words", () => {
+    assert.match(appCode, /function measureWordFullSize\(el\)[^]*?classList\.add\("is-measuring"\)[^]*?classList\.remove\("is-measuring"\)/)
+    assert.match(appCode, /function measureElementInPaper[^]*?measureWordFullSize\(el\)/)
+    assert.match(fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8"), /\.word-item\.is-measuring \.word-meaning\s*\{\s*display:\s*-webkit-box !important;/)
+  })
+
+  it("spreads restored words and falls back to the least-overlap position", () => {
+    assert.match(appCode, /function renderCurrentRound[^]*?\n  \}\n  spreadOverlappingWords\(\)/)
+    assert.match(appCode, /function spreadOverlappingWords\(\)[^]*?radius <= 96[^]*?placed\.el\.style\.left/)
+    assert.match(appCode, /function placeWordElement[^]*?overlapArea[^]*?total < bestOverlap/)
   })
 
   it("wraps round status counts only between items", () => {

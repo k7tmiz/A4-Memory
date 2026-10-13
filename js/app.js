@@ -990,12 +990,19 @@ function getPaperInnerSize() {
   return { w: rect.width || 1, h: rect.height || 1 }
 }
 
-// 单词尺寸随字号、释义显示和纸面尺寸变化，只修正显示位置，不改写已保存的归一化坐标。
+// 按显示释义时的完整尺寸测量，碰撞与限位都为释义预留空间，切换释义时单词不跳位。
+function measureWordFullSize(el) {
+  el.classList.add("is-measuring")
+  const size = { w: el.offsetWidth, h: el.offsetHeight }
+  el.classList.remove("is-measuring")
+  return size
+}
+
+// 单词尺寸随字号和纸面尺寸变化，只修正显示位置，不改写已保存的归一化坐标。
 function fitWordElementInPaper(el) {
   const paperW = dom.paperInner.clientWidth || getPaperInnerSize().w
   const paperH = dom.paperInner.clientHeight || getPaperInnerSize().h
-  const w = el.offsetWidth
-  const h = el.offsetHeight
+  const { w, h } = measureWordFullSize(el)
   const left = parseFloat(el.style.left) || 0
   const top = parseFloat(el.style.top) || 0
   const x = clamp(left, 0, Math.max(0, paperW - w))
@@ -1003,6 +1010,40 @@ function fitWordElementInPaper(el) {
   if (x !== left) el.style.left = `${x}px`
   if (y !== top) el.style.top = `${y}px`
   return { x, y, w, h }
+}
+
+// 归一化坐标在更小的纸面上还原时单词会互相挤压，渲染后就近避让，只调整显示位置。
+function spreadOverlappingWords() {
+  const paperW = dom.paperInner.clientWidth || getPaperInnerSize().w
+  const paperH = dom.paperInner.clientHeight || getPaperInnerSize().h
+  const gap = 2
+  const settled = []
+  for (const placed of appState.placed) {
+    const box = placed.box
+    if (box && settled.some((other) => intersects(box, other, gap))) {
+      let found = null
+      for (let radius = 8; radius <= 96 && !found; radius += 8) {
+        for (let k = 0; k < 16; k++) {
+          const angle = (k / 16) * Math.PI * 2
+          const next = {
+            ...box,
+            x: clamp(box.x + Math.cos(angle) * radius, 0, Math.max(0, paperW - box.w)),
+            y: clamp(box.y + Math.sin(angle) * radius, 0, Math.max(0, paperH - box.h)),
+          }
+          if (!settled.some((other) => intersects(next, other, gap))) {
+            found = next
+            break
+          }
+        }
+      }
+      if (found) {
+        placed.box = found
+        placed.el.style.left = `${found.x}px`
+        placed.el.style.top = `${found.y}px`
+      }
+    }
+    if (placed.box) settled.push(placed.box)
+  }
 }
 
 function fitPlacedWordsInPaper() {
@@ -1158,6 +1199,7 @@ function renderCurrentRound({ transition = "" } = {}) {
       pos: item.pos,
     })
   }
+  spreadOverlappingWords()
 
   const direction = transition === "back" ? "back" : transition === "forward" ? "forward" : ""
   if (direction) {
@@ -1805,13 +1847,12 @@ function measureElementInPaper(el) {
   dom.paperInner.appendChild(el)
   el.style.left = "0px"
   el.style.top = "0px"
-  const paperRect = dom.paperInner.getBoundingClientRect()
-  const rect = el.getBoundingClientRect()
+  const { w, h } = measureWordFullSize(el)
   return {
-    w: rect.width,
-    h: rect.height,
-    paperW: paperRect.width,
-    paperH: paperRect.height,
+    w,
+    h,
+    paperW: dom.paperInner.clientWidth || getPaperInnerSize().w,
+    paperH: dom.paperInner.clientHeight || getPaperInnerSize().h,
   }
 }
 
@@ -1856,10 +1897,26 @@ function placeWordElement(word) {
     dom.paperInner.removeChild(el)
   }
 
+  // 纸面已满时退回到重叠面积最小的位置，而不是完全随机。
   const m = measureElementInPaper(el)
-  const x = Math.random() * Math.max(0, m.paperW - m.w)
-  const y = Math.random() * Math.max(0, m.paperH - m.h)
-  const candidate = { x, y, w: m.w, h: m.h }
+  const overlapArea = (a, b) =>
+    Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+    Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y))
+  let candidate = null
+  let bestOverlap = Infinity
+  for (let i = 0; i < 400 && bestOverlap > 0; i++) {
+    const next = {
+      x: Math.random() * Math.max(0, m.paperW - m.w),
+      y: Math.random() * Math.max(0, m.paperH - m.h),
+      w: m.w,
+      h: m.h,
+    }
+    const total = appState.placed.reduce((sum, placed) => sum + overlapArea(next, placed.box), 0)
+    if (total < bestOverlap) {
+      bestOverlap = total
+      candidate = next
+    }
+  }
   el.style.left = `${candidate.x}px`
   el.style.top = `${candidate.y}px`
   const pos = { x: clamp(candidate.x / m.paperW, 0, 1), y: clamp(candidate.y / m.paperH, 0, 1) }

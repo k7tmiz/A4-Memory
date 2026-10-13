@@ -185,7 +185,9 @@ describe("A4Updater card styling", () => {
     assert.doesNotMatch(componentCss, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i)
 
     for (const variable of componentCss.matchAll(/var\((--[\w-]+)/g)) {
-      assert.equal(allowedVariables.has(variable[1]), true, `${variable[1]} is not an approved update-card variable`)
+      // 字号 / 字重层级变量与主题无关，属于全局排版规范
+      const isTypeToken = /^--f[sw]-/.test(variable[1])
+      assert.equal(allowedVariables.has(variable[1]) || isTypeToken, true, `${variable[1]} is not an approved update-card variable`)
     }
   })
 })

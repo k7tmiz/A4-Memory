@@ -96,16 +96,16 @@ body.settings-page #settingsModal .modal-panel {
   border: none;
   margin-bottom: 8px;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-heavy);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .settings-page-intro h1 {
   margin: 0;
-  font-size: clamp(28px, 4vw, 36px);
-  font-weight: 850;
+  font-size: var(--fs-display);
+  font-weight: var(--fw-heavy);
   line-height: 1.1;
   letter-spacing: -0.04em;
 }
@@ -113,9 +113,9 @@ body.settings-page #settingsModal .modal-panel {
 .settings-page-intro p {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.5;
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 .settings-page-status {
@@ -129,8 +129,8 @@ body.settings-page #settingsModal .modal-panel {
   border-radius: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
 }
 
 .settings-page-status-dot {
@@ -305,8 +305,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   background: transparent;
   box-shadow: none;
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 760;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
   white-space: nowrap;
   transition: color 180ms ease, transform 140ms ease, background 180ms ease;
 }
@@ -372,8 +372,8 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .settings-category-panel > .panel .section-title {
   margin-bottom: 18px;
-  font-size: 18px;
-  font-weight: 850;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-heavy);
   letter-spacing: -0.02em;
 }
 
@@ -408,8 +408,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   border-bottom: 1px solid var(--border2);
   cursor: default;
   user-select: none;
-  font-size: 15px;
-  font-weight: 850;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-heavy);
   letter-spacing: -0.01em;
 }
 
@@ -421,17 +421,17 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 /* Header Icons */
-#settingsPanelLearning .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🎨"; margin-right: 8px; font-size: 15px; }
-#settingsPanelLearning .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "⏱️"; margin-right: 8px; font-size: 15px; }
-#settingsPanelLearning .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "📖"; margin-right: 8px; font-size: 15px; }
-#settingsPanelPronunciation .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🎙️"; margin-right: 8px; font-size: 15px; }
-#settingsPanelPronunciation .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "📦"; margin-right: 8px; font-size: 15px; }
-#settingsPanelPronunciation .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "🔊"; margin-right: 8px; font-size: 15px; }
-#settingsPanelAi .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "⚡"; margin-right: 8px; font-size: 15px; }
-#settingsPanelAi .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "⚙️"; margin-right: 8px; font-size: 15px; }
-#settingsPanelMore .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🌐"; margin-right: 8px; font-size: 15px; }
-#settingsPanelMore .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "💾"; margin-right: 8px; font-size: 15px; }
-#settingsPanelMore .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "ℹ️"; margin-right: 8px; font-size: 15px; }
+#settingsPanelLearning .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🎨"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelLearning .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "⏱️"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelLearning .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "📖"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelPronunciation .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🎙️"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelPronunciation .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "📦"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelPronunciation .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "🔊"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelAi .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "⚡"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelAi .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "⚙️"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelMore .settings-accordion-card:nth-child(1) > .settings-card-header::before { content: "🌐"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelMore .settings-accordion-card:nth-child(2) > .settings-card-header::before { content: "💾"; margin-right: 8px; font-size: var(--fs-base); }
+#settingsPanelMore .settings-accordion-card:nth-child(3) > .settings-card-header::before { content: "ℹ️"; margin-right: 8px; font-size: var(--fs-base); }
 
 /* 4. Form Layouts & Seamless Rows */
 #settingsModal .form-row {
@@ -451,8 +451,8 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .form-label {
   color: var(--text);
-  font-size: 13.5px;
-  font-weight: 750;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
 }
 
 #settingsModal .form-control {
@@ -469,8 +469,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   border-radius: 12px;
   background: transparent;
   color: var(--text);
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all 0.18s ease;
 }
@@ -494,8 +494,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   border-radius: 12px;
   background: transparent;
   color: var(--text);
-  font-size: 13px;
-  font-weight: 750;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
   cursor: pointer;
   transition: all 0.18s ease;
 }
@@ -515,8 +515,13 @@ body.settings-page #settingsModal .settings-category-tabs {
   margin-top: 16px;
 }
 
+/* 登录 / 注册 / 重置表单保持易读宽度，不随桌面宽度拉长 */
+#settingsModal #accountLoggedOut {
+  max-width: 560px;
+}
+
 #settingsModal .view-tabs.account-tabs {
-  width: min(100%, 420px);
+  width: 100%;
   height: 44px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -660,8 +665,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   background: #ffffff;
   color: #1f1f1f;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  font-weight: 750;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
   letter-spacing: -0.01em;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -709,8 +714,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   align-items: center;
   gap: 12px;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
 }
 
 .account-auth-divider::before,
@@ -746,8 +751,8 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-section-title {
   color: var(--text);
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-heavy);
   margin-bottom: 2px;
 }
 
@@ -768,8 +773,8 @@ body.theme-dark .account-oauth-btn:hover {
   border-radius: 13px;
   background: var(--accent);
   color: var(--accentText, #ffffff);
-  font-size: 14px;
-  font-weight: 800;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-heavy);
   box-shadow: 0 3px 12px -2px color-mix(in srgb, var(--accent) 35%, transparent);
   cursor: pointer;
   transition: all 0.18s ease;
@@ -812,8 +817,8 @@ body.theme-dark .account-oauth-btn:hover {
 .account-summary-title {
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 20px;
-  font-weight: 850;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-heavy);
   letter-spacing: -0.02em;
 }
 
@@ -821,7 +826,7 @@ body.theme-dark .account-oauth-btn:hover {
   margin-top: 2px;
   overflow-wrap: anywhere;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.45;
 }
 
@@ -832,8 +837,8 @@ body.theme-dark .account-oauth-btn:hover {
   border-radius: 999px;
   background: color-mix(in srgb, var(--success) 14%, var(--card));
   color: var(--success);
-  font-size: 12px;
-  font-weight: 800;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-heavy);
   white-space: nowrap;
 }
 
@@ -864,7 +869,7 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary-sync span {
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: var(--fs-xs);
   white-space: nowrap;
 }
 
@@ -872,7 +877,7 @@ body.theme-dark .account-oauth-btn:hover {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.35;
 }
 
@@ -901,7 +906,7 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary-stat span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   white-space: nowrap;
 }
 
@@ -909,8 +914,8 @@ body.theme-dark .account-oauth-btn:hover {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 16px;
-  font-weight: 850;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-heavy);
   line-height: 1.25;
 }
 
@@ -926,7 +931,7 @@ body.theme-dark .account-oauth-btn:hover {
   border-radius: 12px;
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   text-align: left;
 }
 
@@ -964,14 +969,14 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-summary-session span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .account-summary-session strong {
   min-width: 0;
   overflow-wrap: anywhere;
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   text-align: right;
 }
 
@@ -1037,8 +1042,8 @@ body.theme-dark .account-oauth-btn:hover {
   border: 1px solid color-mix(in srgb, currentColor 20%, var(--border));
   border-radius: 14px;
   background: color-mix(in srgb, currentColor 9%, transparent);
-  font-size: 22px;
-  font-weight: 800;
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-heavy);
 }
 
 .account-cloud-action-copy {
@@ -1054,14 +1059,14 @@ body.theme-dark .account-oauth-btn:hover {
 
 .account-cloud-action-copy strong {
   color: currentColor;
-  font-size: 14px;
-  font-weight: 850;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-heavy);
 }
 
 .account-cloud-action-copy small {
   color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 500;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
   line-height: 1.35;
 }
 
@@ -1074,8 +1079,8 @@ body.theme-dark .account-oauth-btn:hover {
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   box-shadow: none;
   transition: all 0.2s ease;
 }
@@ -1096,7 +1101,7 @@ body.theme-dark .account-oauth-btn:hover {
   border: 0;
   border-radius: 0;
   background: transparent;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .account-status.is-info {
@@ -1154,7 +1159,7 @@ body.theme-dark .account-oauth-btn:hover {
   #settingsModal .settings-category-tab {
     min-height: 40px;
     padding: 8px 12px;
-    font-size: 13.5px;
+    font-size: var(--fs-md);
   }
 
   #settingsModal .settings-accordion-grid {
@@ -1249,7 +1254,7 @@ body.theme-dark .account-oauth-btn:hover {
   }
 
   .settings-page-intro h1 {
-    font-size: 30px;
+    font-size: var(--fs-display-compact);
   }
 
   .settings-page-status {
@@ -1286,7 +1291,7 @@ body.theme-dark .account-oauth-btn:hover {
 
   .account-oauth-btn {
     min-height: 44px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
   }
 
   .account-auth-divider {
@@ -1304,7 +1309,7 @@ body.theme-dark .account-oauth-btn:hover {
     width: 100%;
     min-width: 0;
     padding: 8px 4px;
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .account-summary {
@@ -1333,7 +1338,7 @@ body.theme-dark .account-oauth-btn:hover {
     width: 36px;
     height: 36px;
     border-radius: 11px;
-    font-size: 18px;
+    font-size: var(--fs-xl);
   }
 }
 
@@ -1350,7 +1355,7 @@ body.theme-dark .account-oauth-btn:hover {
   #settingsModal .settings-category-tab {
     min-height: 42px;
     padding-inline: 2px;
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .account-cloud-actions {

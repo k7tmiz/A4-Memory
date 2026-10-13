@@ -111,6 +111,7 @@ describe("records summary cards", () => {
     assert.equal(summary.goalTarget, 5)
     assert.equal(summary.goalPercent, 40)
     assert.equal(summary.goalText, "每日目标：2/5 个词 · 未达成")
+    assert.equal(summary.goalPending, true)
     assert.equal(summary.totalText, "累计 2 个词 · 完成 1 轮")
   })
 })

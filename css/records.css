@@ -43,15 +43,15 @@ body.records-page .app.records {
 .records-focus-kicker {
   display: block;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 850;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-heavy);
   letter-spacing: 0.13em;
 }
 
 .records-page-intro h1 {
   margin: 7px 0 0;
   color: var(--text);
-  font-size: clamp(28px, 4vw, 38px);
+  font-size: var(--fs-display);
   line-height: 1.08;
   letter-spacing: -0.04em;
 }
@@ -59,7 +59,7 @@ body.records-page .app.records {
 .records-page-intro p {
   margin: 8px 0 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.5;
 }
 
@@ -79,8 +79,8 @@ body.records-page .app.records {
   box-shadow: 0 5px 18px color-mix(in srgb, var(--text) 5%, transparent);
   color: var(--text);
   cursor: pointer;
-  font-size: 17px;
-  font-weight: 850;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-heavy);
   letter-spacing: 0.08em;
   list-style: none;
   -webkit-tap-highlight-color: transparent;
@@ -129,8 +129,8 @@ body.records-page .app.records {
   box-shadow: none !important;
   color: var(--text);
   text-align: left;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   transition: background 0.15s ease, color 0.15s ease;
 }
 
@@ -236,8 +236,8 @@ body.records-page .app.records {
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 760;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
   -webkit-user-drag: none;
   transition: color 180ms ease-out;
 }
@@ -284,8 +284,8 @@ body.records-page .app.records {
 .records-stat-card span {
   overflow: hidden;
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -293,7 +293,7 @@ body.records-page .app.records {
 .records-stat-card strong {
   margin-top: 6px;
   color: var(--text);
-  font-size: clamp(21px, 3vw, 27px);
+  font-size: clamp(20px, 3vw, 28px);
   line-height: 1;
   letter-spacing: -0.035em;
 }
@@ -301,7 +301,7 @@ body.records-page .app.records {
 .records-stat-detail {
   margin: 9px 3px 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.45;
 }
 
@@ -343,7 +343,7 @@ body.records-page .app.records {
   max-width: 590px;
   margin: 8px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.55;
 }
 
@@ -357,7 +357,7 @@ body.records-page .app.records {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--accentText);
-  font-weight: 780;
+  font-weight: var(--fw-bold);
 }
 
 .records-focus-done {
@@ -369,8 +369,8 @@ body.records-page .app.records {
   border-radius: 999px;
   background: color-mix(in srgb, var(--records-success) 8%, var(--card));
   color: var(--records-success);
-  font-size: 12px;
-  font-weight: 760;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
   white-space: nowrap;
 }
 
@@ -388,12 +388,12 @@ body.records-page .app.records {
   justify-content: space-between;
   gap: 12px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 
 .records-goal-label strong {
   color: var(--text);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .records-goal-progress,
@@ -463,7 +463,7 @@ body.records-page .app.records {
 .round-title {
   margin: 0;
   color: var(--text);
-  font-size: 17px;
+  font-size: var(--fs-lg);
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
@@ -477,8 +477,8 @@ body.records-page .app.records {
   border: 1px solid var(--border2);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 760;
+  font-size: var(--fs-3xs);
+  font-weight: var(--fw-bold);
   white-space: nowrap;
 }
 
@@ -492,7 +492,7 @@ body.records-page .app.records {
   margin-top: 7px;
   overflow-wrap: anywhere;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   line-height: 1.45;
 }
 
@@ -507,14 +507,14 @@ body.records-page .app.records {
 
 .round-count strong {
   color: var(--text);
-  font-size: 24px;
+  font-size: var(--fs-4xl);
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
 .round-count span {
-  font-size: 11px;
-  font-weight: 650;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
 }
 
 .round-progress {
@@ -534,7 +534,7 @@ body.records-page .app.records {
   gap: 12px;
   flex-wrap: wrap;
   color: var(--muted);
-  font-size: 11px;
+  font-size: var(--fs-2xs);
 }
 
 .round-status-item {
@@ -573,7 +573,7 @@ body.records-page .app.records {
 .round-primary-actions button {
   min-height: 42px;
   border-radius: 13px;
-  font-weight: 740;
+  font-weight: var(--fw-bold);
 }
 
 .round-review-action {
@@ -605,7 +605,7 @@ body.records-page .app.records {
   min-height: 36px;
   padding: 7px 10px;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
 }
 
 .round-preview-toggle {
@@ -702,7 +702,7 @@ body.records-page .app.records {
 .status-card-title {
   margin: 0;
   color: var(--text);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   line-height: 1.2;
 }
 
@@ -711,8 +711,8 @@ body.records-page .app.records {
   border: 1px solid var(--border2);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 10px;
-  font-weight: 740;
+  font-size: var(--fs-3xs);
+  font-weight: var(--fw-bold);
   white-space: nowrap;
 }
 
@@ -729,7 +729,7 @@ body.records-page .app.records {
   border: 1px dashed var(--border3);
   border-radius: 13px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   text-align: center;
 }
 
@@ -770,12 +770,12 @@ body.records-page .app.records .empty {
   }
 
   .records-page-intro h1 {
-    font-size: 29px;
+    font-size: var(--fs-display-compact);
   }
 
   .records-page-intro p {
     margin-top: 5px;
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .records-tools summary {
@@ -799,17 +799,17 @@ body.records-page .app.records .empty {
   }
 
   .records-stat-card span {
-    font-size: 10px;
+    font-size: var(--fs-3xs);
   }
 
   .records-stat-card strong {
     margin-top: 5px;
-    font-size: 20px;
+    font-size: var(--fs-2xl);
   }
 
   .records-stat-detail {
     margin-top: 7px;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
   }
 
   .records-focus {
@@ -827,11 +827,11 @@ body.records-page .app.records .empty {
   }
 
   .records-focus h2 {
-    font-size: 21px;
+    font-size: var(--fs-2xl);
   }
 
   .records-focus p {
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .records-focus-action {
