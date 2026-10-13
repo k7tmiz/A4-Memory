@@ -381,7 +381,7 @@ describe("responsive application shell", () => {
       ["js/settings/ai.js", "20260910-1"],
       ["js/settings/account.js", "20260910-1"],
       ["js/settings/tts.js", "20260910-1"],
-      ["js/settings/dom.js", "20260910-1"],
+      ["js/settings/dom.js", "20261013-1"],
       ["js/settings/controller.js", "20260910-1"],
       ["js/settings.js", "20260910-1"],
       ["js/lookup.js", "20260802-1"],

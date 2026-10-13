@@ -692,7 +692,9 @@ describe("A4Settings responsive category navigation", () => {
 })
 
 describe("A4Settings Google sign-in placeholder", () => {
-  it("keeps the Google entry presentation-only until the private auth release is approved", () => {
+  it("keeps the Google entry hidden and presentation-only until the private auth release is approved", () => {
+    assert.match(settingsCode, /<div class="account-oauth hidden" id="accountOauthEntry">/)
+    assert.match(settingsCode, /<div class="account-auth-divider hidden" id="accountOauthDivider"/)
     assert.match(settingsCode, /id="cloudGoogleLoginBtn"[^>]*type="button"/)
     assert.match(settingsStyle, /\.account-oauth-btn\s*\{[^}]*width:\s*100%[^}]*min-height:\s*46px/s)
     assert.match(

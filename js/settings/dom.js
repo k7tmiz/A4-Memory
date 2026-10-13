@@ -170,7 +170,7 @@
                 <div class="section-title">账号</div>
                 <div id="accountLoggedOut">
                   <div class="form-help">登录后可用云端备份；没有账号可注册或重置密码。</div>
-                  <div class="account-oauth">
+                  <div class="account-oauth hidden" id="accountOauthEntry">
                     <button class="account-oauth-btn" id="cloudGoogleLoginBtn" type="button">
                       <span class="account-oauth-google-icon" aria-hidden="true">
                         <svg viewBox="0 0 48 48" width="18" height="18" focusable="false">
@@ -183,7 +183,7 @@
                       <span class="account-oauth-btn-label">使用 Google 账号继续</span>
                     </button>
                   </div>
-                  <div class="account-auth-divider" role="separator" aria-label="或使用邮箱">
+                  <div class="account-auth-divider hidden" id="accountOauthDivider" role="separator" aria-label="或使用邮箱">
                     <span>或使用邮箱</span>
                   </div>
                   <div class="view-tabs account-tabs" role="tablist" aria-label="账号操作">

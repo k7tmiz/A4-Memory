@@ -262,7 +262,7 @@ window.A4Speech = {
 | `js/settings/dom.js` | 设置面板 DOM 模板、类别导航与数值下拉辅助 |
 | `js/settings/controller.js` | `createSettingsModalController`：设置表单、账号、发音、AI 与云同步行为 |
 
-设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口为界面占位，点击只显示暂未接入提示，不调用私有登录桥接。AI 模型输入支持自由填写；“获取模型”使用当前 Base URL 和内存态 API Key 请求标准 `/models` 接口，成功结果通过带本地搜索的应用内选择面板填入。模型列表不内置、不缓存、不回退，获取失败不打开选择面板：
+设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口与「或使用邮箱」分隔线默认隐藏，正式接入前不对用户显示，也不调用私有登录桥接。AI 模型输入支持自由填写；“获取模型”使用当前 Base URL 和内存态 API Key 请求标准 `/models` 接口，成功结果通过带本地搜索的应用内选择面板填入。模型列表不内置、不缓存、不回退，获取失败不打开选择面板：
 ```javascript
 window.A4Settings = {
   createSettingsModalController({ getState, setState, persist, applyTheme, onAfterChange, getWordbookLanguage, presentation }),
