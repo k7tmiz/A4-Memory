@@ -67,8 +67,6 @@ const {
   intersects,
   buildWordElement,
   expandSpanishGenderShortForm,
-  getReviewSwipeConfig,
-  rubberBandClamp,
 } = appInternal.studyHelpers || {}
 
 function makeId() {
@@ -1550,7 +1548,7 @@ function openAutoReviewModal(pinnedRoundItem, trigger = document.activeElement |
 }
 
 function closeReviewModal() {
-  resetReviewToCenter({ hard: true })
+  reviewSwipeController.resetToCenter({ hard: true })
   setModalVisible(dom.reviewModal, false)
   appState.reviewPinnedRoundItem = null
   appState.reviewContinuousAction = ""
@@ -1596,6 +1594,39 @@ function cancelRoundFullModal() {
   closeRoundFullModal()
 }
 
+function showRoundGeneratedToast(label, total, pages) {
+  if (total <= 0) return
+  showToast(pages <= 1 ? `${label}：共 ${total} 个，已生成 1 页 A4。` : `${label}：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
+}
+
+// 按每页上限分页排版，toDraft 返回 null 时跳过该词（页内切分保持按原列表位置）。
+function layoutRoundPages(round, entries, cap, toDraft) {
+  const pages = Math.max(1, Math.ceil(entries.length / cap))
+  for (let pageIndex = 0; pageIndex < pages; pageIndex++) {
+    clearPaper()
+    appState.placed = []
+    for (const entry of entries.slice(pageIndex * cap, (pageIndex + 1) * cap)) {
+      const draft = toDraft(entry)
+      if (!draft) continue
+      const placed = placeWordElement(draft.word)
+      const fontSize = placed.el.style.fontSize || ""
+      const roundItem = {
+        word: draft.word,
+        pos: placed.pos,
+        fontSize,
+        createdAt: new Date().toISOString(),
+        status: draft.status,
+        lastReviewedAt: draft.lastReviewedAt || "",
+        nextReviewAt: draft.nextReviewAt || "",
+        pageIndex,
+      }
+      round.items.push(roundItem)
+      appState.placed.push({ word: draft.word, roundItem, el: placed.el, box: placed.box, fontSize, pos: placed.pos })
+    }
+  }
+  clearPaper()
+}
+
 function generateStatusRound(kind) {
   const cap = normalizeRoundCap(appState.roundCap)
   const nowMs = Date.now()
@@ -1630,9 +1661,7 @@ function generateStatusRound(kind) {
     return
   }
 
-  const pages = Math.max(1, Math.ceil(total / cap))
-  if (total <= cap) showToast(`${title}：共 ${total} 个，已生成 1 页 A4。`)
-  else showToast(`${title}：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
+  showRoundGeneratedToast(title, total, Math.max(1, Math.ceil(total / cap)))
 
   startNextRound()
   const round = getCurrentRound()
@@ -1641,31 +1670,16 @@ function generateStatusRound(kind) {
   round.items = []
   appState.currentPageIndex = 0
 
-  for (let pageIndex = 0; pageIndex < pages; pageIndex++) {
-    clearPaper()
-    appState.placed = []
-    const chunk = list.slice(pageIndex * cap, (pageIndex + 1) * cap)
-    for (const entry of chunk) {
-      const word = entry?.word
-      if (!word || !word.term) continue
-      const placed = placeWordElement(word)
-      const fontSize = placed.el.style.fontSize || ""
-      const roundItem = {
-        word,
-        pos: placed.pos,
-        fontSize,
-        createdAt: new Date().toISOString(),
-        status: normalizeStatus(entry?.status),
-        lastReviewedAt: String(entry?.lastReviewedAt || ""),
-        nextReviewAt: String(entry?.nextReviewAt || ""),
-        pageIndex,
-      }
-      round.items.push(roundItem)
-      appState.placed.push({ word, roundItem, el: placed.el, box: placed.box, fontSize, pos: placed.pos })
+  layoutRoundPages(round, list, cap, (entry) => {
+    const word = entry?.word
+    if (!word || !word.term) return null
+    return {
+      word,
+      status: normalizeStatus(entry?.status),
+      lastReviewedAt: String(entry?.lastReviewedAt || ""),
+      nextReviewAt: String(entry?.nextReviewAt || ""),
     }
-  }
-
-  clearPaper()
+  })
   renderCurrentRound()
 
   updateBadge()
@@ -1694,13 +1708,7 @@ function generateWordbookRound(wordbookId) {
   }
 
   const cap = normalizeRoundCap(appState.roundCap)
-  const pages = Math.max(1, Math.ceil(total / cap))
-
-  if (total <= cap) {
-    showToast(`词书「${book.name}」：共 ${total} 个，已生成 1 页 A4。`)
-  } else {
-    showToast(`词书「${book.name}」：共 ${total} 个，已生成 ${pages} 页 A4（同一轮内）。`)
-  }
+  showRoundGeneratedToast(`词书「${book.name}」`, total, Math.max(1, Math.ceil(total / cap)))
 
   ensureCurrentRound()
   const current = getCurrentRound()
@@ -1725,43 +1733,14 @@ function generateWordbookRound(wordbookId) {
   appState.poolIndex = 0
 
   const addedKeys = new Set()
+  layoutRoundPages(round, words, cap, (w) => {
+    const word = { ...w, lang: getLangBase(w?.lang || "") || langBase }
+    const key = getWordMeaningKey(word)
+    if (!key || addedKeys.has(key)) return null
+    addedKeys.add(key)
+    return { word, status: STATUS_UNKNOWN }
+  })
 
-  for (let pageIndex = 0; pageIndex < pages; pageIndex++) {
-    clearPaper()
-    appState.placed = []
-    const chunk = words.slice(pageIndex * cap, (pageIndex + 1) * cap)
-
-    for (const w of chunk) {
-      const wordLang = getLangBase(w?.lang || "") || langBase
-      const key = getWordMeaningKey({ ...w, lang: wordLang })
-      if (!key || addedKeys.has(key)) continue
-      addedKeys.add(key)
-
-      const placed = placeWordElement({ ...w, lang: wordLang })
-      const fontSize = placed.el.style.fontSize || ""
-      const roundItem = {
-        word: { ...w, lang: wordLang },
-        pos: placed.pos,
-        fontSize,
-        createdAt: new Date().toISOString(),
-        status: STATUS_UNKNOWN,
-        lastReviewedAt: "",
-        nextReviewAt: "",
-        pageIndex,
-      }
-      round.items.push(roundItem)
-      appState.placed.push({
-        word: w,
-        roundItem,
-        el: placed.el,
-        box: placed.box,
-        fontSize,
-        pos: placed.pos,
-      })
-    }
-  }
-
-  clearPaper()
   closeImportModal()
   renderCurrentRound()
   updatePageNav()
@@ -2670,177 +2649,21 @@ dom.reviewUnknownBtn.addEventListener("click", () => {
 })
 
 dom.reviewCardTerm.addEventListener("click", (e) => {
-  if (reviewBlockClickUntil && Date.now() < reviewBlockClickUntil) return
-  if (reviewSwipe.dragging || reviewSwipe.animating) return
+  if (reviewSwipeController.isInteractionBlocked()) return
   e.preventDefault()
   e.stopPropagation()
   speakTerm(dom.reviewCardTerm.textContent)
 })
 
-dom.reviewCardTerm.addEventListener("pointerdown", (e) => {
-  e.stopPropagation()
+const reviewSwipeController = appInternal.reviewSwipe.createReviewSwipeController({
+  card: dom.reviewCard,
+  isReviewOpen: () => isModalOpen(dom.reviewModal),
+  onCommit: (direction) => advanceReview(direction > 0 ? STATUS_MASTERED : STATUS_UNKNOWN),
 })
-
-let reviewBlockClickUntil = 0
-const reviewSwipe = {
-  state: "idle",
-  active: false,
-  dragging: false,
-  animating: false,
-  pointerId: null,
-  pointerType: "",
-  startX: 0,
-  startY: 0,
-  dx: 0,
-  dy: 0,
-  lastMoveX: 0,
-  lastMoveT: 0,
-  vx: 0,
-  raf: 0,
-  settleTimer: 0,
-}
-
-function cleanupReviewPointerListeners() {
-  window.removeEventListener("pointermove", onReviewPointerMove, true)
-  window.removeEventListener("pointerup", onReviewPointerUp, true)
-  window.removeEventListener("pointercancel", onReviewPointerCancel, true)
-}
-
-function clearReviewSwipeRaf() {
-  if (reviewSwipe.raf) cancelAnimationFrame(reviewSwipe.raf)
-  reviewSwipe.raf = 0
-}
-
-function clearReviewSwipeSettleTimer() {
-  if (reviewSwipe.settleTimer) window.clearTimeout(reviewSwipe.settleTimer)
-  reviewSwipe.settleTimer = 0
-}
-
-function setReviewSwipeState(next) {
-  reviewSwipe.state = String(next || "idle")
-  reviewSwipe.active = reviewSwipe.state !== "idle"
-  reviewSwipe.dragging = reviewSwipe.state === "dragging"
-  reviewSwipe.animating = reviewSwipe.state === "resetting-center" || reviewSwipe.state === "animating-out"
-}
-
-function getReviewCardWidth() {
-  const rect = dom.reviewCard.getBoundingClientRect()
-  return Math.max(1, rect.width || 1)
-}
-
-function applyReviewSwipeVisual({ dx, pointerType }) {
-  const w = getReviewCardWidth()
-  const cfg = getReviewSwipeConfig(pointerType)
-  const commitDist = Math.max(cfg.commitMinPx, w * cfg.commitRatio)
-  const maxPreview = Math.max(40, w * 0.95)
-  const x = rubberBandClamp(dx, maxPreview, cfg.rubberBandResistance)
-  const prog = clamp(Math.abs(x) / commitDist, 0, 1)
-  const rot = clamp((x / w) * cfg.maxRotDeg, -cfg.maxRotDeg, cfg.maxRotDeg)
-  const opacity = 1 - prog * 0.18
-  dom.reviewCard.style.setProperty("--swipe-x", `${x.toFixed(1)}px`)
-  dom.reviewCard.style.setProperty("--swipe-rot", `${rot.toFixed(2)}deg`)
-  dom.reviewCard.style.setProperty("--swipe-opacity", String(opacity.toFixed(3)))
-  dom.reviewCard.style.setProperty("--swipe-right-alpha", x > 0 ? String(prog.toFixed(3)) : "0")
-  dom.reviewCard.style.setProperty("--swipe-left-alpha", x < 0 ? String(prog.toFixed(3)) : "0")
-}
-
-function setReviewSwipeTransition({ durationMs, type } = {}) {
-  const d = clamp(Math.round(Number(durationMs) || 0), 80, 420)
-  const easing = type === "return" ? "cubic-bezier(0.34, 1.56, 0.64, 1)" : "cubic-bezier(0.2, 0.9, 0.25, 1)"
-  dom.reviewCard.style.transition = `transform ${d}ms ${easing}, opacity ${d}ms ${easing}`
-}
-
-function clearReviewSwipeTransition() {
-  dom.reviewCard.style.transition = ""
-}
-
-function resetReviewSwipeVisual({ hard } = {}) {
-  if (hard) dom.reviewCard.style.transition = "none"
-  dom.reviewCard.style.setProperty("--swipe-x", "0px")
-  dom.reviewCard.style.setProperty("--swipe-rot", "0deg")
-  dom.reviewCard.style.setProperty("--swipe-opacity", "1")
-  dom.reviewCard.style.setProperty("--swipe-right-alpha", "0")
-  dom.reviewCard.style.setProperty("--swipe-left-alpha", "0")
-  if (hard) {
-    void dom.reviewCard.offsetHeight
-    clearReviewSwipeTransition()
-  }
-}
-
-function cleanupReviewSwipeCore() {
-  cleanupReviewPointerListeners()
-  clearReviewSwipeRaf()
-  clearReviewSwipeSettleTimer()
-  reviewSwipe.pointerId = null
-  reviewSwipe.pointerType = ""
-  reviewSwipe.startX = 0
-  reviewSwipe.startY = 0
-  reviewSwipe.dx = 0
-  reviewSwipe.dy = 0
-  reviewSwipe.lastMoveX = 0
-  reviewSwipe.lastMoveT = 0
-  reviewSwipe.vx = 0
-  dom.reviewCard.classList.remove("is-dragging")
-  document.body.classList.remove("no-select")
-}
-
-function resetReviewToCenter({ hard } = {}) {
-  cleanupReviewPointerListeners()
-  clearReviewSwipeRaf()
-  clearReviewSwipeSettleTimer()
-  dom.reviewCard.classList.remove("is-dragging")
-  document.body.classList.remove("no-select")
-  setReviewSwipeState("resetting-center")
-  if (hard) {
-    resetReviewSwipeVisual({ hard: true })
-    cleanupReviewSwipeCore()
-    setReviewSwipeState("idle")
-    return
-  }
-  setReviewSwipeTransition({ durationMs: 300, type: "return" })
-  resetReviewSwipeVisual()
-  reviewBlockClickUntil = Date.now() + 360
-  reviewSwipe.settleTimer = window.setTimeout(() => {
-    clearReviewSwipeTransition()
-    cleanupReviewSwipeCore()
-    setReviewSwipeState("idle")
-  }, 340)
-}
-
-function commitReviewSwipe(dir, { fromPointerType } = {}) {
-  const d = dir >= 0 ? 1 : -1
-  cleanupReviewPointerListeners()
-  clearReviewSwipeRaf()
-  clearReviewSwipeSettleTimer()
-  dom.reviewCard.classList.remove("is-dragging")
-  document.body.classList.remove("no-select")
-  setReviewSwipeState("animating-out")
-  reviewBlockClickUntil = Date.now() + 420
-
-  const w = getReviewCardWidth()
-  const outX = d * (w * 1.35 + 90)
-  const outRot = d * (String(fromPointerType || "") === "mouse" ? 18 : 16)
-  setReviewSwipeTransition({ durationMs: 220 })
-  dom.reviewCard.style.setProperty("--swipe-right-alpha", d > 0 ? "1" : "0")
-  dom.reviewCard.style.setProperty("--swipe-left-alpha", d < 0 ? "1" : "0")
-  dom.reviewCard.style.setProperty("--swipe-x", `${outX.toFixed(0)}px`)
-  dom.reviewCard.style.setProperty("--swipe-rot", `${outRot.toFixed(0)}deg`)
-  dom.reviewCard.style.setProperty("--swipe-opacity", "0")
-
-  const status = d > 0 ? STATUS_MASTERED : STATUS_UNKNOWN
-  reviewSwipe.settleTimer = window.setTimeout(() => {
-    resetReviewSwipeVisual({ hard: true })
-    clearReviewSwipeTransition()
-    cleanupReviewSwipeCore()
-    setReviewSwipeState("idle")
-    advanceReview(status)
-  }, 260)
-}
 
 dom.reviewCard.addEventListener("click", (e) => {
   if (!appState.reviewCardFlipEnabled) return
-  if (reviewBlockClickUntil && Date.now() < reviewBlockClickUntil) return
-  if (reviewSwipe.dragging || reviewSwipe.animating) return
+  if (reviewSwipeController.isInteractionBlocked()) return
   const target = e.target instanceof Element ? e.target : null
   if (target && target.closest(".review-card-term")) return
   const entry = appState.reviewQueue[appState.reviewIndex]
@@ -2854,133 +2677,6 @@ dom.reviewCard.addEventListener("click", (e) => {
   }
   renderReviewCard()
 })
-
-dom.reviewCard.addEventListener("dragstart", (e) => {
-  e.preventDefault()
-})
-
-dom.reviewCard.addEventListener("pointerdown", (e) => {
-  if (reviewSwipe.animating) return
-  if (e.pointerType === "mouse" && e.button !== 0) return
-  if (!isModalOpen(dom.reviewModal)) return
-  if (reviewSwipe.active) resetReviewToCenter({ hard: true })
-  reviewSwipe.pointerId = e.pointerId
-  reviewSwipe.pointerType = String(e.pointerType || "")
-  reviewSwipe.startX = e.clientX
-  reviewSwipe.startY = e.clientY
-  reviewSwipe.dx = 0
-  reviewSwipe.dy = 0
-  reviewSwipe.lastMoveX = e.clientX
-  reviewSwipe.lastMoveT = performance.now ? performance.now() : Date.now()
-  reviewSwipe.vx = 0
-  setReviewSwipeState("pointer-down")
-  try {
-    dom.reviewCard.setPointerCapture?.(e.pointerId)
-  } catch { /* ignore */ }
-  window.addEventListener("pointermove", onReviewPointerMove, { passive: false, capture: true })
-  window.addEventListener("pointerup", onReviewPointerUp, { capture: true })
-  window.addEventListener("pointercancel", onReviewPointerCancel, { capture: true })
-})
-
-function onReviewPointerMove(e) {
-  if (!reviewSwipe.active) return
-  if (reviewSwipe.pointerId !== e.pointerId) return
-  if (reviewSwipe.animating) return
-
-  const x = e.clientX
-  const y = e.clientY
-  const dx = x - reviewSwipe.startX
-  const dy = y - reviewSwipe.startY
-  reviewSwipe.dx = dx
-  reviewSwipe.dy = dy
-
-  const nowT = performance.now ? performance.now() : Date.now()
-  const dt = Math.max(1, nowT - (reviewSwipe.lastMoveT || nowT))
-  const instVx = (x - (reviewSwipe.lastMoveX || x)) / dt
-  reviewSwipe.vx = Number.isFinite(instVx) ? reviewSwipe.vx * 0.78 + instVx * 0.22 : reviewSwipe.vx
-  reviewSwipe.lastMoveX = x
-  reviewSwipe.lastMoveT = nowT
-
-  const cfg = getReviewSwipeConfig(reviewSwipe.pointerType)
-  const absX = Math.abs(dx)
-  const absY = Math.abs(dy)
-
-  if (reviewSwipe.state === "pointer-down" || reviewSwipe.state === "maybe-drag") {
-    if (absX < cfg.startDistancePx && absY < cfg.startDistancePx) return
-    setReviewSwipeState("maybe-drag")
-
-    if (absY > absX * cfg.directionCancelRatio && absY > cfg.startDistancePx * 1.2) {
-      resetReviewToCenter({ hard: true })
-      setReviewSwipeState("idle")
-      return
-    }
-
-    if (absX >= absY * cfg.directionLockRatio) {
-      setReviewSwipeState("dragging")
-      reviewBlockClickUntil = Date.now() + (cfg.isMouse ? 480 : 360)
-      document.body.classList.add("no-select")
-      dom.reviewCard.classList.add("is-dragging")
-    } else {
-      return
-    }
-  }
-
-  if (reviewSwipe.state !== "dragging") return
-  e.preventDefault()
-
-  if (reviewSwipe.raf) return
-  reviewSwipe.raf = requestAnimationFrame(() => {
-    reviewSwipe.raf = 0
-    applyReviewSwipeVisual({ dx: reviewSwipe.dx, pointerType: reviewSwipe.pointerType })
-  })
-}
-
-function finishReviewSwipe({ commit } = {}) {
-  if (reviewSwipe.animating) return
-  cleanupReviewPointerListeners()
-  clearReviewSwipeRaf()
-  clearReviewSwipeSettleTimer()
-
-  if (reviewSwipe.state !== "dragging") {
-    cleanupReviewSwipeCore()
-    setReviewSwipeState("idle")
-    return
-  }
-
-  dom.reviewCard.classList.remove("is-dragging")
-  document.body.classList.remove("no-select")
-
-  const cfg = getReviewSwipeConfig(reviewSwipe.pointerType)
-  const w = getReviewCardWidth()
-  const commitDist = Math.max(cfg.commitMinPx, w * cfg.commitRatio)
-  const dx = Number(reviewSwipe.dx) || 0
-  const vx = Number(reviewSwipe.vx) || 0
-  const dir = dx === 0 ? (vx >= 0 ? 1 : -1) : dx >= 0 ? 1 : -1
-
-  const absDx = Math.abs(dx)
-  const absVx = Math.abs(vx)
-  const fastEnough = absVx >= cfg.velocityCommitPxPerMs && absDx >= Math.max(cfg.startDistancePx * 2, commitDist * 0.35)
-  const farEnough = absDx >= commitDist
-
-  const shouldCommit = !!commit && (farEnough || fastEnough)
-  if (!shouldCommit) {
-    setReviewSwipeState("resetting-center")
-    resetReviewToCenter()
-    return
-  }
-
-  commitReviewSwipe(dir, { fromPointerType: reviewSwipe.pointerType })
-}
-
-function onReviewPointerUp(e) {
-  if (reviewSwipe.pointerId != null && reviewSwipe.pointerId !== e.pointerId) return
-  finishReviewSwipe({ commit: true })
-}
-
-function onReviewPointerCancel(e) {
-  if (reviewSwipe.pointerId != null && reviewSwipe.pointerId !== e.pointerId) return
-  finishReviewSwipe({ commit: false })
-}
 
 dom.shuffleBtn.addEventListener("click", () => {
   appState.reviewShuffled = !appState.reviewShuffled

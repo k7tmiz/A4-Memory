@@ -8,21 +8,35 @@ const ROOT = path.join(__dirname, "..")
 const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), "utf8")
 
 // 顺序必须与 index.html 中的 <script> 顺序一致
-const APP_MODULE_FILES = ["js/app/wordbook-io.js", "js/app/study-helpers.js"]
+const APP_MODULE_FILES = ["js/app/wordbook-io.js", "js/app/study-helpers.js", "js/app/review-swipe.js"]
 
 function loadAppInternal() {
   const sandbox = {
     console,
     URL,
+    setTimeout,
+    clearTimeout,
+    performance,
+    requestAnimationFrame: (callback) => setTimeout(() => callback(Date.now()), 0),
+    cancelAnimationFrame: (id) => clearTimeout(id),
     window: {
       location: { href: "https://example.com/words/" },
+      setTimeout,
+      clearTimeout,
+      listeners: new Map(),
+      addEventListener(type, listener) {
+        this.listeners.set(type, listener)
+      },
+      removeEventListener(type, listener) {
+        if (this.listeners.get(type) === listener) this.listeners.delete(type)
+      },
       scrollY: 0,
       scrollTo() {},
       WORDS: [],
       WORDBOOKS: [],
     },
     document: {
-      body: { classList: { add() {}, remove() {} }, style: {} },
+      body: { classList: { add() {}, remove() {}, toggle() {} }, style: {} },
     },
   }
   sandbox.window.window = sandbox.window
@@ -35,7 +49,7 @@ function loadAppInternal() {
 const plain = (value) => JSON.parse(JSON.stringify(value))
 
 describe("app modules", () => {
-  const { wordbookIo, studyHelpers, sandbox } = loadAppInternal()
+  const { wordbookIo, studyHelpers, reviewSwipe, sandbox } = loadAppInternal()
 
   it("loads app modules before app.js in index.html", () => {
     const indexMarkup = read("index.html")
@@ -48,6 +62,9 @@ describe("app modules", () => {
   it("keeps extracted helpers out of app.js", () => {
     const appCode = read("js/app.js")
     for (const name of [...Object.keys(wordbookIo), ...Object.keys(studyHelpers)]) {
+      assert.doesNotMatch(appCode, new RegExp(`function ${name}\\(`), name)
+    }
+    for (const name of ["applyReviewSwipeVisual", "commitReviewSwipe", "finishReviewSwipe", "onReviewPointerMove"]) {
       assert.doesNotMatch(appCode, new RegExp(`function ${name}\\(`), name)
     }
   })
@@ -91,5 +108,36 @@ describe("app modules", () => {
     assert.equal(studyHelpers.rubberBandClamp(40, 100, 0.5), 40)
     assert.equal(studyHelpers.rubberBandClamp(-140, 100, 0.5), -120)
     assert.equal(studyHelpers.getReviewSwipeConfig("mouse").commitMinPx, 40)
+  })
+
+  it("commits a horizontal swipe and blocks clicks while dragging", async () => {
+    const cardListeners = new Map()
+    const card = {
+      style: { setProperty() {}, transition: "" },
+      classList: { add() {}, remove() {} },
+      offsetHeight: 0,
+      addEventListener: (type, listener) => cardListeners.set(type, listener),
+      removeEventListener: (type) => cardListeners.delete(type),
+      getBoundingClientRect: () => ({ width: 300 }),
+      setPointerCapture() {},
+    }
+    const commits = []
+    const controller = reviewSwipe.createReviewSwipeController({
+      card,
+      isReviewOpen: () => true,
+      onCommit: (direction) => commits.push(direction),
+    })
+    const win = sandbox.window
+    const pointer = (x) => ({ pointerId: 1, pointerType: "touch", button: 0, clientX: x, clientY: 100, preventDefault() {} })
+    cardListeners.get("pointerdown")(pointer(100))
+    win.listeners.get("pointermove")(pointer(140))
+    win.listeners.get("pointermove")(pointer(260))
+    assert.equal(controller.isInteractionBlocked(), true)
+    win.listeners.get("pointerup")(pointer(260))
+    await new Promise((resolve) => setTimeout(resolve, 320))
+    assert.deepEqual(commits, [1])
+
+    controller.destroy()
+    assert.equal(cardListeners.has("pointerdown"), false)
   })
 })

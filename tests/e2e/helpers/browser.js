@@ -137,6 +137,33 @@ class Page {
     await loaded
   }
 
+  // 以真实鼠标事件点击元素中心（经过 pointerdown / pointerup / click 完整链路）
+  async tap(selector) {
+    const center = await this.evaluate(`(() => {
+      const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect()
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+    })()`)
+    for (const type of ["mousePressed", "mouseReleased"]) {
+      await this.send("Input.dispatchMouseEvent", { type, ...center, button: "left", buttons: type === "mousePressed" ? 1 : 0, clickCount: 1 })
+    }
+  }
+
+  // 以真实鼠标事件横向拖动元素中心
+  async drag(selector, deltaX, { steps = 12 } = {}) {
+    const center = await this.evaluate(`(() => {
+      const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect()
+      return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+    })()`)
+    const mouse = (type, x, buttons) =>
+      this.send("Input.dispatchMouseEvent", { type, x, y: center.y, button: "left", buttons, clickCount: 1 })
+    await mouse("mousePressed", center.x, 1)
+    for (let step = 1; step <= steps; step++) {
+      await mouse("mouseMoved", center.x + (deltaX * step) / steps, 1)
+      await sleep(16)
+    }
+    await mouse("mouseReleased", center.x + deltaX, 0)
+  }
+
   click(selector) {
     return this.evaluate(`(() => {
       const el = document.querySelector(${JSON.stringify(selector)})

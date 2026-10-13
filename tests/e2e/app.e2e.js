@@ -64,6 +64,37 @@ describe("A4 Memory end-to-end", { skip: findChrome() ? false : "未找到 Chrom
     assert.deepEqual(page.errors, [])
   })
 
+  it("marks a word as mastered by swiping the review card right", async () => {
+    await browser.freshApp(page)
+    await page.click("#dockNextBtn")
+    await page.waitFor(isVisible("reviewModal"))
+    await page.drag("#reviewCard", 220)
+    await page.waitFor(isHidden("reviewModal"))
+    await page.waitFor(`document.getElementById("roundStatusCounts").textContent.includes("已掌握 1")`)
+    assert.deepEqual(page.errors, [])
+  })
+
+  it("speaks the review term on tap without flipping or closing the card", async () => {
+    await browser.freshApp(page, { state: { version: 2, pronunciationEnabled: true, reviewCardFlipEnabled: true } })
+    await page.click("#dockNextBtn")
+    await page.waitFor(isVisible("reviewModal"))
+    await page.evaluate(`(() => {
+      window.__spoken = []
+      window.A4Speech = {
+        resolveVoice: () => ({}),
+        getCurrentLanguageBase: () => "en",
+        speak: (options) => window.__spoken.push(options.text),
+      }
+    })()`)
+    const term = await page.evaluate(`document.getElementById("reviewCardTerm").textContent.trim()`)
+    await page.tap("#reviewCardTerm")
+    await page.waitFor(`window.__spoken.length === 1`)
+    assert.equal(await page.evaluate(`window.__spoken[0]`), term)
+    assert.equal(await page.evaluate(isVisible("reviewModal")), true)
+    assert.equal(await page.evaluate(`document.getElementById("reviewCard").classList.contains("is-flipped")`), false)
+    assert.deepEqual(page.errors, [])
+  })
+
   it("keeps words inside the paper on a phone without horizontal overflow", async () => {
     await browser.freshApp(page, { width: 390, height: 844 })
     for (let i = 0; i < 12; i++) await addWordAndCloseReview()
