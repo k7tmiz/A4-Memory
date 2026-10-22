@@ -54,9 +54,9 @@ describe("records state normalization", () => {
 
   it("normalizes visual palette state for records and imported legacy data", () => {
     const { normalizeState } = loadRecordsInternals()
-    assert.equal(normalizeState({ version: 2, rounds: [], themePalette: "ocean" }).themePalette, "ocean")
-    assert.equal(normalizeState({ version: 2, rounds: [], themePalette: "plum" }).themePalette, "classic")
-    assert.equal(normalizeState(null).themePalette, "classic")
+    assert.equal(normalizeState({ version: 2, rounds: [], themePalette: "swiss" }).themePalette, "swiss")
+    assert.equal(normalizeState({ version: 2, rounds: [], themePalette: "ocean" }).themePalette, "paper")
+    assert.equal(normalizeState(null).themePalette, "paper")
   })
 })
 

@@ -253,7 +253,7 @@
   min-width: 0;
   overflow: hidden;
   font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
+  font-weight: var(--fw-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -271,12 +271,13 @@
   align-items: center;
   gap: 5px;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
+  box-shadow: none;
   color: var(--muted);
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
 }
 
 .paper-toolbar-action:hover,
@@ -284,7 +285,7 @@
 .paper-toolbar-action[aria-pressed="true"] {
   background: var(--surfaceHover);
   color: var(--text);
-  border-color: color-mix(in srgb, var(--border3) 60%, transparent);
+  border-color: var(--border2);
 }
 
 .paper-toolbar + .paper-inner {
@@ -299,7 +300,6 @@
   height: 56px;
   display: flex;
   gap: 9px;
-  filter: drop-shadow(0 14px 24px color-mix(in srgb, var(--text) 17%, transparent));
   transform: translateX(-50%);
   animation: a4-dock-enter 280ms 55ms cubic-bezier(0.18, 0.86, 0.25, 1) both;
   transition: gap 320ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -321,15 +321,14 @@
   align-items: stretch;
   touch-action: pan-y;
   user-select: none;
-  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 65%, transparent);
+  background: var(--glass);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    0 20px 48px -10px color-mix(in srgb, var(--text) 16%, transparent),
-    0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
-  backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
-  -webkit-backdrop-filter: blur(28px) saturate(180%) brightness(1.04);
+    inset 0 1px 0 color-mix(in srgb, var(--glass-hi) 65%, transparent),
+    var(--dock-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   transform: translateX(var(--a4-dock-shift, 0px)) scale(calc(var(--a4-dock-sx, 1) * var(--a4-dock-press, 1)), calc(var(--a4-dock-sy, 1) * var(--a4-dock-press, 1)));
   transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -347,9 +346,9 @@
 .app-dock-nav.is-dragging .app-dock-indicator {
   --a4-dock-lift: 1.22;
   --a4-dock-float: -1.5px;
-  border-color: color-mix(in srgb, var(--border) 30%, transparent);
+  border-color: color-mix(in srgb, var(--glass-border) 50%, transparent);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 1px 0 color-mix(in srgb, var(--glass-hi) 72%, transparent),
     inset 0 -10px 16px color-mix(in srgb, var(--text) 8%, transparent),
     0 10px 24px color-mix(in srgb, var(--text) 18%, transparent);
   filter:
@@ -363,8 +362,8 @@
   inset: 0;
   border-radius: inherit;
   background:
-    radial-gradient(130% 100% at 50% 110%, rgba(255, 255, 255, 0.42), transparent 64%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 42%);
+    radial-gradient(130% 100% at 50% 110%, color-mix(in srgb, var(--glass-hi) 42%, transparent), transparent 64%),
+    linear-gradient(180deg, color-mix(in srgb, var(--glass-hi) 16%, transparent), transparent 42%);
   opacity: 0;
   transition: opacity 180ms ease;
   pointer-events: none;
@@ -383,8 +382,8 @@
   border-radius: inherit;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.35),
-    rgba(255, 255, 255, 0.08) 40%,
+    color-mix(in srgb, var(--glass-hi) 35%, transparent),
+    color-mix(in srgb, var(--glass-hi) 8%, transparent) 40%,
     transparent 64%
   );
   pointer-events: none;
@@ -432,12 +431,12 @@
   left: 4px;
   width: calc((100% - 8px) / 3);
   --a4-dock-lift: 1;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--card) 85%, transparent);
+  background: var(--glass-solid);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    0 4px 14px -2px color-mix(in srgb, var(--text) 12%, transparent);
+    inset 0 1px 0 color-mix(in srgb, var(--glass-hi) 75%, transparent),
+    0 4px 14px -4px color-mix(in srgb, var(--text) 16%, transparent);
   pointer-events: none;
   transform: translate3d(calc(var(--a4-dock-index) * 100% + var(--a4-dock-drag, 0px)), var(--a4-dock-float, 0px), 0) scale(var(--a4-dock-lift, 1));
   transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms ease;
@@ -458,6 +457,7 @@
   border: 0;
   border-radius: 999px;
   background: transparent;
+  box-shadow: none;
   color: var(--muted);
   text-decoration: none;
   cursor: pointer;
@@ -475,7 +475,7 @@
 }
 
 .app-dock-item:hover {
-  background: color-mix(in srgb, var(--card) 58%, transparent);
+  background: transparent;
   color: var(--text);
 }
 
@@ -495,13 +495,13 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid color-mix(in srgb, var(--accentText) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ctaText) 14%, transparent);
   border-radius: 999px;
-  background: var(--accent);
-  color: var(--accentText);
-  box-shadow: 0 6px 24px -4px color-mix(in srgb, var(--accent) 35%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: var(--cta);
+  color: var(--ctaText);
+  box-shadow: var(--cta-shadow), inset 0 1px 0 color-mix(in srgb, var(--ctaText) 18%, transparent);
   font-size: var(--fs-sm);
-  font-weight: var(--fw-heavy);
+  font-weight: var(--fw-bold);
   white-space: nowrap;
   overflow: hidden;
   transform-origin: right center;
@@ -544,6 +544,8 @@
     overflow: hidden;
     /* 纸面随视口高度伸缩，并为两侧 220px 工具栏和 28px 间距留出空间 */
     --desktop-paper-w: max(456px, min(600px, calc((100dvh - 195px) * 210 / 297), calc(100vw - 540px)));
+    /* 纸面顶边：.app 上下内边距共 126px，纸面在剩余高度内垂直居中；两侧栏与之顶端对齐 */
+    --desktop-paper-top: calc(30px + max(0px, (100dvh - 126px - var(--desktop-paper-w) * 297 / 210) / 2));
   }
 
   body.home-page .app {
@@ -561,50 +563,50 @@
   .desktop-brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
 
   .desktop-brand-mark {
-    width: 42px;
-    height: 42px;
-    flex: 0 0 42px;
-    border-radius: 12px;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: var(--radius-sm);
     object-fit: contain;
-    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 25%, transparent);
+    box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--text) 40%, transparent);
     user-select: none;
     -webkit-user-drag: none;
   }
 
   .desktop-brand h1 {
     margin: 0;
-    font-size: var(--fs-xl);
-    letter-spacing: -0.035em;
+    font-size: var(--fs-3xl);
+    line-height: 1.05;
   }
 
   .desktop-brand p {
-    margin: 3px 0 0;
+    margin: 4px 0 0;
     color: var(--muted);
-    font-size: var(--fs-2xs);
+    font-size: var(--fs-xs);
   }
 
   body.home-page .home-controls {
-    /* Sit to the left of the centered A4 paper */
+    /* 位于纸面左侧，顶端与纸面对齐 */
     position: fixed;
     z-index: 16;
-    top: 50%;
-    left: max(18px, calc(50% - var(--desktop-paper-w) / 2 - 28px - 220px));
+    top: var(--desktop-paper-top);
+    left: max(18px, calc(50% - var(--desktop-paper-w) / 2 - 36px - 220px));
     width: 220px;
     padding: 0;
     display: flex;
     align-items: stretch;
     flex-direction: column;
-    gap: 14px;
+    gap: 22px;
     border: 0;
+    border-radius: 0;
     background: transparent;
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    transform: translateY(-50%);
   }
 
   body.home-page .home-controls .controls-row-top,
@@ -613,16 +615,14 @@
   }
 
   body.home-page .home-controls .controls-row-wordbook {
-    margin: 12px 0 0;
-    padding: 14px;
+    margin: 0;
+    padding: 16px 0 0;
     display: grid;
-    gap: 9px;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: color-mix(in srgb, var(--card) 86%, transparent);
-    box-shadow: 0 12px 32px color-mix(in srgb, var(--text) 6%, transparent);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    gap: 10px;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
   }
 
   .desktop-section-label {
@@ -640,10 +640,10 @@
   body.home-page .home-controls .controls-row-wordbook select,
   body.home-page .home-controls .controls-row-wordbook .wordbook-picker-btn {
     min-height: 42px;
-    border-radius: 12px;
-    background-color: var(--paper);
-    font-size: var(--fs-xs);
-    font-weight: var(--fw-bold);
+    border-radius: var(--radius-md);
+    background-color: var(--field);
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
   }
 
   body.home-page .home-controls #importWordbookBtn {
@@ -657,15 +657,15 @@
 
   .desktop-tools-button {
     width: 100%;
-    min-height: 44px;
+    min-height: 42px;
     padding: 0 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--card) 82%, transparent);
-    font-size: var(--fs-xs);
-    font-weight: var(--fw-bold);
+    border-radius: var(--radius-md);
+    background: transparent;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
   }
 
   .desktop-tools-popover {
@@ -676,15 +676,13 @@
     width: 100%;
     padding: 6px;
     display: grid;
-    gap: 3px;
+    gap: 2px;
     border: 1px solid var(--border);
-    border-radius: 16px;
-    background: color-mix(in srgb, var(--card) 94%, transparent);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
     box-shadow: var(--shadowModal);
     transform-origin: top left;
     animation: a4-menu-enter var(--motion-duration-fast) var(--motion-ease-out) both;
-    backdrop-filter: blur(24px) saturate(150%);
-    -webkit-backdrop-filter: blur(24px) saturate(150%);
   }
 
   .desktop-tools-popover.hidden {
@@ -698,7 +696,7 @@
     align-items: center;
     gap: 9px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     background: transparent;
     box-shadow: none !important;
     color: var(--text);
@@ -734,9 +732,9 @@
     max-width: 100%;
     height: auto;
     aspect-ratio: 210 / 297;
-    border-radius: 16px;
+    border-radius: var(--radius-paper);
     border: 1px solid var(--paperBorder);
-    box-shadow: var(--paperShadow, 0 24px 64px color-mix(in srgb, var(--text) 13%, transparent));
+    box-shadow: var(--paperShadow);
   }
 
   body.home-page .page-nav {
@@ -764,53 +762,133 @@
   .desktop-status-stack {
     position: fixed;
     z-index: 15;
-    top: 50%;
-    /* 与左侧工具栏对称：半张纸面 + 28px 间距 */
-    left: calc(50% + var(--desktop-paper-w) / 2 + 28px);
-    width: 230px;
+    top: var(--desktop-paper-top);
+    /* 与左侧工具栏对称：半张纸面 + 36px 间距 */
+    left: calc(50% + var(--desktop-paper-w) / 2 + 36px);
+    width: 220px;
     display: none;
-    transform: translateY(-50%);
   }
 
   .desktop-status-card {
-    padding: 16px;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: color-mix(in srgb, var(--card) 90%, transparent);
-    box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-    backdrop-filter: blur(24px) saturate(160%);
-    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    padding: 16px 0 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    background: transparent;
   }
 
   .desktop-status-eyebrow {
-    margin-bottom: 10px;
+    margin-bottom: 14px;
     color: var(--muted);
-    font-size: var(--fs-3xs);
-    font-weight: var(--fw-heavy);
-    letter-spacing: 0.08em;
+    font-size: var(--fs-2xs);
+    font-weight: var(--fw-bold);
   }
 
   .desktop-status-card .badge {
     width: 100%;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+  }
+
+  .desktop-status-card .badge-count {
+    font-size: 52px;
+    line-height: 0.9;
+    letter-spacing: var(--display-tracking);
+  }
+
+  .desktop-status-card .badge-count small {
+    margin-left: 4px;
+    color: var(--faint);
+    font-family: var(--font-ui);
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0;
+  }
+
+  .desktop-status-card .badge-label {
     overflow: hidden;
-    text-align: center;
+    color: var(--muted);
+    font-size: var(--fs-xs);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .desktop-status-card .status-progress {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 16px;
   }
 
   .desktop-status-card .status-meta {
-    margin-top: 10px;
+    margin-top: 18px;
+    display: grid;
+    gap: 0;
     text-align: left;
-    line-height: 1.55;
+    line-height: 1.2;
+  }
+
+  .desktop-status-card .status-meta-part {
+    padding: 9px 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-bottom: 1px solid var(--border2);
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+
+  .desktop-status-card .status-meta-part::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    flex: 0 0 auto;
+    border-radius: var(--radius-pill);
+    background: var(--faint);
+  }
+
+  .desktop-status-card .status-meta-part[data-kind="mastered"]::before {
+    background: var(--success);
+  }
+
+  .desktop-status-card .status-meta-part[data-kind="learning"]::before {
+    background: var(--warning);
+  }
+
+  .desktop-status-card .status-meta-part[data-kind="unknown"]::before {
+    background: var(--mark);
+  }
+
+  .desktop-status-card .status-meta-part b {
+    margin-left: auto;
+    color: var(--text);
+    font-weight: var(--fw-bold);
   }
 
   body.settings-page .settings-page-main {
     padding-bottom: 96px;
+  }
+}
+
+/* 平板宽度：左栏固定在左侧，纸面在右侧剩余空间内居中，避免与左栏重叠 */
+@media (min-width: 701px) and (max-width: 1099px) {
+  body.home-page {
+    --desktop-paper-w: max(360px, min(560px, calc((100dvh - 195px) * 210 / 297), calc(100vw - 330px)));
+  }
+
+  body.home-page .app {
+    padding-left: 274px;
+  }
+
+  body.home-page .home-controls {
+    left: 22px;
+  }
+
+  body.home-page.immersive .app {
+    padding-left: 18px;
   }
 }
 
@@ -872,15 +950,15 @@
     width: 100%;
     min-width: 0;
     height: 38px;
-    padding: 0 30px 0 11px;
+    padding: 0 30px 0 12px;
     overflow: hidden;
     border: 1px solid var(--border3);
-    border-radius: 12px;
-    background-color: var(--card);
+    border-radius: var(--radius-md);
+    background-color: var(--field);
     color: var(--text);
-    box-shadow: 0 3px 12px color-mix(in srgb, var(--text) 5%, transparent);
-    font-size: var(--fs-xs);
-    font-weight: var(--fw-bold);
+    box-shadow: none;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-semibold);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -891,14 +969,15 @@
 
   .mobile-round-chip {
     height: 38px;
-    padding: 0 11px;
+    padding: 0 12px;
     flex: 0 0 auto;
     align-items: center;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--accent);
     color: var(--accentText);
-    font-size: var(--fs-2xs);
-    font-weight: var(--fw-heavy);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-bold);
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 
@@ -915,8 +994,8 @@
     display: grid;
     place-items: center;
     border: 1px solid var(--border3);
-    border-radius: 12px;
-    background: var(--card);
+    border-radius: var(--radius-md);
+    background: var(--control);
     color: var(--muted);
     list-style: none;
     cursor: pointer;
@@ -928,8 +1007,8 @@
   }
 
   .mobile-more-tools[open] .mobile-more-button {
-    border-color: color-mix(in srgb, var(--accent) 28%, var(--border3));
-    background: var(--card);
+    border-color: var(--border-hover);
+    background: var(--control);
     color: var(--text);
   }
 
@@ -939,18 +1018,16 @@
     top: calc(100% + 8px);
     right: 0;
     width: min(220px, calc(100vw - 32px));
-    padding: 7px;
+    padding: 6px;
     display: grid;
-    gap: 3px;
+    gap: 2px;
     border: 1px solid var(--border);
-    border-radius: 17px;
-    background: color-mix(in srgb, var(--card) 96%, transparent);
-    box-shadow: 0 18px 48px color-mix(in srgb, var(--text) 14%, transparent);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadowModal);
     color: var(--text);
     transform-origin: top right;
     animation: a4-menu-enter var(--motion-duration-fast) var(--motion-ease-out) both;
-    backdrop-filter: blur(22px) saturate(145%);
-    -webkit-backdrop-filter: blur(22px) saturate(145%);
   }
 
   .mobile-more-menu button {
@@ -958,7 +1035,7 @@
     padding: 8px 12px;
     justify-content: flex-start;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     background: transparent;
     box-shadow: none !important;
     color: var(--text);
@@ -988,8 +1065,8 @@
         calc(100dvh - 148px - env(safe-area-inset-top) - env(safe-area-inset-bottom))
       )
     );
-    border-radius: 8px;
-    box-shadow: 0 14px 34px color-mix(in srgb, var(--text) 10%, transparent);
+    border-radius: min(var(--radius-paper), 14px);
+    box-shadow: var(--paperShadow);
   }
 
   body.home-page.immersive [data-a4-view="study"] .paper {
@@ -1015,7 +1092,7 @@
   .paper-toolbar-meta {
     min-width: 0;
     overflow: hidden;
-    font-size: var(--fs-2xs);
+    font-size: var(--fs-xs);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1033,11 +1110,11 @@
     align-items: center;
     gap: 4px;
     border: 0;
-    border-radius: 9px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--muted);
-    font-size: var(--fs-2xs);
-    font-weight: var(--fw-bold);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
   }
 
   .paper-toolbar-action:active,
@@ -1062,12 +1139,12 @@
     margin: 0;
     padding: 4px;
     gap: 5px;
-    border: 1px solid rgba(255, 255, 255, 0.84);
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--card) 80%, transparent);
-    box-shadow: 0 9px 24px color-mix(in srgb, var(--text) 13%, transparent);
-    backdrop-filter: blur(20px) saturate(150%);
-    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    background: var(--glass);
+    box-shadow: var(--dock-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
     transform: translateX(-50%);
   }
 
@@ -1076,8 +1153,8 @@
     height: 28px;
     padding: 0;
     border: 0;
-    border-radius: 9px;
-    background: var(--card);
+    border-radius: var(--radius-sm);
+    background: var(--glass-solid);
     font-size: 0;
   }
 
@@ -1108,7 +1185,6 @@
     width: min(calc(100vw - 16px), 420px);
     height: 47px;
     gap: 6px;
-    filter: drop-shadow(0 10px 16px color-mix(in srgb, var(--text) 18%, transparent));
     transform: translateX(-50%);
     animation: a4-dock-enter 280ms 55ms cubic-bezier(0.18, 0.86, 0.25, 1) both;
   }
@@ -1119,15 +1195,14 @@
     flex: 1 1 auto;
     display: flex;
     align-items: stretch;
-    border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+    border: 1px solid var(--glass-border);
     border-radius: 17px;
-    background: color-mix(in srgb, var(--card) 40%, transparent);
+    background: var(--glass);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.5),
-      inset 0 -12px 18px color-mix(in srgb, var(--text) 7%, transparent),
-      0 4px 14px color-mix(in srgb, var(--text) 7%, transparent);
-    backdrop-filter: blur(24px) saturate(170%) brightness(1.04);
-    -webkit-backdrop-filter: blur(24px) saturate(170%) brightness(1.04);
+      inset 0 1px 0 color-mix(in srgb, var(--glass-hi) 50%, transparent),
+      var(--dock-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
   }
 
   .app-dock-nav::before {
@@ -1138,8 +1213,8 @@
     border-radius: inherit;
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.28),
-      rgba(255, 255, 255, 0.06) 40%,
+      color-mix(in srgb, var(--glass-hi) 28%, transparent),
+      color-mix(in srgb, var(--glass-hi) 6%, transparent) 40%,
       transparent 64%
     );
     pointer-events: none;
@@ -1150,13 +1225,12 @@
     bottom: 3px;
     left: 3px;
     width: calc((100% - 6px) / 3);
-    border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    border: 1px solid var(--glass-border);
     border-radius: 13px;
-    background: color-mix(in srgb, var(--card) 52%, transparent);
+    background: var(--glass-solid);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      inset 0 -8px 14px color-mix(in srgb, var(--text) 6%, transparent),
-      0 3px 10px color-mix(in srgb, var(--text) 10%, transparent);
+      inset 0 1px 0 color-mix(in srgb, var(--glass-hi) 55%, transparent),
+      0 3px 10px -2px color-mix(in srgb, var(--text) 14%, transparent);
   }
 
   .app-dock-item {
@@ -1181,7 +1255,7 @@
     overflow: hidden;
     opacity: 1;
     font-size: var(--fs-xs);
-    font-weight: var(--fw-heavy);
+    font-weight: var(--fw-bold);
     white-space: nowrap;
   }
 
@@ -1201,13 +1275,13 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    border: 1px solid color-mix(in srgb, var(--accentText) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ctaText) 14%, transparent);
     border-radius: 17px;
-    background: var(--accent);
-    color: var(--accentText);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accentText) 15%, transparent);
+    background: var(--cta);
+    color: var(--ctaText);
+    box-shadow: var(--cta-shadow), inset 0 1px 0 color-mix(in srgb, var(--ctaText) 15%, transparent);
     font-size: var(--fs-xs);
-    font-weight: var(--fw-heavy);
+    font-weight: var(--fw-bold);
     white-space: nowrap;
     transition:
       flex-basis 320ms cubic-bezier(0.16, 1, 0.3, 1),

@@ -235,10 +235,12 @@
     return state.systemPrefersDark
   }
 
+  // 视觉风格：纸本（默认）/ 极简 / 瑞士；旧版配色值（classic / ocean 等）统一回落到默认风格
+  const THEME_STYLES = Object.freeze(["paper", "minimal", "swiss"])
+
   function normalizeThemePalette(value) {
     const v = String(value || "").trim().toLowerCase()
-    if (v === "paper" || v === "ocean") return v
-    return "classic"
+    return THEME_STYLES.includes(v) ? v : THEME_STYLES[0]
   }
 
   function normalizeRoundCap(value) {
@@ -593,6 +595,7 @@
     normalizeAiProvider,
     normalizeThemeMode,
     syncSystemThemePreference,
+    THEME_STYLES,
     normalizeThemePalette,
     normalizeRoundCap,
     normalizeAccent,

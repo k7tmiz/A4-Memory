@@ -1,6 +1,6 @@
 # 前端架构文档
 
-当前发布基线为 `2.8.0`。应用版本由 `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json` 与 `js/updater.js` 共同声明，发版前必须保持一致。
+当前发布基线为 `3.0.0`。应用版本由 `package.json`、`package-lock.json`、`src-tauri/Cargo.toml`、`src-tauri/Cargo.lock`、`src-tauri/tauri.conf.json` 与 `js/updater.js` 共同声明，发版前必须保持一致。
 
 ## 1. 项目结构
 
@@ -20,7 +20,7 @@ A4-Memory/
 │   └── mask-icon.svg
 ├── css/
 │   ├── style.css          # 基础样式与组件
-│   ├── theme.css          # 主题与配色变量
+│   ├── theme.css          # 三种视觉风格的令牌与签名样式
 │   ├── shell.css          # 响应式页面壳层与交互动画
 │   ├── records.css        # 记录概览、轮次/状态卡与按需预览
 │   └── settings.css       # 设置仪表盘、五分类顶栏与响应式布局
@@ -120,7 +120,7 @@ A4-Memory/
 
 `index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。设置是一级 App Shell 路由，其页面呈现不使用弹窗式标题或返回头。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。页面退出时只有活动视图接收 `exit` 生命周期，非活动控制器不会用旧的完整状态快照覆盖存储。
 
-App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。字体文件随应用本地分发（`assets/fonts/`，`css/style.css` 中以 `@font-face` 声明并在 `index.html` 预加载），不依赖外部字体服务，CSP 的 `font-src` 只放行 `'self'`。排版规范统一定义在 `css/style.css` 的 `:root`：`--font-sans` 字体栈（Plus Jakarta Sans 优先，中文依次回退苹方、冬青黑体、微软雅黑与思源黑体），`--fs-3xs`～`--fs-6xl` 字号层级（10–34px）与页面大标题 `--fs-display` / `--fs-display-compact`，`--fw-regular`～`--fw-heavy` 五档字重（400–800）；各样式文件只引用这些变量，仅打印、极小屏释义和动态数字字号保留局部取值。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；底栏为 Liquid Glass 玻璃质感，按住浮起、横向拖动可切换视图；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
+App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。字体文件随应用本地分发（`assets/fonts/`，`css/style.css` 中以 `@font-face` 声明并在 `index.html` 预加载），不依赖外部字体服务，CSP 的 `font-src` 只放行 `'self'`。结构令牌统一定义在 `css/style.css` 的 `:root`：三套本地字体栈 `--font-sans`（Plus Jakarta Sans）、`--font-serif`（Newsreader，中文回退宋体系）、`--font-grotesk`（Inter），由风格映射到 `--font-ui` / `--font-display` / `--font-word`；`--fs-3xs`～`--fs-6xl` 字号层级与页面大标题 `--fs-display` / `--fs-display-compact`；`--fw-regular`～`--fw-heavy` 五档字重；`--radius-*` 圆角与 `--word-*` 单词形态。颜色令牌（`--bg`、`--text`、`--surface`、`--paper`、`--ink`、`--mark`、`--glass*`、`--cta` 等）全部定义在 `css/theme.css`：未带风格类名的 `body` 使用纸本令牌，`body.theme-style-minimal` / `body.theme-style-swiss` 及其 `.theme-dark` 组合覆盖为对应风格。各样式文件只引用这些变量，仅打印、极小屏释义和动态数字字号保留局部取值。纸面单词以 `data-status`（`new` / `mastered` / `learning` / `unknown`，由 `renderStats` 按 `lastReviewedAt` 与状态写入）驱动墨色、底色与下划线。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；底栏在纸本与极简风格下为 Liquid Glass 玻璃质感，瑞士风格改为实色直角条与朱红下划线指示器（同一套拖动交互），按住浮起、横向拖动可切换视图；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
 学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，A4 纸面在视口水平居中，宽度由 `--desktop-paper-w` 按视口高度伸缩（456–600px，沉浸模式 470–680px）并为两侧工具栏预留空间；左侧词书/工具与右侧轮次进度相对纸面两侧固定排布。手机端低频工具收在 `.mobile-more-tools` 下拉菜单（与记录页 `.records-tools` 同构），桌面端使用 `.desktop-tools-popover`；两者与记录工具菜单共用 `a4-menu-enter` 弹出动效。手机沉浸模式的纸面高度使用动态视口与安全区计算，纸面底部和悬浮底栏顶部保持 15px 间距；模式切换后按归一化坐标重新渲染当前页单词。查词弹窗由 `js/lookup.js` 构建为 `.lookup-modal`，采用圆形关闭钮与搜索行布局；词书选择底部面板为 `.wordbook-picker-panel`。
 
@@ -417,7 +417,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 设置界面包含五个顶级类别，进入页面时显示「账号」：
 
 1. **账号** — 登录、注册、重置密码、登录状态卡片与云同步（上传/下载数据）。登录状态卡片在宽度不超过 430px 时常显单词数、连续天数和当前轮，其余统计通过「更多学习统计」展开且每次打开设置默认折叠；平板和桌面宽度默认直接展示全部统计。
-2. **学习** — 外观（主题模式与经典/纸张绿/海蓝配色）、学习目标（每日轮次/单词）、学习设置（每轮上限）和复习配置（复习间隔、翻面、持续背书）。
+2. **学习** — 外观（主题模式与纸本/极简/瑞士视觉风格）、学习目标（每日轮次/单词）、学习设置（每轮上限）和复习配置（复习间隔、翻面、持续背书）。
 3. **发音** — 朗读开关、发音方式（在线 TTS / 离线 TTS / 系统语音）和在线发音源；「离线语音包」分区与当前首选发音方式相互独立，桌面端和 Android 应用可随时下载、删除、试听及选择模型，选中离线 TTS 时分区自动展开。Web 端保留该分区并明确提示不支持模型管理。
 4. **AI** — OpenAI、Gemini、DeepSeek 和自定义 OpenAI 兼容 API 配置、模型选择与词书生成；模型名可自由输入，也可从服务商 `/models` 接口实时获取后通过应用内面板选择，不保留内置、缓存或回退列表。
 5. **更多** — 包含联网补充（在线查词）、数据管理和版本信息；版本信息仅在 Tauri 桌面端与 Android 应用中显示。
@@ -442,7 +442,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
   showMeaning: boolean,
   immersiveMode: boolean,
   themeMode: "auto" | "light" | "dark",
-  themePalette: "classic" | "paper" | "ocean",
+  themePalette: "paper" | "minimal" | "swiss",
   darkMode: boolean,
 
   // 轮次

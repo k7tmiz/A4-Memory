@@ -28,7 +28,7 @@
     meaningVisible: false,
     immersiveMode: false,
     themeMode: "auto",
-    themePalette: "classic",
+    themePalette: "paper",
     roundCap: 30,
     dailyGoalRounds: 3,
     dailyGoalWords: 0,

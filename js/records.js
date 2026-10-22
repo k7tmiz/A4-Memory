@@ -38,6 +38,7 @@
     getRoundItemsByPage,
     buildFirstSeenRoundMap,
     formatMeaning,
+    THEME_STYLES = ["paper"],
     normalizeThemePalette,
     normalizeRoundCap,
   } = window.A4Common || {}
@@ -210,6 +211,7 @@
         if (!it || !it.word || !it.word.term || !it.pos) continue
         const word = it.word
         const item = el("div", "word-item")
+        item.dataset.status = it.lastReviewedAt ? String(it.status || "unknown") : "new"
         const t = el("span", "word-term", word.term)
         item.appendChild(t)
         const meaning = formatMeaning(word)
@@ -892,9 +894,8 @@
     const applyTheme = () => {
       if (getResolvedDark()) document.body.classList.add("theme-dark")
       else document.body.classList.remove("theme-dark")
-      const palette = normalizeThemePalette?.(state.themePalette) || "classic"
-      document.body.classList.toggle("theme-palette-paper", palette === "paper")
-      document.body.classList.toggle("theme-palette-ocean", palette === "ocean")
+      const palette = normalizeThemePalette?.(state.themePalette) || "paper"
+      for (const style of THEME_STYLES) document.body.classList.toggle(`theme-style-${style}`, style === palette)
     }
 
     const announcements = window.A4Announcements.createAnnouncementController({

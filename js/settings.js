@@ -58,7 +58,7 @@
 
   window.A4Settings = {
     normalizeThemeMode: common.normalizeThemeMode,
-    normalizeThemePalette: common.normalizeThemePalette || (() => "classic"),
+    normalizeThemePalette: common.normalizeThemePalette || (() => "paper"),
     normalizeRoundCap: common.normalizeRoundCap,
     normalizeAccent: common.normalizeAccent,
     normalizePronunciationLang: common.normalizePronunciationLang,

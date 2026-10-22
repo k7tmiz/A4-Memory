@@ -59,7 +59,7 @@ describe("A4State preference schema", () => {
     assert.equal(preferences.meaningVisible, true)
     assert.equal(preferences.showMeaning, true)
     assert.equal(preferences.themeMode, "dark")
-    assert.equal(preferences.themePalette, "classic")
+    assert.equal(preferences.themePalette, "paper")
     assert.equal(preferences.roundCap, 30)
     assert.equal(preferences.dailyGoalRounds, 8)
     assert.equal(preferences.dailyGoalWords, 12)

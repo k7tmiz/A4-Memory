@@ -255,11 +255,12 @@ describe("A4Settings imported state normalization", () => {
     assert.equal(state.selectedWordbookId, "cet4")
   })
 
-  it("preserves supported palettes and falls back removed palettes to classic", () => {
+  it("preserves supported visual styles and falls back legacy palettes to paper", () => {
     const settings = loadSettingsHelpers()
-    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "paper" }).themePalette, "paper")
-    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "ocean" }).themePalette, "ocean")
-    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "plum" }).themePalette, "classic")
+    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "minimal" }).themePalette, "minimal")
+    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "swiss" }).themePalette, "swiss")
+    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "ocean" }).themePalette, "paper")
+    assert.equal(settings.normalizeImportedState({ version: 2, rounds: [], themePalette: "classic" }).themePalette, "paper")
   })
 
   it("migrates removed SiliconCloud configs to custom without losing endpoint or model", () => {
@@ -282,22 +283,24 @@ describe("A4Settings imported state normalization", () => {
   })
 })
 
-describe("A4Settings visual palettes", () => {
-  it("offers only Classic, Paper Green, and Ocean as accessible palette choices", () => {
+describe("A4Settings visual styles", () => {
+  it("offers Paper, Minimal and Swiss as accessible style choices", () => {
     assert.match(settingsCode, /id="themePaletteGroup"[^>]*role="radiogroup"/)
-    assert.match(settingsCode, /data-theme-palette="classic"[^>]*>[^<]*经典/s)
-    assert.match(settingsCode, /data-theme-palette="paper"[^>]*>[^<]*纸张绿/s)
-    assert.match(settingsCode, /data-theme-palette="ocean"[^>]*>[^<]*海蓝/s)
-    assert.doesNotMatch(settingsCode, /data-theme-palette="plum"/)
+    assert.match(settingsCode, /data-theme-palette="paper"[^>]*>[\s\S]*?纸本/)
+    assert.match(settingsCode, /data-theme-palette="minimal"[^>]*>[\s\S]*?极简/)
+    assert.match(settingsCode, /data-theme-palette="swiss"[^>]*>[\s\S]*?瑞士/)
+    assert.doesNotMatch(settingsCode, /data-theme-palette="(?:classic|ocean)"/)
   })
 
-  it("defines light and dark tokens for the two optional palettes", () => {
+  it("defines light and dark tokens for every style with paper as the unclassed default", () => {
     const themeCode = fs.readFileSync(path.join(ROOT, "css", "theme.css"), "utf8")
-    assert.match(themeCode, /body\.theme-palette-paper\s*\{/)
-    assert.match(themeCode, /body\.theme-dark\.theme-palette-paper\s*\{/)
-    assert.match(themeCode, /body\.theme-palette-ocean\s*\{/)
-    assert.match(themeCode, /body\.theme-dark\.theme-palette-ocean\s*\{/)
-    assert.doesNotMatch(themeCode, /theme-palette-plum/)
+    assert.match(themeCode, /body,\s*body\.theme-style-paper\s*\{/)
+    assert.match(themeCode, /body\.theme-dark,\s*body\.theme-dark\.theme-style-paper\s*\{/)
+    for (const style of ["minimal", "swiss"]) {
+      assert.match(themeCode, new RegExp(`body\\.theme-style-${style}\\s*\\{`))
+      assert.match(themeCode, new RegExp(`body\\.theme-dark\\.theme-style-${style}\\s*\\{`))
+    }
+    assert.doesNotMatch(themeCode, /theme-palette-(?:paper|ocean|plum)\b/)
   })
 })
 

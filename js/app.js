@@ -39,8 +39,9 @@
   const settings = window.A4Settings || {}
   const utils = window.A4Utils || {}
   const {
-    normalizeThemePalette = (v) => (v === "paper" || v === "ocean" ? v : "classic"),
+    normalizeThemePalette = () => "paper",
   } = settings
+  const THEME_STYLES = window.A4Common?.THEME_STYLES || ["paper"]
   const {
     showNoticeDialog = () => Promise.resolve(false),
     showToast = () => null,
@@ -372,8 +373,7 @@
     if (dark) document.body.classList.add("theme-dark")
     else document.body.classList.remove("theme-dark")
     const palette = normalizeThemePalette(appState.themePalette)
-    document.body.classList.toggle("theme-palette-paper", palette === "paper")
-    document.body.classList.toggle("theme-palette-ocean", palette === "ocean")
+    for (const style of THEME_STYLES) document.body.classList.toggle(`theme-style-${style}`, style === palette)
   }
 
   const themeMedia = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null
@@ -497,6 +497,7 @@
     for (const item of items) {
       if (!item || !item.word || !item.word.term || !item.pos) continue
       const el = buildWordElement(item.word)
+      el.dataset.status = getPaperWordStatus(item)
       if (item.fontSize) el.style.fontSize = item.fontSize
       const x = clamp(item.pos.x, 0, 1) * paper.w
       const y = clamp(item.pos.y, 0, 1) * paper.h
@@ -568,7 +569,15 @@
     const pageCount = getRoundPageCount(round)
     const pageIndex = clamp(Math.floor(Number(appState.currentPageIndex) || 0), 0, Math.max(0, pageCount - 1))
     const cap = getCurrentRoundCap()
-    dom.roundBadge.textContent = `第${roundNo}轮 · 第${pageIndex + 1}/${pageCount}张 · ${appState.placed.length}/${cap}`
+    const badgeCount = document.createElement("strong")
+    badgeCount.className = "badge-count"
+    const badgeCap = document.createElement("small")
+    badgeCap.textContent = `/${cap}`
+    badgeCount.append(String(appState.placed.length), badgeCap)
+    const badgeLabel = document.createElement("span")
+    badgeLabel.className = "badge-label"
+    badgeLabel.textContent = `第${roundNo}轮 · 第${pageIndex + 1}/${pageCount}张`
+    dom.roundBadge.replaceChildren(badgeCount, badgeLabel)
     if (dom.mobileRoundBadge) dom.mobileRoundBadge.textContent = `${appState.placed.length} / ${cap}`
     if (dom.paperMeta) {
       const total = Array.isArray(round?.items) ? round.items.length : 0
@@ -625,20 +634,32 @@
 
     if (dom.roundStatusCounts) {
       const parts = [
-        `已掌握 ${counts.mastered}`,
-        `学习中 ${counts.learning}`,
-        `不会 ${counts.unknown}`,
-        `待复习 ${dueCount}`,
+        ["mastered", "已掌握", counts.mastered],
+        ["learning", "学习中", counts.learning],
+        ["unknown", "不会", counts.unknown],
+        ["due", "待复习", dueCount],
       ]
       dom.roundStatusCounts.replaceChildren(
-        ...parts.flatMap((text, index) => {
+        ...parts.map(([kind, label, value]) => {
           const part = document.createElement("span")
           part.className = "status-meta-part"
-          part.textContent = text
-          return index ? [" · ", part] : [part]
+          part.dataset.kind = kind
+          const count = document.createElement("b")
+          count.textContent = String(value)
+          part.append(label, " ", count)
+          return part
         }),
       )
     }
+
+    for (const placed of appState.placed) {
+      if (placed?.el) placed.el.dataset.status = getPaperWordStatus(placed.roundItem)
+    }
+  }
+
+  // 纸面单词按复习状态着色；尚未复习过的新词保持默认墨色
+  function getPaperWordStatus(item) {
+    return item?.lastReviewedAt ? normalizeStatus(item.status) : "new"
   }
 
   function updateMeaningToggle() {

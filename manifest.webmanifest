@@ -3,8 +3,8 @@
   "short_name": "A4 Memory",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f6f7fb",
-  "theme_color": "#0b1220",
+  "background_color": "#ebe6dc",
+  "theme_color": "#ebe6dc",
   "icons": [
     {
       "src": "./assets/icon.svg",

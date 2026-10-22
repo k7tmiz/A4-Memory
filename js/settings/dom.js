@@ -352,12 +352,12 @@
               </div>
             </div>
             <div class="form-row form-row-palette">
-              <div class="form-label">配色方案</div>
+              <div class="form-label">视觉风格</div>
               <div class="form-control">
-                <div class="theme-palette-options" id="themePaletteGroup" role="radiogroup" aria-label="配色方案">
-                  <button class="theme-palette-option" data-theme-palette="classic" type="button" role="radio" aria-checked="true">经典<span class="theme-palette-swatch theme-palette-swatch-classic" aria-hidden="true"></span></button>
-                  <button class="theme-palette-option" data-theme-palette="paper" type="button" role="radio" aria-checked="false">纸张绿<span class="theme-palette-swatch theme-palette-swatch-paper" aria-hidden="true"></span></button>
-                  <button class="theme-palette-option" data-theme-palette="ocean" type="button" role="radio" aria-checked="false">海蓝<span class="theme-palette-swatch theme-palette-swatch-ocean" aria-hidden="true"></span></button>
+                <div class="theme-palette-options" id="themePaletteGroup" role="radiogroup" aria-label="视觉风格">
+                  <button class="theme-palette-option" data-theme-palette="paper" type="button" role="radio" aria-checked="true"><span class="theme-palette-preview theme-palette-preview-paper" aria-hidden="true"><i>Aa</i><b></b><b></b></span><span class="theme-palette-name">纸本</span><span class="theme-palette-note">衬线 · 暖纸</span></button>
+                  <button class="theme-palette-option" data-theme-palette="minimal" type="button" role="radio" aria-checked="false"><span class="theme-palette-preview theme-palette-preview-minimal" aria-hidden="true"><i>Aa</i><b></b><b></b></span><span class="theme-palette-name">极简</span><span class="theme-palette-note">柔和 · 克制</span></button>
+                  <button class="theme-palette-option" data-theme-palette="swiss" type="button" role="radio" aria-checked="false"><span class="theme-palette-preview theme-palette-preview-swiss" aria-hidden="true"><i>Aa</i><b></b><b></b></span><span class="theme-palette-name">瑞士</span><span class="theme-palette-note">网格 · 朱红</span></button>
                 </div>
               </div>
             </div>

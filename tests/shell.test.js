@@ -174,8 +174,8 @@ describe("responsive application shell", () => {
     assert.match(settingsStyle, /prefers-reduced-motion[^]*\.settings-category-indicator[^}]*transition:\s*none\s*!important/s)
     assert.match(recordsStyle, /prefers-reduced-motion[^]*\.records-view-indicator[^}]*transition:\s*none\s*!important/s)
     assert.match(recordsStyle, /body\.records-page \.app\.records[^}]*env\(safe-area-inset-bottom\)/s)
-    assert.match(themeStyle, /body\.theme-palette-paper/)
-    assert.match(themeStyle, /body\.theme-palette-ocean/)
+    assert.match(themeStyle, /body\.theme-style-minimal/)
+    assert.match(themeStyle, /body\.theme-style-swiss/)
   })
 
   it("defines directional view motion while the dock remains mounted", () => {
@@ -392,6 +392,13 @@ describe("study paper bounds and intro focus", () => {
   it("spreads restored words and falls back to the least-overlap position", () => {
     assert.match(appCode, /function renderCurrentRound[^]*?\n\s*fitPlacedWordsInPaper\(\)\n\s*spreadOverlappingWords\(\)/)
     assert.match(appCode, /function placeWordElement[^]*?overlapArea[^]*?total < bestOverlap/)
+  })
+
+  it("marks paper words with their review status on every render", () => {
+    assert.match(appCode, /function renderCurrentRound[^]*?el\.dataset\.status = getPaperWordStatus\(item\)/)
+    assert.match(appCode, /function renderStats[^]*?placed\.el\.dataset\.status = getPaperWordStatus\(placed\.roundItem\)/)
+    assert.match(appCode, /function getPaperWordStatus\(item\)\s*\{\s*return item\?\.lastReviewedAt \? normalizeStatus\(item\.status\) : "new"/)
+    assert.match(sharedStyle, /\.word-item\[data-status="mastered"\]\s*\{[^}]*color:\s*var\(--word-mastered-ink\)/s)
   })
 
   it("wraps round status counts only between items", () => {

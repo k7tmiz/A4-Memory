@@ -170,6 +170,7 @@ describe("A4Updater card styling", () => {
       "--accent",
       "--accentText",
       "--shadowModal",
+      "--surface",
     ])
 
     assert.match(componentCss, /#updateModal \.update-card\s*\{[^}]*width:\s*min\([^;]*45\dpx\)/s)

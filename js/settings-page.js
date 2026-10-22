@@ -20,9 +20,10 @@
 
   function applyTheme() {
     document.body.classList.toggle("theme-dark", getResolvedDarkMode())
-    const palette = settings?.normalizeThemePalette?.(state.themePalette) || "classic"
-    document.body.classList.toggle("theme-palette-paper", palette === "paper")
-    document.body.classList.toggle("theme-palette-ocean", palette === "ocean")
+    const palette = settings?.normalizeThemePalette?.(state.themePalette) || "paper"
+    for (const style of common?.THEME_STYLES || ["paper"]) {
+      document.body.classList.toggle(`theme-style-${style}`, style === palette)
+    }
   }
 
   function persist() {

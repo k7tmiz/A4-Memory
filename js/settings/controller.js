@@ -8,7 +8,7 @@
 
   const clamp = common.clamp
   const normalizeThemeMode = common.normalizeThemeMode
-  const normalizeThemePalette = common.normalizeThemePalette || (() => "classic")
+  const normalizeThemePalette = common.normalizeThemePalette || (() => "paper")
   const normalizeRoundCap = common.normalizeRoundCap
   const normalizeAccent = common.normalizeAccent
   const normalizeVoiceMode = common.normalizeVoiceMode
