@@ -42,7 +42,7 @@ GoogleService-Info.plist
 secrets/
 
 # Local deploy scripts
-/deploy-hexo.sh
+/deploy-web.sh
 /deploy-backend.sh
 
 # Tauri
