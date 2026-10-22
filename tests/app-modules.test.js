@@ -338,3 +338,59 @@ describe("frontend script isolation", () => {
     }
   })
 })
+
+describe("word picker", () => {
+  const words = ["alpha", "beta", "gamma", "delta"].map((term) => ({ term, meaning: `${term}-m`, lang: "en" }))
+
+  function createPicker(appStateOverrides = {}) {
+    const { wordPicker } = loadAppInternal()
+    const round = { id: "r2", language: "en", items: [] }
+    const appState = {
+      pool: [],
+      poolIndex: 0,
+      sourceWords: words,
+      unknownTerms: [],
+      rounds: [round],
+      ...appStateOverrides,
+    }
+    const picker = wordPicker.createWordPicker({
+      appState,
+      getCurrentRound: () => appState.rounds[appState.rounds.length - 1],
+      getLangBase: (value) => String(value || "").split("-")[0],
+      getActiveLangBase: () => "en",
+      getUnknownTermKey: ({ term, langBase }) => `${langBase}||${term.toLowerCase()}`,
+    })
+    return { picker, appState, round }
+  }
+
+  it("serves words marked unknown before the rest", () => {
+    const { picker, appState } = createPicker({ unknownTerms: ["en||gamma"] })
+    picker.ensurePool()
+    assert.equal(appState.pool[0].term, "gamma")
+    assert.equal(appState.pool.length, 4)
+  })
+
+  it("never picks a word that is already in the current round", () => {
+    const { picker, round } = createPicker()
+    round.items = ["alpha", "beta", "gamma"].map((term) => ({ word: { term, meaning: `${term}-m` }, lang: "en" }))
+    const picked = picker.pickNextWord()
+    assert.equal(picked.term, "delta")
+    round.items.push({ word: picked, lang: "en" })
+    assert.equal(picker.pickNextWord(), null, "the pool refills but every word is already in the round")
+  })
+
+  it("prefers words never seen in earlier rounds", () => {
+    const earlier = { id: "r1", language: "en", items: ["alpha", "beta", "gamma"].map((term) => ({ word: { term, meaning: `${term}-m` } })) }
+    const { picker, appState } = createPicker()
+    appState.rounds = [earlier, { id: "r2", language: "en", items: [] }]
+    const globalSeenSet = picker.buildAllRoundsWordKeySet({ excludeRoundId: "r2" })
+    assert.equal(globalSeenSet.size, 3)
+    assert.equal(picker.pickNextWordPreferUnseenFirst({ globalSeenSet }).term, "delta")
+  })
+
+  it("deduplicates repeated source words by term and meaning", () => {
+    const { picker, appState } = createPicker({ sourceWords: [...words, { ...words[0] }] })
+    picker.ensurePool()
+    assert.equal(appState.pool.length, 4)
+  })
+})

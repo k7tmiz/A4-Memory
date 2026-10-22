@@ -17,6 +17,7 @@ const APP_MODULE_FILES = [
   "js/app/paper-layout.js",
   "js/app/wordbook-manager.js",
   "js/app/review-modal.js",
+  "js/app/word-picker.js",
 ]
 
 function readStudyBundle() {
