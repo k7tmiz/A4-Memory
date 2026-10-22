@@ -330,38 +330,6 @@ const dom = {
   roundFullMeta: document.getElementById("roundFullMeta"),
   continueRoundBtn: document.getElementById("continueRoundBtn"),
   reviewFromFullBtn: document.getElementById("reviewFromFullBtn"),
-  settingsModal: document.getElementById("settingsModal"),
-  settingsBackdrop: document.getElementById("settingsBackdrop"),
-  closeSettingsBtn: document.getElementById("closeSettingsBtn"),
-  themeModeSelect: document.getElementById("themeModeSelect"),
-  dailyGoalRoundsInput: document.getElementById("dailyGoalRoundsInput"),
-  dailyGoalWordsInput: document.getElementById("dailyGoalWordsInput"),
-  roundCapInput: document.getElementById("roundCapInput"),
-  pronounceToggleBtn: document.getElementById("pronounceToggleBtn"),
-  accentSelect: document.getElementById("accentSelect"),
-  pronunciationLangSelect: document.getElementById("pronunciationLangSelect"),
-  voiceModeSelect: document.getElementById("voiceModeSelect"),
-  voiceManualRow: document.getElementById("voiceManualRow"),
-  voiceSelect: document.getElementById("voiceSelect"),
-  voiceHint: document.getElementById("voiceHint"),
-  testVoiceBtn: document.getElementById("testVoiceBtn"),
-  exportBackupBtn: document.getElementById("exportBackupBtn"),
-  importBackupBtn: document.getElementById("importBackupBtn"),
-  importBackupFile: document.getElementById("importBackupFile"),
-  aiBaseUrlInput: document.getElementById("aiBaseUrlInput"),
-  aiApiKeyInput: document.getElementById("aiApiKeyInput"),
-  aiModelInput: document.getElementById("aiModelInput"),
-  aiTypeSelect: document.getElementById("aiTypeSelect"),
-  aiCustomTopicInput: document.getElementById("aiCustomTopicInput"),
-  aiCountInput: document.getElementById("aiCountInput"),
-  aiGenerateBtn: document.getElementById("aiGenerateBtn"),
-  aiStatus: document.getElementById("aiStatus"),
-  aiPreviewModal: document.getElementById("aiPreviewModal"),
-  aiPreviewBackdrop: document.getElementById("aiPreviewBackdrop"),
-  closeAiPreviewBtn: document.getElementById("closeAiPreviewBtn"),
-  aiPreviewMeta: document.getElementById("aiPreviewMeta"),
-  aiPreviewList: document.getElementById("aiPreviewList"),
-  aiConfirmBtn: document.getElementById("aiConfirmBtn"),
 }
 
 const appState = {
@@ -2714,7 +2682,6 @@ function isAnyModalOpen() {
     isModalOpen(dom.remoteImportModal) ||
     isModalOpen(dom.wordbookPickerModal) ||
     isModalOpen(dom.introModal) ||
-    isModalOpen(dom.aiPreviewModal) ||
     isModalOpen(document.getElementById("lookupModal")) ||
     isModalOpen(document.getElementById("a4-confirm-title")?.closest(".modal"))
   )
