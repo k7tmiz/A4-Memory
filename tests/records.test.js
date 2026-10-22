@@ -5,6 +5,7 @@ const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
 
 const commonCode = fs.readFileSync(path.join(__dirname, "..", "js", "core", "common.js"), "utf8")
+const stateSchemaCode = fs.readFileSync(path.join(__dirname, "..", "js", "core", "state-schema.js"), "utf8")
 const sanitizeCode = fs.readFileSync(path.join(__dirname, "..", "js", "core", "sanitize.js"), "utf8")
 const recordsCode = fs.readFileSync(path.join(__dirname, "..", "js", "records.js"), "utf8")
 
@@ -26,6 +27,7 @@ function loadRecordsInternals({ document: documentRef } = {}) {
   sandbox.window.window = sandbox.window
   vm.createContext(sandbox)
   vm.runInContext(commonCode, sandbox)
+  vm.runInContext(stateSchemaCode, sandbox)
   vm.runInContext(sanitizeCode, sandbox)
   const instrumented = recordsCode.replace(
     /\n  main\(\)\n\}\)\(\)\s*$/,

@@ -29,6 +29,7 @@ A4-Memory/
 ├── js/
 │   ├── core/
 │   │   ├── common.js      # 跨页共享纯业务逻辑
+│   │   ├── state-schema.js # 持久化偏好字段的默认值、范围与归一化
 │   │   └── sanitize.js    # XSS 防护（HTML/属性转义）
 │   ├── ui/
 │   │   ├── layers.js      # 共享弹层栈、滚动锁与焦点管理
@@ -121,6 +122,7 @@ App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records
 index.html
   → data/words.js
   → js/core/common.js
+  → js/core/state-schema.js
   → js/ui/layers.js
   → js/ui/motion.js
   → js/ui/router.js
@@ -168,9 +170,28 @@ index.html
 - 当前轮次缺失时保留历史轮次并追加新轮次（`ensureCurrentRoundState`）
 - 查词匹配评分与去重排序
 - 时间格式化、日期 key、统计计算
-- 通用 normalize 与默认设置
+- 通用 normalize（单字段规则）
 - 系统主题偏好缓存与活动视图应用判定（`syncSystemThemePreference`）
 - 词库/单词归一化（`getWordsFromGlobal`、`getWordbooksFromGlobal`、`normalizeWordObject`）
+
+### `js/core/state-schema.js`
+持久化状态的唯一规则来源，暴露 `window.A4State`。学习视图（`restore` / 持久化）、记录视图（`normalizeState`）、设置视图（`loadSettingsState`）以及备份导入/云恢复（`normalizeImportedState`）都通过它读写偏好字段；新增偏好只需在这里登记一次。
+```javascript
+window.A4State = {
+  STATE_VERSION,           // 2
+  PREFERENCE_DEFAULTS,     // 全部偏好字段及默认值
+  PREFERENCE_KEYS,         // 偏好字段名清单
+  DATA_KEYS,               // 学习数据字段名清单（轮次、词书、待办意图等，持久化时原样写回）
+  normalizePreferences(raw),             // 任意来源 → 完整、合法的偏好对象；不修改入参，aiConfig.apiKey 恒为空
+  buildPersistedState(source, extra),    // 归一化偏好 + 学习数据字段 + 视图派生字段（darkMode、currentCount）
+  normalizeReviewIntervals(raw),
+  normalizePendingKind(value),
+  normalizeAiConfig(raw),
+  normalizeLookupOnlineSource(value),
+  normalizeLookupLangMode(value),
+  normalizeLookupCacheDays(value),
+}
+```
 
 ### `js/ui/layers.js`
 共享弹层控制器，暴露 `window.A4UI`。标准入口为 `setLayerVisible(layer, visible, { trigger, motion })`：`trigger` 保存实际触发元素与可用矩形；`motion: "origin"` 从来源控件展开并在关闭时按同一路径返回，`"sheet"` 自面板高度方向滑入（用于词书选择等底部面板，不从顶部触发点飞入），`"neutral"` 用于没有用户来源的自动弹层。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。动画可被快速反向、中断或立即清理，并在来源消失、Web Animations API 不可用或系统要求减少动态效果时安全降级。首页弹窗、查词、设置页内确认/预览、确认框、公告和 Android 下拉面板均通过该入口管理。学习页手机「更多工具」与记录页工具菜单使用页面内 `details` 下拉，不进入弹层栈。路由切换按从顶层到底层的顺序向弹层所有者发送 `a4-layer-dismiss`，由所有者执行取消、请求中止、Promise 收敛和 DOM 清理，再同步收尾所有已打开或正在退出的共享弹层；批量收尾不恢复旧焦点，由目标视图独占最终焦点。
@@ -261,7 +282,7 @@ window.A4Speech = {
 
 | 文件 | 职责 |
 |------|------|
-| `js/settings/state-normalize.js` | 状态归一化：备份导入 / 云恢复清洗规则、`pageIndex` 按 `roundCap` 补分、`aiConfig.apiKey` 强制清空 |
+| `js/settings/state-normalize.js` | 备份导入 / 云恢复清洗：偏好字段交给 `A4State.normalizePreferences`，自身负责轮次、词书、`pageIndex` 按 `roundCap` 补分与待办意图清理 |
 | `js/settings/ai.js` | AI 提供商预设、Base URL / origin 归一化、请求构建与模型列表解析 |
 | `js/settings/account.js` | 账号表单校验、错误文案映射、验证码冷却读写与 429 退避解析 |
 | `js/settings/tts.js` | 发音测试选项构造与离线语音展示辅助 |
@@ -277,7 +298,7 @@ window.A4Settings = {
 ```
 
 ### `js/settings-page.js`
-设置视图控制器。它从 `A4Storage` 读取完整状态、应用主题、连接 `createSettingsModalController({ presentation: "page" })`，并通过路由生命周期在每次进入时刷新状态、离开时持久化；它只负责设置状态、主题和路由生命周期接线，不记录返回来源或发起导航。设置状态继续写入同一个 `a4-memory:v1`，AI API Key 仍只保留在当前页面内存中。
+设置视图控制器。它从 `A4Storage` 读取完整状态并经 `A4State.normalizePreferences` 归一化偏好、应用主题、连接 `createSettingsModalController({ presentation: "page" })`，并通过路由生命周期在每次进入时刷新状态、离开时持久化；它只负责设置状态、主题和路由生命周期接线，不记录返回来源或发起导航。设置状态继续写入同一个 `a4-memory:v1`，AI API Key 仍只保留在当前页面内存中。
 
 ### `js/lookup.js`
 查词弹窗控制器，暴露 `window.A4Lookup`：
@@ -386,6 +407,8 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 ## 6. localStorage 数据结构
 
 ### 主状态键 `a4-memory:v1`
+
+偏好字段的默认值与合法范围以 `js/core/state-schema.js` 的 `PREFERENCE_DEFAULTS` / `normalizePreferences` 为准。
 
 ```javascript
 {

@@ -372,34 +372,6 @@
     return { key: k, status, sourceRoundNo, lastReviewedAt, nextReviewAt, reviewSystemEnabled: !!reviewSystemEnabled }
   }
 
-  // ── Defaults ────────────────────────────────────────────────────────────────
-
-  const DEFAULTS = {
-    themePalette: "classic",
-    reviewSystemEnabled: true,
-    reviewAutoCloseModal: true,
-    continuousStudyMode: false,
-    reviewCardFlipEnabled: false,
-    reviewIntervals: { unknownDays: 1, learningDays: 3, masteredDays: 7 },
-    pronunciationEnabled: true,
-    pronunciationAccent: "auto",
-    pronunciationLang: "auto",
-    voiceMode: "auto",
-    lookupOnlineEnabled: true,
-    lookupOnlineSource: "builtin",
-    lookupLangMode: "auto",
-    lookupSpanishConjugationEnabled: true,
-    lookupCacheEnabled: true,
-    lookupCacheDays: 30,
-    roundCap: 30,
-    dailyGoalRounds: 0,
-    dailyGoalWords: 0,
-    onlineTtsEnabled: true,
-    onlineTtsProvider: "edge",
-    ttsMode: "online",
-    offlineVoiceByLang: {},
-  }
-
   function normalizeOnlineTtsProvider(value) {
     const v = String(value || "").trim().toLowerCase()
     if (v === "google") return "google"
@@ -633,7 +605,6 @@
     dedupeAndSortLookupResults,
     buildFirstSeenRoundMap,
     normalizeLookupRecordMeta,
-    DEFAULTS,
     normalizeOnlineTtsProvider,
     normalizeTtsMode,
     normalizeOfflineVoiceByLang,

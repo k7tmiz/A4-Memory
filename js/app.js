@@ -1,6 +1,4 @@
-const DEFAULT_ROUND_CAP = 30
 const INTRO_SEEN_KEY = "a4-memory:intro-seen:v1"
-const DEFAULT_REVIEW_INTERVALS = { unknownDays: 1, learningDays: 3, masteredDays: 7 }
 const {
   STATUS_MASTERED,
   STATUS_LEARNING,
@@ -12,8 +10,7 @@ const {
   ROUND_TYPE_DUE,
   normalizeStatus,
   normalizeRoundType,
-  normalizeAiProvider,
-  normalizeReviewCardFlipEnabled,
+  normalizeRoundCap,
   normalizeLangTag,
   parseIsoTime,
   formatDateTime,
@@ -26,19 +23,19 @@ const {
   setModalVisible,
   getWordbooksFromGlobal,
   normalizeWordObject,
-  normalizeOnlineTtsProvider,
-  normalizeTtsPreferences,
   syncSystemThemePreference,
 } = window.A4Common || {}
+const {
+  normalizePreferences,
+  buildPersistedState,
+  normalizeReviewIntervals,
+  normalizePendingKind,
+} = window.A4State || {}
 
 const settings = window.A4Settings || {}
 const utils = window.A4Utils || {}
 const {
-  normalizeThemeMode = (v) => (v === "dark" || v === "light" ? v : "auto"),
   normalizeThemePalette = (v) => (v === "paper" || v === "ocean" ? v : "classic"),
-  normalizeAccent = (v) => String(v || "").trim().toLowerCase(),
-  normalizeVoiceMode = (v) => (v === "manual" || v === "auto" ? v : "auto"),
-  normalizePronunciationLang = (v) => String(v || "").trim().toLowerCase() || "auto",
 } = settings
 const {
   sanitizeFilename = (v) => String(v || ""),
@@ -244,6 +241,13 @@ function openLookupModal({ preset, trigger = document.activeElement || null } = 
   showNoticeDialog({ title: "查词不可用", message: "查词模块未加载。", trigger })
 }
 
+// appState 以 showMeaning 表示释义开关，持久化时再写回 meaningVisible，避免内存中出现两份不同步的值。
+function omitMeaningVisible(preferences) {
+  const rest = { ...preferences }
+  delete rest.meaningVisible
+  return rest
+}
+
 function saveState(state) {
   window.A4Storage?.saveState?.(state)
 }
@@ -333,6 +337,8 @@ const dom = {
 }
 
 const appState = {
+  // 偏好字段的默认值统一来自 js/core/state-schema.js；showMeaning 即持久化的 meaningVisible
+  ...omitMeaningVisible(normalizePreferences(null)),
   builtInWordbooks: getWordbooksFromGlobal(),
   customWordbooks: [],
   selectedWordbookId: "",
@@ -341,7 +347,6 @@ const appState = {
   pool: [],
   poolIndex: 0,
   placed: [],
-  showMeaning: false,
   // 复习弹窗顺序控制：
   // - 手动“复习本轮”：每次打开默认打乱（不置顶）
   // - “下一个单词”后的自动复习：置顶本次新加入的 roundItem，其余旧词按当前复习顺序规则排列
@@ -354,38 +359,11 @@ const appState = {
   pendingReviewRoundId: "",
   pendingGenerateStatusKind: "",
   currentPageIndex: 0,
-  immersiveMode: false,
-  themeMode: "auto",
-  themePalette: "classic",
   systemPrefersDark: false,
   unknownTerms: [],
   reviewQueue: [],
   reviewIndex: 0,
   reviewContinuousAction: "",
-  roundCap: DEFAULT_ROUND_CAP,
-  dailyGoalRounds: 3,
-  dailyGoalWords: 0,
-  reviewSystemEnabled: true,
-  reviewIntervals: { ...DEFAULT_REVIEW_INTERVALS },
-  reviewAutoCloseModal: true,
-  continuousStudyMode: false,
-  reviewCardFlipEnabled: false,
-  pronunciationEnabled: true,
-  pronunciationAccent: "auto",
-  pronunciationLang: "auto",
-  voiceMode: "auto",
-  voiceURI: "",
-  onlineTtsEnabled: true,
-  onlineTtsProvider: "edge",
-  ttsMode: "online",
-  offlineVoiceByLang: {},
-  aiConfig: { provider: "custom", baseUrl: "", apiKey: "", model: "" },
-  lookupOnlineEnabled: true,
-  lookupOnlineSource: "builtin",
-  lookupLangMode: "auto",
-  lookupSpanishConjugationEnabled: true,
-  lookupCacheEnabled: true,
-  lookupCacheDays: 30,
   reviewScope: "round",
   reviewScopePageIndex: 0,
 }
@@ -438,12 +416,6 @@ function getRoundTypeFromKind(kind) {
   return ROUND_TYPE_NORMAL
 }
 
-function normalizePendingKind(value) {
-  const v = String(value || "").trim().toLowerCase()
-  if (v === "due") return "due"
-  if (v === STATUS_MASTERED || v === STATUS_LEARNING || v === STATUS_UNKNOWN) return v
-  return ""
-}
 
 
 function updatePageNav() {
@@ -1073,11 +1045,6 @@ function getRoundItemCountByPage(round, pageIndex) {
   return window.A4Common?.getRoundItemCountOnPage?.(round, pageIndex) ?? 0
 }
 
-function normalizeRoundCap(value) {
-  const n = Number(value)
-  if (!Number.isFinite(n)) return DEFAULT_ROUND_CAP
-  return clamp(Math.round(n), 20, 30)
-}
 
 function getCurrentRoundCap() {
   const round = getCurrentRound()
@@ -1102,49 +1069,10 @@ function persist() {
   }, 80)
 }
 function _persistImpl() {
-  const darkMode = getResolvedDarkMode()
-  const ttsPreferences = normalizeTtsPreferences(appState)
-  saveState({
-    version: 2,
-    showMeaning: appState.showMeaning,
-    meaningVisible: appState.showMeaning,
-    selectedWordbookId: appState.selectedWordbookId,
-    customWordbooks: appState.customWordbooks,
-    rounds: appState.rounds,
-    currentRoundId: appState.currentRoundId,
-    pendingReviewRoundId: appState.pendingReviewRoundId,
-    pendingGenerateStatusKind: appState.pendingGenerateStatusKind,
-    currentCount: appState.placed.length,
-    immersiveMode: appState.immersiveMode,
-    darkMode,
-    themeMode: appState.themeMode,
-    themePalette: normalizeThemePalette(appState.themePalette),
-    unknownTerms: appState.unknownTerms,
-    roundCap: appState.roundCap,
-    dailyGoalRounds: appState.dailyGoalRounds,
-    dailyGoalWords: appState.dailyGoalWords,
-    reviewSystemEnabled: !!appState.reviewSystemEnabled,
-    reviewIntervals: normalizeReviewIntervals(appState.reviewIntervals),
-    reviewAutoCloseModal: true,
-    continuousStudyMode: !!appState.continuousStudyMode,
-    reviewCardFlipEnabled: !!appState.reviewCardFlipEnabled,
-    pronunciationEnabled: appState.pronunciationEnabled,
-    pronunciationAccent: appState.pronunciationAccent,
-    pronunciationLang: appState.pronunciationLang,
-    voiceMode: appState.voiceMode,
-    voiceURI: appState.voiceURI,
-    onlineTtsEnabled: ttsPreferences.onlineTtsEnabled,
-    onlineTtsProvider: normalizeOnlineTtsProvider(appState.onlineTtsProvider),
-    ttsMode: ttsPreferences.ttsMode,
-    offlineVoiceByLang: ttsPreferences.offlineVoiceByLang,
-    aiConfig: appState.aiConfig,
-    lookupOnlineEnabled: !!appState.lookupOnlineEnabled,
-    lookupOnlineSource: String(appState.lookupOnlineSource || "").trim().toLowerCase() === "custom" ? "custom" : "builtin",
-    lookupLangMode: String(appState.lookupLangMode || "").trim().toLowerCase() === "es" ? "es" : String(appState.lookupLangMode || "").trim().toLowerCase() === "en" ? "en" : "auto",
-    lookupSpanishConjugationEnabled: !!appState.lookupSpanishConjugationEnabled,
-    lookupCacheEnabled: !!appState.lookupCacheEnabled,
-    lookupCacheDays: Math.max(1, Math.min(365, Math.round(Number(appState.lookupCacheDays) || 30))),
-  })
+  saveState(buildPersistedState(
+    { ...appState, meaningVisible: appState.showMeaning },
+    { darkMode: getResolvedDarkMode(), currentCount: appState.placed.length }
+  ))
 }
 
 function renderCurrentRound({ transition = "" } = {}) {
@@ -1249,13 +1177,6 @@ function updateHint() {
   dom.paperHint.style.display = appState.placed.length === 0 ? "block" : "none"
 }
 
-function normalizeReviewIntervals(raw) {
-  const base = raw && typeof raw === "object" ? raw : {}
-  const unknownDays = clamp(Math.round(Number(base.unknownDays) || DEFAULT_REVIEW_INTERVALS.unknownDays), 1, 60)
-  const learningDays = clamp(Math.round(Number(base.learningDays) || DEFAULT_REVIEW_INTERVALS.learningDays), 1, 60)
-  const masteredDays = clamp(Math.round(Number(base.masteredDays) || DEFAULT_REVIEW_INTERVALS.masteredDays), 1, 365)
-  return { unknownDays, learningDays, masteredDays }
-}
 
 function getNextReviewAtIso(status, nowMs) {
   const intervals = normalizeReviewIntervals(appState.reviewIntervals)
@@ -1914,16 +1835,9 @@ function restore({ showStartupPrompts = false } = {}) {
     }
     return
   }
-  if (typeof saved.meaningVisible === "boolean") appState.showMeaning = saved.meaningVisible
-  else appState.showMeaning = !!saved.showMeaning
+  Object.assign(appState, omitMeaningVisible(normalizePreferences(saved)))
   updateMeaningToggle()
-
-  appState.immersiveMode = !!saved.immersiveMode
   updateImmersiveToggle()
-  if (typeof saved.themeMode === "string") appState.themeMode = normalizeThemeMode(saved.themeMode)
-  else if (typeof saved.darkMode === "boolean") appState.themeMode = saved.darkMode ? "dark" : "light"
-  else appState.themeMode = "auto"
-  appState.themePalette = normalizeThemePalette(saved.themePalette)
 
   const unknownRaw = Array.isArray(saved.unknownTerms)
     ? saved.unknownTerms.map((s) => String(s || "").trim()).filter(Boolean)
@@ -1936,55 +1850,6 @@ function restore({ showStartupPrompts = false } = {}) {
       return getUnknownTermKey({ term: s, langBase: fallbackLang })
     })
     .filter(Boolean)
-
-  const rawRoundCap = Number(saved.roundCap)
-  appState.roundCap = Number.isFinite(rawRoundCap) ? clamp(Math.round(rawRoundCap), 20, 30) : DEFAULT_ROUND_CAP
-  const rawGoalRounds = Number(saved.dailyGoalRounds)
-  appState.dailyGoalRounds = Number.isFinite(rawGoalRounds)
-    ? clamp(Math.round(rawGoalRounds), 0, 20)
-    : appState.dailyGoalRounds
-  const rawGoalWords = Number(saved.dailyGoalWords)
-  appState.dailyGoalWords = Number.isFinite(rawGoalWords) ? clamp(Math.round(rawGoalWords), 0, 500) : 0
-
-  appState.reviewSystemEnabled = typeof saved.reviewSystemEnabled === "boolean" ? saved.reviewSystemEnabled : true
-  appState.reviewIntervals = normalizeReviewIntervals(saved.reviewIntervals)
-  appState.reviewAutoCloseModal = true
-  appState.continuousStudyMode = typeof saved.continuousStudyMode === "boolean" ? saved.continuousStudyMode : false
-  appState.reviewCardFlipEnabled = normalizeReviewCardFlipEnabled
-    ? normalizeReviewCardFlipEnabled(saved.reviewCardFlipEnabled)
-    : typeof saved.reviewCardFlipEnabled === "boolean"
-      ? saved.reviewCardFlipEnabled
-      : false
-
-  appState.pronunciationEnabled =
-    typeof saved.pronunciationEnabled === "boolean" ? saved.pronunciationEnabled : true
-  appState.pronunciationAccent = normalizeAccent(saved.pronunciationAccent)
-  appState.pronunciationLang = normalizePronunciationLang(saved.pronunciationLang)
-  appState.voiceMode = normalizeVoiceMode(saved.voiceMode)
-  appState.voiceURI = typeof saved.voiceURI === "string" ? saved.voiceURI : ""
-  const ttsPreferences = normalizeTtsPreferences(saved)
-  appState.ttsMode = ttsPreferences.ttsMode
-  appState.onlineTtsEnabled = ttsPreferences.onlineTtsEnabled
-  appState.offlineVoiceByLang = ttsPreferences.offlineVoiceByLang
-  appState.onlineTtsProvider = normalizeOnlineTtsProvider(saved.onlineTtsProvider)
-  appState.aiConfig =
-    saved.aiConfig && typeof saved.aiConfig === "object"
-      ? {
-        provider: normalizeAiProvider(saved.aiConfig.provider),
-        baseUrl: String(saved.aiConfig.baseUrl || "").trim(),
-        model: String(saved.aiConfig.model || "").trim(),
-        apiKey: "", // Never restore apiKey from persisted state
-      }
-      : { provider: "custom", baseUrl: "", model: "", apiKey: "" }
-
-  appState.lookupOnlineEnabled = typeof saved.lookupOnlineEnabled === "boolean" ? saved.lookupOnlineEnabled : true
-  appState.lookupOnlineSource = String(saved.lookupOnlineSource || "").trim().toLowerCase() === "custom" ? "custom" : "builtin"
-  const lm = String(saved.lookupLangMode || "").trim().toLowerCase()
-  appState.lookupLangMode = lm === "en" ? "en" : lm === "es" ? "es" : "auto"
-  appState.lookupSpanishConjugationEnabled =
-    typeof saved.lookupSpanishConjugationEnabled === "boolean" ? saved.lookupSpanishConjugationEnabled : true
-  appState.lookupCacheEnabled = typeof saved.lookupCacheEnabled === "boolean" ? saved.lookupCacheEnabled : true
-  appState.lookupCacheDays = clamp(Math.round(Number(saved.lookupCacheDays) || 30), 1, 365)
 
   applyTheme()
 

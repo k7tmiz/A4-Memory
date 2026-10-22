@@ -5,90 +5,26 @@
 ;(function () {
   const ns = (window.A4SettingsInternal = window.A4SettingsInternal || {})
   const common = window.A4Common || {}
+  const stateSchema = window.A4State || {}
   const clamp = common.clamp
-  const normalizeThemeMode = common.normalizeThemeMode
-  const normalizeThemePalette = common.normalizeThemePalette || (() => "classic")
   const normalizeRoundCap = common.normalizeRoundCap
-  const normalizeAccent = common.normalizeAccent
-  const normalizePronunciationLang = common.normalizePronunciationLang
-  const normalizeVoiceMode = common.normalizeVoiceMode
-  const normalizeAiProvider = common.normalizeAiProvider
-  const normalizeOnlineTtsProvider = common.normalizeOnlineTtsProvider
-  const normalizeTtsPreferences = common.normalizeTtsPreferences
   const normalizeStatus = common.normalizeStatus
   const normalizeRoundType = common.normalizeRoundType
   const ROUND_TYPE_NORMAL = common.ROUND_TYPE_NORMAL || "normal"
   const normalizeWordObject = common.normalizeWordObject
   const getWordbooksFromGlobal = common.getWordbooksFromGlobal || (() => [])
+  const { normalizePreferences, normalizeReviewIntervals, normalizePendingKind } = stateSchema
 
-  function normalizeReviewIntervals(raw) {
-    const base = raw && typeof raw === "object" ? raw : {}
-    const unknownDays = clamp(Math.round(Number(base.unknownDays) || 1), 1, 60)
-    const learningDays = clamp(Math.round(Number(base.learningDays) || 3), 1, 60)
-    const masteredDays = clamp(Math.round(Number(base.masteredDays) || 7), 1, 365)
-    return { unknownDays, learningDays, masteredDays }
-  }
-
-  function normalizePendingKind(value) {
-    const v = String(value || "").trim().toLowerCase()
-    if (!v) return ""
-    if (v === "due") return "due"
-    const status = normalizeStatus(v)
-    if (status === "mastered" || status === "learning" || status === "unknown") return status
-    return ""
-  }
   function normalizeImportedState(raw) {
     if (!raw || typeof raw !== "object") return null
     const next = { ...raw }
     next.version = 2
 
-    next.themeMode = normalizeThemeMode(next.themeMode)
-    next.themePalette = normalizeThemePalette(next.themePalette)
+    Object.assign(next, normalizePreferences(next))
     if (typeof next.darkMode !== "boolean") {
       const mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null
       next.darkMode = next.themeMode === "dark" ? true : next.themeMode === "light" ? false : !!mq?.matches
     }
-
-    next.immersiveMode = !!next.immersiveMode
-    next.meaningVisible = typeof next.meaningVisible === "boolean" ? next.meaningVisible : !!next.showMeaning
-    next.showMeaning = !!next.meaningVisible
-
-    next.roundCap = normalizeRoundCap(next.roundCap)
-    next.dailyGoalRounds = clamp(Number(next.dailyGoalRounds) || 0, 0, 20)
-    next.dailyGoalWords = clamp(Number(next.dailyGoalWords) || 0, 0, 500)
-    next.reviewSystemEnabled = typeof next.reviewSystemEnabled === "boolean" ? next.reviewSystemEnabled : true
-    next.reviewIntervals = normalizeReviewIntervals(next.reviewIntervals)
-    next.reviewAutoCloseModal = true
-    next.continuousStudyMode = typeof next.continuousStudyMode === "boolean" ? next.continuousStudyMode : false
-    next.reviewCardFlipEnabled = typeof next.reviewCardFlipEnabled === "boolean" ? next.reviewCardFlipEnabled : false
-
-    next.pronunciationEnabled =
-      typeof next.pronunciationEnabled === "boolean" ? next.pronunciationEnabled : true
-    next.pronunciationAccent = normalizeAccent(next.pronunciationAccent)
-    next.pronunciationLang = normalizePronunciationLang(next.pronunciationLang)
-    next.voiceMode = normalizeVoiceMode(next.voiceMode)
-    next.voiceURI = typeof next.voiceURI === "string" ? next.voiceURI : ""
-    Object.assign(next, normalizeTtsPreferences(next))
-    next.onlineTtsProvider = normalizeOnlineTtsProvider(next.onlineTtsProvider)
-
-    next.aiConfig =
-      next.aiConfig && typeof next.aiConfig === "object"
-        ? {
-          provider: normalizeAiProvider(next.aiConfig.provider),
-          baseUrl: String(next.aiConfig.baseUrl || "").trim(),
-          apiKey: "",
-          model: String(next.aiConfig.model || "").trim(),
-        }
-        : { provider: "custom", baseUrl: "", apiKey: "", model: "" }
-
-    next.lookupOnlineEnabled = typeof next.lookupOnlineEnabled === "boolean" ? next.lookupOnlineEnabled : true
-    next.lookupOnlineSource = String(next.lookupOnlineSource || "").trim().toLowerCase() === "custom" ? "custom" : "builtin"
-    const lm = String(next.lookupLangMode || "").trim().toLowerCase()
-    next.lookupLangMode = lm === "en" ? "en" : lm === "es" ? "es" : "auto"
-    next.lookupSpanishConjugationEnabled =
-      typeof next.lookupSpanishConjugationEnabled === "boolean" ? next.lookupSpanishConjugationEnabled : true
-    next.lookupCacheEnabled = typeof next.lookupCacheEnabled === "boolean" ? next.lookupCacheEnabled : true
-    next.lookupCacheDays = clamp(Math.round(Number(next.lookupCacheDays) || 30), 1, 365)
 
     next.unknownTerms = Array.isArray(next.unknownTerms)
       ? next.unknownTerms.map((s) => String(s || "").trim()).filter(Boolean)

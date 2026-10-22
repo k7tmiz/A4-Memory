@@ -6,6 +6,7 @@ const assert = require("node:assert/strict")
 
 const ROOT = path.join(__dirname, "..")
 const commonCode = fs.readFileSync(path.join(ROOT, "js", "core", "common.js"), "utf8")
+const stateSchemaCode = fs.readFileSync(path.join(ROOT, "js", "core", "state-schema.js"), "utf8")
 const { readSettingsBundle } = require("./helpers/settings-source")
 const settingsCode = readSettingsBundle()
 const lookupCode = fs.readFileSync(path.join(ROOT, "js", "lookup.js"), "utf8")
@@ -35,6 +36,7 @@ function loadSettingsHelpers({ wordbooks = [] } = {}) {
   const sandbox = { console, document, window, URL }
   vm.createContext(sandbox)
   vm.runInContext(commonCode, sandbox)
+  vm.runInContext(stateSchemaCode, sandbox)
   vm.runInContext(settingsCode, sandbox)
   return window.A4Settings
 }

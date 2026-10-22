@@ -39,10 +39,11 @@
     getRoundItemsByPage,
     buildFirstSeenRoundMap,
     formatMeaning,
-    normalizeTtsPreferences,
     normalizeThemePalette,
+    normalizeRoundCap,
     setModalVisible,
   } = window.A4Common || {}
+  const { normalizePreferences } = window.A4State || {}
 
   function formatDateTimeText(value) {
     if (!value) return ""
@@ -55,12 +56,6 @@
     return s
   }
 
-  const normalizeRoundCap =
-  window.A4Settings?.normalizeRoundCap ||
-  ((value) => {
-    const n = Math.round(Number(value) || 30)
-    return Math.max(20, Math.min(30, n || 30))
-  })
   const PRINT_PREVIEW_WIDTH = 794
   const PRINT_PREVIEW_HEIGHT = 1123
   let activePrintPreviewTeardown = null
@@ -635,42 +630,15 @@
     }
   }
 
+  // 偏好字段统一交给 A4State 归一化；这里只处理记录视图关心的轮次结构与旧版单页数据迁移。
   function normalizeState(raw) {
-    const themeMode = typeof raw?.themeMode === "string" ? raw.themeMode : ""
-    const normalizedThemeMode = themeMode === "light" || themeMode === "dark" || themeMode === "auto" ? themeMode : ""
-    const roundCap = normalizeRoundCap(raw?.roundCap)
-    const dailyGoalRounds = Math.max(0, Math.min(20, Math.round(Number(raw?.dailyGoalRounds) || 0)))
-    const dailyGoalWords = Math.max(0, Math.min(500, Math.round(Number(raw?.dailyGoalWords) || 0)))
-    const ttsPreferences = normalizeTtsPreferences?.(raw || {}) || {}
-    const themePalette = normalizeThemePalette?.(raw?.themePalette) || "classic"
-    if (!raw)
-      return {
-        version: 2,
-        showMeaning: false,
-        meaningVisible: false,
-        darkMode: false,
-        themeMode: "auto",
-        themePalette,
-        roundCap: 30,
-        dailyGoalRounds: 0,
-        dailyGoalWords: 0,
-        reviewAutoCloseModal: true,
-        ...ttsPreferences,
-        rounds: [],
-        currentRoundId: "",
-      }
+    const preferences = normalizePreferences(raw)
+    if (!raw) return { version: 2, ...preferences, darkMode: false, rounds: [], currentRoundId: "" }
     if (raw.version === 2 && Array.isArray(raw.rounds))
       return {
         ...raw,
-        ...ttsPreferences,
+        ...preferences,
         darkMode: !!raw.darkMode,
-        themeMode:
-        normalizedThemeMode || (typeof raw.darkMode === "boolean" ? (raw.darkMode ? "dark" : "light") : "auto"),
-        themePalette,
-        roundCap,
-        dailyGoalRounds,
-        dailyGoalWords,
-        reviewAutoCloseModal: typeof raw.reviewAutoCloseModal === "boolean" ? raw.reviewAutoCloseModal : true,
         rounds: raw.rounds.map((r) => ({ ...r, type: normalizeRoundType(r?.type) })),
       }
 
@@ -678,7 +646,7 @@
     const round = {
       id: `${Date.now()}`,
       startedAt: new Date().toISOString(),
-      finishedAt: placed.length >= roundCap ? new Date().toISOString() : "",
+      finishedAt: placed.length >= preferences.roundCap ? new Date().toISOString() : "",
       items: placed.map((p) => ({
         word: p.word,
         pos: { x: 0.1, y: 0.1 },
@@ -689,27 +657,18 @@
         nextReviewAt: "",
         pageIndex: 0,
       })),
-      roundCap,
+      roundCap: preferences.roundCap,
       type: ROUND_TYPE_NORMAL,
     }
-    const showMeaning = !!raw.showMeaning
-    const fallbackThemeMode = typeof raw.darkMode === "boolean" ? (raw.darkMode ? "dark" : "light") : "auto"
     return {
       version: 2,
-      showMeaning,
-      meaningVisible: showMeaning,
+      ...preferences,
       darkMode: !!raw.darkMode,
-      themeMode: normalizedThemeMode || fallbackThemeMode,
-      themePalette,
-      roundCap,
-      dailyGoalRounds,
-      dailyGoalWords,
-      reviewAutoCloseModal: true,
-      ...ttsPreferences,
       rounds: [round],
       currentRoundId: round.id,
     }
   }
+
 
   function computeRecordsSummary({ rounds, state, nowMs = Date.now() }) {
     const list = Array.isArray(rounds) ? rounds : []

@@ -147,6 +147,24 @@ describe("A4 Memory end-to-end", { skip: findChrome() ? false : "未找到 Chrom
     assert.deepEqual(page.errors, [])
   })
 
+  it("keeps a settings preference after the study view saves its own state", async () => {
+    await browser.freshApp(page, { query: "?view=settings" })
+    await page.waitFor(`!!document.getElementById("dailyGoalRoundsInput")`)
+    await page.evaluate(`(() => {
+      const select = document.getElementById("dailyGoalRoundsInput")
+      select.value = "5"
+      select.dispatchEvent(new Event("change", { bubbles: true }))
+    })()`)
+    await page.click("#dockStudyNav")
+    await page.waitFor(`document.body.dataset.a4CurrentView === "study"`)
+    await addWordAndCloseReview()
+    await page.click("#dockSettingsNav")
+    await page.waitFor(`document.body.dataset.a4CurrentView === "settings"`)
+    await page.waitFor(`document.getElementById("dailyGoalRoundsInput").value === "5"`)
+    assert.equal(await page.evaluate(`JSON.parse(localStorage.getItem("a4-memory:v1")).dailyGoalRounds`), 5)
+    assert.deepEqual(page.errors, [])
+  })
+
   it("persists the theme from settings and keeps the Google entry hidden", async () => {
     await browser.freshApp(page, { query: "?view=settings" })
     await page.waitFor(`!!document.getElementById("themeModeSelect")`)

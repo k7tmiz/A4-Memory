@@ -5,9 +5,8 @@
 
   function loadSettingsState() {
     const source = storage?.loadState?.()
-    return source && typeof source === "object"
-      ? source
-      : { version: 2, rounds: [], customWordbooks: [], aiConfig: {} }
+    const base = source && typeof source === "object" ? source : { version: 2, rounds: [], customWordbooks: [] }
+    return { ...base, ...window.A4State?.normalizePreferences?.(base) }
   }
 
   let state = loadSettingsState()
