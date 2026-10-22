@@ -247,3 +247,80 @@ describe("wordbook manager", () => {
     assert.deepEqual(plain(manager.normalizeStoredCustomWordbooks(undefined)), [])
   })
 })
+
+describe("review modal", () => {
+  function createElementStub() {
+    const classes = new Set()
+    return {
+      textContent: "",
+      disabled: false,
+      setAttribute() {},
+      style: { setProperty() {}, removeProperty() {} },
+      classList: {
+        add: (name) => classes.add(name),
+        remove: (name) => classes.delete(name),
+        toggle: (name, force) => (force ?? !classes.has(name) ? classes.add(name) : classes.delete(name)),
+        contains: (name) => classes.has(name),
+      },
+    }
+  }
+
+  function createReview(appState, overrides = {}) {
+    const { reviewModal } = loadAppInternal()
+    const dom = new Proxy({}, { get: (target, key) => (target[key] ??= createElementStub()) })
+    const calls = { persist: 0, stats: 0 }
+    const review = reviewModal.createReviewModal({
+      appState,
+      dom,
+      persist: () => calls.persist++,
+      renderStats: () => calls.stats++,
+      getCurrentRound: () => appState.round,
+      getCurrentRoundCap: () => 30,
+      getLangBase: (value) => String(value || "").split("-")[0],
+      getActiveLangBase: () => "en",
+      getUnknownTermKey: ({ term, langBase }) => `${langBase}||${term.toLowerCase()}`,
+      getNextReviewAtIso: (status) => `next:${status}`,
+      ...overrides,
+    })
+    return { review, calls, dom }
+  }
+
+  it("records the review result, schedules the next review and tracks unknown terms", () => {
+    const roundItem = { word: { term: "Apple", lang: "en" }, status: "learning" }
+    const appState = {
+      reviewIndex: 0,
+      reviewQueue: [{ word: roundItem.word, roundItem }],
+      reviewSystemEnabled: true,
+      unknownTerms: [],
+    }
+    const { review, calls } = createReview(appState)
+
+    review.markCurrentReviewStatus("unknown")
+    assert.equal(roundItem.status, "unknown")
+    assert.equal(roundItem.nextReviewAt, "next:unknown")
+    assert.ok(roundItem.lastReviewedAt)
+    assert.deepEqual(plain(appState.unknownTerms), ["en||apple"])
+
+    review.markCurrentReviewStatus("mastered")
+    assert.deepEqual(plain(appState.unknownTerms), [])
+    assert.equal(calls.persist, 2)
+    assert.equal(calls.stats, 2)
+  })
+
+  it("puts the just-added word first in an automatic page review", () => {
+    const items = [0, 1, 2].map((i) => ({ word: { term: `w${i}` }, pageIndex: 0 }))
+    const appState = {
+      round: { type: "normal", items },
+      currentPageIndex: 0,
+      reviewOrderPreferenceShuffled: false,
+      reviewQueue: [],
+      reviewIndex: 0,
+      placed: [],
+    }
+    const { review } = createReview(appState)
+    review.openAutoReviewModal(items[2])
+    assert.deepEqual(plain(appState.reviewQueue.map((entry) => entry.word.term)), ["w2", "w0", "w1"])
+    assert.equal(appState.reviewScope, "page")
+    assert.equal(appState.reviewContinuousAction, "next_word")
+  })
+})

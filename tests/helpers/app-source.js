@@ -16,6 +16,7 @@ const APP_MODULE_FILES = [
   "js/app/review-swipe.js",
   "js/app/paper-layout.js",
   "js/app/wordbook-manager.js",
+  "js/app/review-modal.js",
 ]
 
 function readStudyBundle() {

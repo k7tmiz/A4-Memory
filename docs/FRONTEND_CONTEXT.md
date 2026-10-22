@@ -49,7 +49,8 @@ A4-Memory/
 │   │   ├── study-helpers.js # 纸面排版、发音文本与复习滑动辅助函数
 │   │   ├── review-swipe.js # 复习卡滑动状态机
 │   │   ├── paper-layout.js # A4 纸面测量、落位、限位与避让
-│   │   └── wordbook-manager.js # 词书选择、导入、在线导入与自定义词书管理
+│   │   ├── wordbook-manager.js # 词书选择、导入、在线导入与自定义词书管理
+│   │   └── review-modal.js # 复习队列、卡片渲染、翻面与状态标记
 │   ├── __cloud_stub.js    # cloud.js 占位（仅公开仓库构建时使用）
 │   ├── app.js             # 学习视图控制器
 │   ├── lookup.js          # 查词弹窗控制器
@@ -150,6 +151,7 @@ index.html
   → js/app/review-swipe.js
   → js/app/paper-layout.js
   → js/app/wordbook-manager.js
+  → js/app/review-modal.js
   → js/app.js
   → js/records.js
   → js/settings-page.js
@@ -327,15 +329,15 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 | `js/app/study-helpers.js` | `studyHelpers`：洗牌、纸面碰撞检测、单词元素构建、西语阴阳性简写展开、复习滑动阈值与橡皮筋阻尼 |
 | `js/app/review-swipe.js` | `reviewSwipe.createReviewSwipeController({ card, isReviewOpen, onCommit })`：复习卡指针拖动状态机，确认横向拖动后才捕获指针，轻点卡片单词仍可发音；返回 `resetToCenter`、`isInteractionBlocked`、`destroy` |
 | `js/app/wordbook-manager.js` | `wordbookManager.createWordbookManager({ appState, dom, persist, ... })`：词书选择（Android 使用应用内底部面板，其余平台保留原生 `<select>`）、本地文件/链接/GitHub 仓库在线导入、自定义词书管理与删除、已保存词书的名称迁移与去重；`bindEvents()` 绑定词书相关控件 |
+| `js/app/review-modal.js` | `reviewModal.createReviewModal({ appState, dom, persist, ... })`：手动复习（整轮、默认打乱）与「下一个单词」后的自动复习（新词置顶，普通轮按当前页）共用队列、卡片渲染、翻面与状态标记；状态写入 `lastReviewedAt` / `nextReviewAt` 并同步「不会」词表；`bindEvents()` 绑定标记按钮、点词发音、翻面、打乱与 `reviewSwipe` 滑动 |
 | `js/app/paper-layout.js` | `paperLayout.createPaperLayout({ paperInner, getPlaced })`：按显示释义时的完整尺寸批量测量单词，新词在纸面边距内随机取位、纸面已满时退回重叠面积最小的位置，恢复时限位并就近避让；只调整显示位置，不改写已保存的归一化坐标 |
 
 `js/app.js` 是学习视图控制器（UI 层，不含核心业务逻辑）。负责：
 - 按当前页渲染纸面：整页插入单词后交给 `paperLayout` 批量限位与避让，新词落位同样委托 `paperLayout`
 - 当前轮恢复
-- 复习弹窗（按钮与滑动标记，滑动交互由 `js/app/review-swipe.js` 提供；从卡片任意位置包括单词本身均可拖动）
 - 状态轮与词书整轮生成共用分页排版流程
 - 轮次推进与状态写回
-- 创建 `paperLayout`、`wordbookManager` 与公告控制器并注入所需状态和回调
+- 创建 `paperLayout`、`wordbookManager`、`reviewModal` 与公告控制器并注入所需状态和回调
 
 宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在词书行旁的 `.mobile-more-tools` 下拉菜单；宽度达到 701px 时，A4 在视口居中，词书/工具与进度卡分居两侧，低频入口在左侧 `.desktop-tools-popover`。两种布局共用纸面复习/释义操作和悬浮底栏；沉浸模式下纸面工具栏显示独立退出操作。「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。学习页根视口裁切横向溢出，页面手势仅允许纵向平移并禁用双击/双指缩放；A4 保持原始布局比例，复习卡仍独立处理横向标记手势。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
 
