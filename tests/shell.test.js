@@ -233,7 +233,7 @@ describe("responsive application shell", () => {
     assert.match(settingsPageCode, /onSystemThemeChange[^]*isActive\("settings"\)/s)
     assert.match(appCode, /function isAnyModalOpen\(\)[^]*A4UI\?\.hasOpenLayer[^]*A4UI\.hasOpenLayer\(\)/s)
     assert.doesNotMatch(
-      appCode.match(/function isAnyModalOpen\(\)\s*\{([^]*?)\n\}/)?.[1] || "",
+      appCode.match(/function isAnyModalOpen\(\)\s*\{([^]*?)\n\s*\}/)?.[1] || "",
       /settingsModal/
     )
   })
@@ -373,8 +373,8 @@ describe("responsive application shell", () => {
 
 describe("study paper bounds and intro focus", () => {
   it("keeps rendered and revealed words inside the paper without rewriting saved positions", () => {
-    assert.match(appCode, /function renderCurrentRound[^]*?dom\.paperInner\.appendChild\(fragment\)\n  fitPlacedWordsInPaper\(\)/)
-    assert.match(appCode, /function updateMeaningToggle\(\)[^]*?fitPlacedWordsInPaper\(\)\n\}/)
+    assert.match(appCode, /function renderCurrentRound[^]*?dom\.paperInner\.appendChild\(fragment\)\n\s*fitPlacedWordsInPaper\(\)/)
+    assert.match(appCode, /function updateMeaningToggle\(\)[^]*?fitPlacedWordsInPaper\(\)\n\s*\}/)
     assert.match(appCode, /classList\.toggle\("reveal"\)\n[^]*?fitWordElementInPaper\(itemEl\)/)
     assert.match(appCode, /const maxX = Math\.max\(0, m\.paperW - m\.w - margin \* 2\)/)
     assert.match(appCode, /const maxY = Math\.max\(0, m\.paperH - m\.h - margin \* 2\)/)
@@ -390,7 +390,7 @@ describe("study paper bounds and intro focus", () => {
   })
 
   it("spreads restored words and falls back to the least-overlap position", () => {
-    assert.match(appCode, /function renderCurrentRound[^]*?\n  fitPlacedWordsInPaper\(\)\n  spreadOverlappingWords\(\)/)
+    assert.match(appCode, /function renderCurrentRound[^]*?\n\s*fitPlacedWordsInPaper\(\)\n\s*spreadOverlappingWords\(\)/)
     assert.match(appCode, /function placeWordElement[^]*?overlapArea[^]*?total < bestOverlap/)
   })
 

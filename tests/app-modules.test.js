@@ -324,3 +324,17 @@ describe("review modal", () => {
     assert.equal(appState.reviewContinuousAction, "next_word")
   })
 })
+
+describe("frontend script isolation", () => {
+  it("wraps every frontend script in an IIFE so declarations stay out of the global scope", () => {
+    const files = fs
+      .readdirSync(path.join(ROOT, "js"), { recursive: true })
+      .filter((file) => file.endsWith(".js") && !file.endsWith("__cloud_stub.js") && path.basename(file) !== "cloud.js")
+    assert.ok(files.length > 20)
+    for (const file of files) {
+      const code = read(path.join("js", file)).replace(/^\/\*\*[^]*?\*\/\s*/, "").trim()
+      assert.ok(/^;?\(function \(\) \{/.test(code), `${file} must start with an IIFE`)
+      assert.ok(/\}\)\(\)$/.test(code), `${file} must end its IIFE`)
+    }
+  })
+})
