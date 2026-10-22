@@ -46,7 +46,8 @@ A4-Memory/
 │   ├── app/
 │   │   ├── wordbook-io.js  # 词书解析、语言/名称推断与 GitHub 词书列表
 │   │   ├── study-helpers.js # 纸面排版、发音文本与复习滑动辅助函数
-│   │   └── review-swipe.js # 复习卡滑动状态机
+│   │   ├── review-swipe.js # 复习卡滑动状态机
+│   │   └── paper-layout.js # A4 纸面测量、落位、限位与避让
 │   ├── __cloud_stub.js    # cloud.js 占位（仅公开仓库构建时使用）
 │   ├── app.js             # 学习视图控制器
 │   ├── lookup.js          # 查词弹窗控制器
@@ -144,6 +145,7 @@ index.html
   → js/app/wordbook-io.js
   → js/app/study-helpers.js
   → js/app/review-swipe.js
+  → js/app/paper-layout.js
   → js/app.js
   → js/records.js
   → js/settings-page.js
@@ -317,9 +319,10 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 | `js/app/wordbook-io.js` | `wordbookIo`：TXT/CSV/TSV/JSON 词条解析、词书对象归一化、语言与名称推断、远程 JSON 词书结构提取、GitHub 仓库 JSON 文件列表与排序 |
 | `js/app/study-helpers.js` | `studyHelpers`：洗牌、纸面碰撞检测、单词元素构建、西语阴阳性简写展开、复习滑动阈值与橡皮筋阻尼 |
 | `js/app/review-swipe.js` | `reviewSwipe.createReviewSwipeController({ card, isReviewOpen, onCommit })`：复习卡指针拖动状态机，确认横向拖动后才捕获指针，轻点卡片单词仍可发音；返回 `resetToCenter`、`isInteractionBlocked`、`destroy` |
+| `js/app/paper-layout.js` | `paperLayout.createPaperLayout({ paperInner, getPlaced })`：按显示释义时的完整尺寸批量测量单词，新词在纸面边距内随机取位、纸面已满时退回重叠面积最小的位置，恢复时限位并就近避让；只调整显示位置，不改写已保存的归一化坐标 |
 
 `js/app.js` 是学习视图控制器（UI 层，不含核心业务逻辑）。负责：
-- A4 排版与单词放置：放置与限位按显示释义时的完整尺寸测量，新词在纸面边距内随机取位，纸面已满时退回重叠面积最小的位置；按归一化坐标重新渲染时把单词限制在纸面内并就近避让重叠，只调整显示位置，不改写已保存的坐标
+- 按当前页渲染纸面：整页插入单词后交给 `paperLayout` 批量限位与避让，新词落位同样委托 `paperLayout`
 - 当前轮恢复
 - 首页词书选择；Android 环境使用应用内底部面板，iOS/macOS/桌面浏览器保留原生 `<select>`
 - 复习弹窗（按钮与滑动标记，滑动交互由 `js/app/review-swipe.js` 提供；从卡片任意位置包括单词本身均可拖动）

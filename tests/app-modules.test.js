@@ -7,8 +7,7 @@ const assert = require("node:assert/strict")
 const ROOT = path.join(__dirname, "..")
 const read = (relativePath) => fs.readFileSync(path.join(ROOT, relativePath), "utf8")
 
-// 顺序必须与 index.html 中的 <script> 顺序一致
-const APP_MODULE_FILES = ["js/app/wordbook-io.js", "js/app/study-helpers.js", "js/app/review-swipe.js"]
+const { APP_MODULE_FILES } = require("./helpers/app-source")
 
 function loadAppInternal() {
   const sandbox = {
@@ -139,5 +138,87 @@ describe("app modules", () => {
 
     controller.destroy()
     assert.equal(cardListeners.has("pointerdown"), false)
+  })
+})
+
+describe("paper layout", () => {
+  // 测量态下单词按显示释义时的完整尺寸返回，便于验证排版为释义预留空间
+  function createWordStub({ w, h, left = 0, top = 0, log = [] }) {
+    const classes = new Set()
+    return {
+      style: { left: `${left}px`, top: `${top}px` },
+      classList: {
+        add(name) {
+          classes.add(name)
+          log.push(`add:${name}`)
+        },
+        remove(name) {
+          classes.delete(name)
+          log.push(`remove:${name}`)
+        },
+      },
+      get offsetWidth() {
+        log.push("read")
+        return classes.has("is-measuring") ? w : w / 2
+      },
+      get offsetHeight() {
+        return classes.has("is-measuring") ? h : h / 2
+      },
+    }
+  }
+
+  function createLayout(placed = []) {
+    const { paperLayout } = loadAppInternal()
+    const paperInner = {
+      clientWidth: 400,
+      clientHeight: 300,
+      getBoundingClientRect: () => ({ width: 400, height: 300 }),
+    }
+    return paperLayout.createPaperLayout({ paperInner, getPlaced: () => placed })
+  }
+
+  it("pulls words back inside the paper using their full measured size", () => {
+    const layout = createLayout()
+    const el = createWordStub({ w: 120, h: 40, left: 350, top: 290 })
+    const box = layout.fitWordElementInPaper(el)
+    assert.deepEqual(plain(box), { x: 280, y: 260, w: 120, h: 40 })
+    assert.equal(el.style.left, "280px")
+    assert.equal(el.style.top, "260px")
+  })
+
+  it("leaves words that already fit untouched", () => {
+    const layout = createLayout()
+    const el = createWordStub({ w: 50, h: 20, left: 10, top: 12 })
+    layout.fitWordElementInPaper(el)
+    assert.equal(el.style.left, "10px")
+    assert.equal(el.style.top, "12px")
+  })
+
+  it("measures a batch in one write phase followed by one read phase", () => {
+    const layout = createLayout()
+    const log = []
+    const elements = [1, 2, 3].map(() => createWordStub({ w: 40, h: 20, log }))
+    layout.fitWordElementsInPaper(elements)
+    assert.deepEqual(log, [
+      "add:is-measuring", "add:is-measuring", "add:is-measuring",
+      "read", "read", "read",
+      "remove:is-measuring", "remove:is-measuring", "remove:is-measuring",
+    ])
+  })
+
+  it("moves overlapping restored words apart", () => {
+    const first = createWordStub({ w: 60, h: 20, left: 100, top: 100 })
+    const second = createWordStub({ w: 60, h: 20, left: 100, top: 100 })
+    const placed = [
+      { el: first, box: { x: 100, y: 100, w: 60, h: 20 } },
+      { el: second, box: { x: 100, y: 100, w: 60, h: 20 } },
+    ]
+    const layout = createLayout(placed)
+    layout.spreadOverlappingWords()
+    const [a, b] = placed.map((p) => p.box)
+    const overlaps = a.x < b.x + b.w + 2 && b.x < a.x + a.w + 2 && a.y < b.y + b.h + 2 && b.y < a.y + a.h + 2
+    assert.equal(overlaps, false)
+    assert.equal(first.style.left, "100px", "the first word keeps its position")
+    assert.equal(second.style.left, `${b.x}px`)
   })
 })

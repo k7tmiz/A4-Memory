@@ -2,11 +2,12 @@ const fs = require("node:fs")
 const path = require("node:path")
 const { describe, it } = require("node:test")
 const assert = require("node:assert/strict")
+const { readStudyBundle } = require("./helpers/app-source")
 
 const ROOT = path.join(__dirname, "..")
 const read = (filename) => fs.readFileSync(path.join(ROOT, filename), "utf8")
 
-const appCode = read("js/app.js")
+const appCode = readStudyBundle()
 const lookupCode = read("js/lookup.js")
 const { readSettingsBundle } = require("./helpers/settings-source")
 const settingsCode = readSettingsBundle()
