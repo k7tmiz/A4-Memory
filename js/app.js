@@ -997,17 +997,28 @@ function measureWordFullSize(el) {
 }
 
 // 单词尺寸随字号和纸面尺寸变化，只修正显示位置，不改写已保存的归一化坐标。
-function fitWordElementInPaper(el) {
+// 批量处理时先统一进入测量态、集中读取尺寸，再统一回写位置，避免逐词强制回流。
+function fitWordElementsInPaper(elements) {
+  if (!elements.length) return []
   const paperW = dom.paperInner.clientWidth || getPaperInnerSize().w
   const paperH = dom.paperInner.clientHeight || getPaperInnerSize().h
-  const { w, h } = measureWordFullSize(el)
-  const left = parseFloat(el.style.left) || 0
-  const top = parseFloat(el.style.top) || 0
-  const x = clamp(left, 0, Math.max(0, paperW - w))
-  const y = clamp(top, 0, Math.max(0, paperH - h))
-  if (x !== left) el.style.left = `${x}px`
-  if (y !== top) el.style.top = `${y}px`
-  return { x, y, w, h }
+  for (const el of elements) el.classList.add("is-measuring")
+  const sizes = elements.map((el) => ({ w: el.offsetWidth, h: el.offsetHeight }))
+  for (const el of elements) el.classList.remove("is-measuring")
+  return elements.map((el, i) => {
+    const { w, h } = sizes[i]
+    const left = parseFloat(el.style.left) || 0
+    const top = parseFloat(el.style.top) || 0
+    const x = clamp(left, 0, Math.max(0, paperW - w))
+    const y = clamp(top, 0, Math.max(0, paperH - h))
+    if (x !== left) el.style.left = `${x}px`
+    if (y !== top) el.style.top = `${y}px`
+    return { x, y, w, h }
+  })
+}
+
+function fitWordElementInPaper(el) {
+  return fitWordElementsInPaper([el])[0]
 }
 
 // 归一化坐标在更小的纸面上还原时单词会互相挤压，渲染后就近避让，只调整显示位置。
@@ -1045,9 +1056,11 @@ function spreadOverlappingWords() {
 }
 
 function fitPlacedWordsInPaper() {
-  for (const placed of appState.placed) {
-    if (placed?.el?.isConnected) placed.box = fitWordElementInPaper(placed.el)
-  }
+  const connected = appState.placed.filter((placed) => placed?.el?.isConnected)
+  const boxes = fitWordElementsInPaper(connected.map((placed) => placed.el))
+  connected.forEach((placed, i) => {
+    placed.box = boxes[i]
+  })
 }
 
 function getCurrentRound() {
@@ -1179,6 +1192,7 @@ function renderCurrentRound({ transition = "" } = {}) {
   appState.currentPageIndex = clamp(Math.floor(Number(appState.currentPageIndex) || 0), 0, Math.max(0, pageCount - 1))
   updatePageNav()
   const items = getRoundItemsByPage(round, appState.currentPageIndex)
+  const fragment = document.createDocumentFragment()
   for (const item of items) {
     if (!item || !item.word || !item.word.term || !item.pos) continue
     const el = buildWordElement(item.word)
@@ -1187,16 +1201,18 @@ function renderCurrentRound({ transition = "" } = {}) {
     const y = clamp(item.pos.y, 0, 1) * paper.h
     el.style.left = `${x}px`
     el.style.top = `${y}px`
-    dom.paperInner.appendChild(el)
+    fragment.appendChild(el)
     appState.placed.push({
       word: item.word,
       roundItem: item,
-      box: fitWordElementInPaper(el),
+      box: null,
       el,
       fontSize: item.fontSize || "",
       pos: item.pos,
     })
   }
+  dom.paperInner.appendChild(fragment)
+  fitPlacedWordsInPaper()
   spreadOverlappingWords()
 
   const direction = transition === "back" ? "back" : transition === "forward" ? "forward" : ""

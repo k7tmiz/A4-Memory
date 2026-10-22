@@ -36,6 +36,13 @@ describe("A4Storage", () => {
     assert.equal(parsed.aiConfig.provider, "openai")
   })
 
+  it("keeps the in-memory apiKey on the caller's state after saving", () => {
+    const { A4Storage } = loadStorage()
+    const state = { rounds: [], aiConfig: { apiKey: "sk-memory", provider: "openai" } }
+    A4Storage.saveState(state)
+    assert.equal(state.aiConfig.apiKey, "sk-memory")
+  })
+
   it("strips apiKey on load even if older versions persisted it", () => {
     const { A4Storage, store } = loadStorage()
     store.set(

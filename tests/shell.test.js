@@ -376,8 +376,9 @@ describe("responsive application shell", () => {
 
 describe("study paper bounds and intro focus", () => {
   it("keeps rendered and revealed words inside the paper without rewriting saved positions", () => {
-    assert.match(appCode, /function fitWordElementInPaper\(el\)[^]*?clamp\(left, 0, Math\.max\(0, paperW - w\)\)[^]*?clamp\(top, 0, Math\.max\(0, paperH - h\)\)/)
-    assert.match(appCode, /function renderCurrentRound[^]*?box: fitWordElementInPaper\(el\)/)
+    assert.match(appCode, /function fitWordElementsInPaper\(elements\)[^]*?clamp\(left, 0, Math\.max\(0, paperW - w\)\)[^]*?clamp\(top, 0, Math\.max\(0, paperH - h\)\)/)
+    assert.match(appCode, /function fitWordElementInPaper\(el\) \{\n  return fitWordElementsInPaper\(\[el\]\)\[0\]/)
+    assert.match(appCode, /function renderCurrentRound[^]*?dom\.paperInner\.appendChild\(fragment\)\n  fitPlacedWordsInPaper\(\)/)
     assert.match(appCode, /function updateMeaningToggle\(\)[^]*?fitPlacedWordsInPaper\(\)\n\}/)
     assert.match(appCode, /classList\.toggle\("reveal"\)\n[^]*?fitWordElementInPaper\(itemEl\)/)
     assert.match(appCode, /const maxX = Math\.max\(0, m\.paperW - m\.w - margin \* 2\)/)
@@ -388,6 +389,11 @@ describe("study paper bounds and intro focus", () => {
     assert.match(indexMarkup, /id="closeIntroBtn"[^>]*data-autofocus/)
   })
 
+  it("batches word measurement into one write phase and one read phase", () => {
+    const fitBatch = appCode.match(/function fitWordElementsInPaper\(elements\) \{[^]*?\n\}/)?.[0] || ""
+    assert.match(fitBatch, /for \(const el of elements\) el\.classList\.add\("is-measuring"\)\n\s*const sizes = elements\.map\(\(el\) => \(\{ w: el\.offsetWidth, h: el\.offsetHeight \}\)\)\n\s*for \(const el of elements\) el\.classList\.remove\("is-measuring"\)/)
+  })
+
   it("reserves meaning space when placing and fitting words", () => {
     assert.match(appCode, /function measureWordFullSize\(el\)[^]*?classList\.add\("is-measuring"\)[^]*?classList\.remove\("is-measuring"\)/)
     assert.match(appCode, /function measureElementInPaper[^]*?measureWordFullSize\(el\)/)
@@ -395,7 +401,7 @@ describe("study paper bounds and intro focus", () => {
   })
 
   it("spreads restored words and falls back to the least-overlap position", () => {
-    assert.match(appCode, /function renderCurrentRound[^]*?\n  \}\n  spreadOverlappingWords\(\)/)
+    assert.match(appCode, /function renderCurrentRound[^]*?\n  fitPlacedWordsInPaper\(\)\n  spreadOverlappingWords\(\)/)
     assert.match(appCode, /function spreadOverlappingWords\(\)[^]*?radius <= 96[^]*?placed\.el\.style\.left/)
     assert.match(appCode, /function placeWordElement[^]*?overlapArea[^]*?total < bestOverlap/)
   })

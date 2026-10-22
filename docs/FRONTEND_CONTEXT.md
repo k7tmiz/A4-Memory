@@ -158,7 +158,7 @@ index.html
 ## 4. 模块职责
 
 ### `js/core/common.js`
-跨页共享的纯逻辑模块，以业务规则为主；`setModalVisible` 负责把既有调用转交给 `A4UI`，并在共享弹层模块缺失时提供兼容降级。
+跨页共享的纯逻辑模块，以业务规则为主；`setModalVisible` 负责把既有调用转交给 `A4UI`，在共享弹层模块缺失时只切换显隐与 `aria-hidden`。
 - UUID / 随机 ID 生成（`makeUuid`，含 `crypto.randomUUID` 降级）
 - 数值约束（`clamp`）
 - 状态/轮次类型归一化（mastered / learning / unknown）

@@ -441,95 +441,15 @@
 
   // ── Modal utility ────────────────────────────────────────────────────────────
 
-  let _modalOpenCount = 0
-  let _savedScrollY = 0
-  const _modalStack = []
-  let _focusTrapHandler = null
-
-  function getFocusableElements(root) {
-    const selector =
-      'a[href], button, input, textarea, select, details, [tabindex]:not([tabindex="-1"])'
-    return Array.from(root.querySelectorAll(selector)).filter(
-      (el) => !el.disabled && !el.classList.contains("hidden") && el.offsetParent !== null
-    )
-  }
-
-  function trapFocus(e) {
-    const modal = _modalStack[_modalStack.length - 1]
-    if (!modal || e.key !== "Tab") return
-    const focusable = getFocusableElements(modal)
-    if (focusable.length === 0) {
-      e.preventDefault()
-      return
-    }
-    const first = focusable[0]
-    const last = focusable[focusable.length - 1]
-    if (e.shiftKey) {
-      if (document.activeElement === first || !modal.contains(document.activeElement)) {
-        e.preventDefault()
-        last.focus()
-      }
-    } else {
-      if (document.activeElement === last || !modal.contains(document.activeElement)) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-  }
-
+  // 弹层统一由 js/ui/layers.js 管理；仅在共享弹层栈缺失时退化为显隐切换。
   function setModalVisible(modal, visible, options = {}) {
     if (!modal) return
     if (window.A4UI?.setLayerVisible) {
       window.A4UI.setLayerVisible(modal, visible, options)
       return
     }
-    if (visible) {
-      const prevFocus = document.activeElement
-      modal.dataset.prevFocus = prevFocus ? prevFocus.id || "" : ""
-      modal.classList.remove("hidden")
-      modal.setAttribute("aria-hidden", "false")
-      if (_modalOpenCount === 0) {
-        _savedScrollY = window.scrollY || 0
-        document.body.style.top = `-${_savedScrollY}px`
-        document.body.classList.add("modal-open")
-        _focusTrapHandler = (e) => trapFocus(e)
-        document.addEventListener("keydown", _focusTrapHandler)
-      }
-      _modalOpenCount += 1
-      _modalStack.push(modal)
-      const focusable = getFocusableElements(modal)
-      const autofocus = modal.querySelector("[data-autofocus]")
-      if (autofocus && focusable.includes(autofocus)) {
-        autofocus.focus()
-      } else if (focusable.length) {
-        const closeBtn = modal.querySelector(".modal-actions button, [data-modal-close]")
-        if (closeBtn && focusable.includes(closeBtn)) {
-          focusable.find((el) => el !== closeBtn)?.focus()
-        } else {
-          focusable[0].focus()
-        }
-      }
-    } else {
-      modal.classList.add("hidden")
-      modal.setAttribute("aria-hidden", "true")
-      const idx = _modalStack.lastIndexOf(modal)
-      if (idx >= 0) _modalStack.splice(idx, 1)
-      _modalOpenCount = Math.max(0, _modalOpenCount - 1)
-      if (_modalOpenCount === 0) {
-        document.body.classList.remove("modal-open")
-        document.body.style.top = ""
-        window.scrollTo(0, _savedScrollY)
-        if (_focusTrapHandler) {
-          document.removeEventListener("keydown", _focusTrapHandler)
-          _focusTrapHandler = null
-        }
-      }
-      const prevId = modal.dataset.prevFocus
-      const prevEl = prevId ? document.getElementById(prevId) : null
-      if (prevEl && typeof prevEl.focus === "function" && document.body.contains(prevEl)) {
-        prevEl.focus()
-      }
-    }
+    modal.classList.toggle("hidden", !visible)
+    modal.setAttribute("aria-hidden", visible ? "false" : "true")
   }
 
   // ── Word formatting ──────────────────────────────────────────────────────────

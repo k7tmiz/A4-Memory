@@ -24,10 +24,14 @@
 
   function saveState(state) {
     try {
-      // Deep-clone once, strip sensitive fields, then persist
-      const safe = JSON.parse(JSON.stringify(state))
-      stripSensitive(safe)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(safe))
+      // Single serialization pass: blank the top-level aiConfig.apiKey without mutating the caller's state
+      const serialized = JSON.stringify(state, function (key, value) {
+        if (key === "aiConfig" && this === state && value && typeof value === "object") {
+          return { ...value, apiKey: "" }
+        }
+        return value
+      })
+      localStorage.setItem(STORAGE_KEY, serialized)
       return true
     } catch {
       return false
