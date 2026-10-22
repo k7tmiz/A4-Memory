@@ -43,6 +43,7 @@ A4-Memory/
 │   │   ├── account.js      # 账号表单校验、错误文案与验证码冷却
 │   │   ├── tts.js          # 发音测试选项与离线语音展示辅助
 │   │   ├── dom.js          # 设置面板 DOM 模板与类别导航
+│   │   ├── account-settings.js # 账号表单、验证码冷却与云同步子控制器
 │   │   ├── voice-settings.js # 发音、TTS 模式与离线语音子控制器
 │   │   ├── ai-settings.js  # AI 配置、模型获取与生成预览子控制器
 │   │   └── controller.js   # 设置视图控制器 createSettingsModalController
@@ -146,6 +147,7 @@ index.html
   → js/settings/account.js
   → js/settings/tts.js
   → js/settings/dom.js
+  → js/settings/account-settings.js
   → js/settings/voice-settings.js
   → js/settings/ai-settings.js
   → js/settings/controller.js
@@ -304,9 +306,10 @@ window.A4Speech = {
 | `js/settings/account.js` | 账号表单校验、错误文案映射、验证码冷却读写与 429 退避解析 |
 | `js/settings/tts.js` | 发音测试选项构造与离线语音展示辅助 |
 | `js/settings/dom.js` | 设置面板 DOM 模板、类别导航与数值下拉辅助 |
+| `js/settings/account-settings.js` | `accountSettings.createAccountSettings({ dom, getStateSafe })`：注册/登录/重置密码表单校验提示与验证码冷却、账号状态与学习统计、云端上传/恢复（互斥 busy 与覆盖确认）；`renderAccount()` 在设置视图渲染时同步账号区 |
 | `js/settings/voice-settings.js` | `voiceSettings.createVoiceSettings({ dom, getStateSafe, setStateSafe, persistSafe, afterChange, render, getWordbookLanguage })`：注册系统语音变化监听、发音开关/口音/语言、系统语音选择、在线/离线/系统 TTS 模式、离线语音模型下载与删除、发音测试 |
 | `js/settings/ai-settings.js` | `aiSettings.createAiSettings({ dom, getStateSafe, setStateSafe, persistSafe, afterChange, render, close })`：AI 提供商配置、模型列表获取、流式生成预览弹窗与保存为本地词书 |
-| `js/settings/controller.js` | `createSettingsModalController`：通用设置表单、账号与云同步行为，并创建各设置子控制器 |
+| `js/settings/controller.js` | `createSettingsModalController`：设置面板挂载与分类导航、主题/目标/复习/查词/备份/版本检查等通用设置，并在构造末尾创建账号、发音与 AI 子控制器 |
 
 设置视图以 `presentation: "page"` 创建控制器，页面呈现不带弹窗式标题或返回头。分类轨道拥有一个测量位置的 `aria-hidden` 指示器，在手机上水平显示、在桌面上垂直显示；分类内容按索引方向进入，`prefers-reduced-motion: reduce` 下立即切换状态。`presentation: "modal"` 保留对话框标题和关闭语义；视图内需要确认或预览的操作仍使用标准弹层。账号区的 Google 登录入口与「或使用邮箱」分隔线默认隐藏，正式接入前不对用户显示，也不调用私有登录桥接。AI 模型输入支持自由填写；“获取模型”使用当前 Base URL 和内存态 API Key 请求标准 `/models` 接口，成功结果通过带本地搜索的应用内选择面板填入。模型列表不内置、不缓存、不回退，获取失败不打开选择面板：
 ```javascript

@@ -17,6 +17,7 @@ const SETTINGS_MODULE_FILES = [
   "js/settings/account.js",
   "js/settings/tts.js",
   "js/settings/dom.js",
+  "js/settings/account-settings.js",
   "js/settings/voice-settings.js",
   "js/settings/ai-settings.js",
   "js/settings/controller.js",

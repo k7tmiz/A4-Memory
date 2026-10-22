@@ -160,9 +160,10 @@ describe("A4Settings compact account summary", () => {
       /accountStatsToggleBtn\?\.addEventListener\("click",[\s\S]*?setAccountStatsExpanded\(!expanded\)[\s\S]*?\}/
     )
     assert.match(settingsCode, /matchMedia\("\(min-width:\s*431px\)"\)/)
+    assert.match(settingsCode, /function open\([^)]*\)\s*\{[\s\S]*?resetAccountStatsExpanded\(\)\n\s*render\(\)/)
     assert.match(
       settingsCode,
-      /function open\([^)]*\)\s*\{[\s\S]*?setAccountStatsExpanded\(shouldExpandAccountStatsByDefault\(accountStatsWideQuery\)\)[\s\S]*?render\(\)/
+      /function resetAccountStatsExpanded\(\)\s*\{\s*setAccountStatsExpanded\(shouldExpandAccountStatsByDefault\(accountStatsWideQuery\)\)/
     )
   })
 
