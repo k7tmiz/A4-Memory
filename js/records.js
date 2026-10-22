@@ -1,5 +1,4 @@
 ;(function () {
-  const escapeHtmlAttr = window.A4Sanitize.escapeHtml
   const escapeCsvFormula = window.A4Sanitize.escapeCsvFormula
 
   function loadState() {
@@ -41,7 +40,6 @@
     formatMeaning,
     normalizeThemePalette,
     normalizeRoundCap,
-    setModalVisible,
   } = window.A4Common || {}
   const { normalizePreferences } = window.A4State || {}
 
@@ -899,91 +897,10 @@
       document.body.classList.toggle("theme-palette-ocean", palette === "ocean")
     }
 
-    let announcementModal = null
-    let announcementUnreadIds = []
-
-    const ensureAnnouncementModal = () => {
-      if (announcementModal) return announcementModal
-      announcementModal = document.createElement("div")
-      announcementModal.className = "modal hidden"
-      announcementModal.setAttribute("aria-hidden", "true")
-      announcementModal.innerHTML = `
-      <div class="modal-backdrop" data-announcement-close="1"></div>
-      <div class="modal-panel announcement-modal-panel" role="dialog" aria-modal="true" aria-labelledby="recordsAnnouncementTitle">
-        <div class="modal-header">
-          <h2 id="recordsAnnouncementTitle">系统公告</h2>
-          <div class="modal-actions">
-            <button class="ghost" id="recordsAnnouncementCloseBtn" type="button">关闭</button>
-          </div>
-        </div>
-        <div class="modal-body">
-          <div class="announcement-list" id="recordsAnnouncementList"></div>
-        </div>
-      </div>
-    `
-      announcementModal.addEventListener("click", async (e) => {
-        const target = e.target instanceof Element ? e.target : null
-        if (!target || target.dataset.announcementClose !== "1") return
-        await dismissAnnouncementModal()
-      })
-      announcementModal.querySelector("#recordsAnnouncementCloseBtn")?.addEventListener("click", async () => {
-        await dismissAnnouncementModal()
-      })
-      document.body.appendChild(announcementModal)
-      return announcementModal
-    }
-
-    const renderAnnouncementList = (announcements) => {
-      const modal = ensureAnnouncementModal()
-      const list = modal.querySelector("#recordsAnnouncementList")
-      if (!list) return
-      const items = Array.isArray(announcements) ? announcements : []
-      list.innerHTML = items
-        .map((item, index) => {
-          const title = String(item?.title || "").trim() || `公告 #${item?.id || index + 1}`
-          const content = escapeHtmlAttr(item?.content || "").replace(/\n/g, "<br />")
-          return `
-          <article class="announcement-item ${item?.isUnread ? "is-unread" : ""}">
-            <div class="announcement-item-head">
-              <div>
-                <div class="announcement-item-title">${escapeHtmlAttr(title)}</div>
-                <div class="announcement-item-meta">${String(formatDateTimeText(item?.createdAt || item?.created_at || "") || "")}</div>
-              </div>
-              ${item?.isUnread ? '<span class="announcement-item-badge">新公告</span>' : ""}
-            </div>
-            <div class="announcement-item-content">${content}</div>
-          </article>
-        `
-        })
-        .join("")
-    }
-
-    const dismissAnnouncementModal = async () => {
-      const ids = announcementUnreadIds.slice()
-      announcementUnreadIds = []
-      if (ids.length && window.A4Cloud?.markAnnouncementsRead) {
-        try {
-          await window.A4Cloud.markAnnouncementsRead(ids)
-        } catch { /* ignore */ }
-      }
-      setModalVisible(ensureAnnouncementModal(), false)
-    }
-
-    const checkAnnouncements = async () => {
-      if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
-      if (!window.A4Cloud?.isLoggedIn?.()) return
-      if (!window.A4Cloud?.fetchAnnouncements) return
-      try {
-        const result = await window.A4Cloud.fetchAnnouncements(10)
-        if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
-        if (!result?.success) return
-        const unreadIds = Array.isArray(result.unreadIds) ? result.unreadIds.filter((id) => Number.isFinite(Number(id))) : []
-        if (!unreadIds.length) return
-        announcementUnreadIds = unreadIds
-        renderAnnouncementList(result.announcements || [])
-        setModalVisible(ensureAnnouncementModal(), true, { motion: "neutral" })
-      } catch { /* ignore */ }
-    }
+    const announcements = window.A4Announcements.createAnnouncementController({
+      route: "records",
+      idPrefix: "recordsAnnouncement",
+    })
 
     applyTheme()
 
@@ -1174,7 +1091,7 @@
       applyTheme()
       render()
       renderStats()
-      if (checkUnread) checkAnnouncements()
+      if (checkUnread) announcements.check()
     }
 
     const STORAGE_KEY = window.A4Storage?.STORAGE_KEY || "a4-memory:v1"
@@ -1183,9 +1100,8 @@
       refresh()
     })
 
-    window.addEventListener("a4-cloud-auth-changed", () => {
-      if (window.A4Router?.isActive && !window.A4Router.isActive("records")) return
-      checkAnnouncements()
+    window.addEventListener("a4-cloud-auth-changed", (e) => {
+      announcements.handleAuthChanged(!!(e && e.detail && e.detail.loggedIn))
     })
 
     viewRoundsBtn?.addEventListener("click", () => setView("rounds"))

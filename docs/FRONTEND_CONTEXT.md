@@ -32,6 +32,7 @@ A4-Memory/
 │   │   ├── state-schema.js # 持久化偏好字段的默认值、范围与归一化
 │   │   └── sanitize.js    # XSS 防护（HTML/属性转义）
 │   ├── ui/
+│   │   ├── announcements.js # 学习/记录视图共用的系统公告弹窗
 │   │   ├── layers.js      # 共享弹层栈、滚动锁与焦点管理
 │   │   ├── motion.js      # 完整文档导航的兼容动效
 │   │   ├── route-entry.js # 记录 / 设置深链入口
@@ -129,6 +130,7 @@ index.html
   → js/ui/router.js
   → js/ui/dock-glass.js
   → js/core/sanitize.js
+  → js/ui/announcements.js
   → js/utils.js
   → js/storage.js
   → js/cloud.js              ← 可选私有模块
@@ -219,6 +221,9 @@ window.A4Router = {
 
 ### `js/ui/route-entry.js`
 记录与设置深链兼容入口。它只读取 `body[data-a4-entry-view]`，将 `records.html` / `settings.html` 原地址替换为 App Shell 的 `?view=` 启动地址，不承载业务状态或页面控制器。
+
+### `js/ui/announcements.js`
+学习视图与记录视图共用的系统公告弹窗，暴露 `window.A4Announcements.createAnnouncementController({ route, idPrefix })`，返回 `check`、`schedule`、`dismiss`、`handleAuthChanged`。只在所属路由处于活动状态且已登录时拉取未读公告，以 `neutral` 动效打开；关闭时把未读 id 标记为已读；退出登录时直接收起且不标记已读。公告标题、日期与正文均经 `A4Sanitize.escapeHtml` 转义。
 
 ### `js/ui/motion.js`
 完整文档导航的兼容动效。App Shell 内部路由由 `A4Router` 处理；仅在路由器不可用且控制器退回普通页面地址时使用该模块。

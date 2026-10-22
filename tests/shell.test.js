@@ -244,12 +244,8 @@ describe("responsive application shell", () => {
     assert.match(appCode, /addWordToCurrentRound:\s*addWordToCurrentRoundFromLookup/)
     assert.doesNotMatch(appCode, /window\.A4AddWordFromLookup/)
     assert.doesNotMatch(recordsCode, /addWordToCurrentRound:/)
-    assert.match(appCode, /a4-cloud-auth-changed[^]*isActive\("study"\)/s)
-    assert.match(recordsCode, /a4-cloud-auth-changed[^]*isActive\("records"\)/s)
-    assert.match(
-      recordsCode,
-      /setModalVisible\(ensureAnnouncementModal\(\),\s*true,\s*\{ motion:\s*"neutral" \}\)/
-    )
+    assert.match(appCode, /createAnnouncementController\(\{ route: "study" \}\)/)
+    assert.match(recordsCode, /createAnnouncementController\(\{\s*route: "records",/)
   })
 
   it("cleans route-owned layers and the Records print preview during every router leave", () => {

@@ -123,108 +123,7 @@ function closeWordbookPicker() {
 
 let lookupController = null
 let pendingAddWordAfterRoundFull = null
-let announcementModal = null
-let announcementUnreadIds = []
-let announcementCheckTimer = 0
-
-function buildAnnouncementModalDom() {
-  const modal = document.createElement("div")
-  modal.className = "modal hidden"
-  modal.id = "announcementModal"
-  modal.setAttribute("aria-hidden", "true")
-  modal.innerHTML = `
-    <div class="modal-backdrop" data-announcement-close="1"></div>
-    <div class="modal-panel announcement-modal-panel" role="dialog" aria-modal="true" aria-labelledby="announcementTitle">
-      <div class="modal-header">
-        <h2 id="announcementTitle">系统公告</h2>
-        <div class="modal-actions">
-          <button class="ghost" id="announcementCloseBtn" type="button" aria-label="关闭公告">关闭</button>
-        </div>
-      </div>
-      <div class="modal-body">
-        <div class="announcement-list" id="announcementList"></div>
-      </div>
-    </div>
-  `
-  modal.addEventListener("click", (e) => {
-    const target = e.target instanceof Element ? e.target : null
-    if (target && target.dataset.announcementClose === "1") dismissAnnouncementModal()
-  })
-  modal.querySelector("#announcementCloseBtn")?.addEventListener("click", () => dismissAnnouncementModal())
-  document.body.appendChild(modal)
-  return modal
-}
-
-function ensureAnnouncementModal() {
-  if (announcementModal) return announcementModal
-  announcementModal = buildAnnouncementModalDom()
-  return announcementModal
-}
-
-const escapeHtmlAttr = window.A4Sanitize.escapeHtml
-
-function renderAnnouncementList(announcements) {
-  const modal = ensureAnnouncementModal()
-  const list = modal.querySelector("#announcementList")
-  if (!list) return
-  const items = Array.isArray(announcements) ? announcements : []
-  list.innerHTML = items
-    .map((item, index) => {
-      const title = String(item?.title || "").trim() || `公告 #${item?.id || index + 1}`
-      const content = escapeHtmlAttr(item?.content || "").replace(/\n/g, "<br />")
-      const createdAt = item?.createdAt || item?.created_at || ""
-      const meta = createdAt && formatDateTime ? formatDateTime(createdAt) : String(createdAt || "")
-      return `
-        <article class="announcement-item ${item?.isUnread ? "is-unread" : ""}">
-          <div class="announcement-item-head">
-            <div>
-              <div class="announcement-item-title">${escapeHtmlAttr(title)}</div>
-              <div class="announcement-item-meta">${escapeHtmlAttr(meta)}</div>
-            </div>
-            ${item?.isUnread ? '<span class="announcement-item-badge">新公告</span>' : ""}
-          </div>
-          <div class="announcement-item-content">${content}</div>
-        </article>
-      `
-    })
-    .join("")
-}
-
-async function dismissAnnouncementModal() {
-  const unreadIds = announcementUnreadIds.slice()
-  announcementUnreadIds = []
-  if (unreadIds.length && window.A4Cloud?.markAnnouncementsRead) {
-    try {
-      await window.A4Cloud.markAnnouncementsRead(unreadIds)
-    } catch { /* ignore */ }
-  }
-  setModalVisible(ensureAnnouncementModal(), false)
-}
-
-async function checkAnnouncements() {
-  if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
-  if (!window.A4Cloud?.isLoggedIn?.()) return
-  if (!window.A4Cloud?.fetchAnnouncements) return
-  try {
-    const result = await window.A4Cloud.fetchAnnouncements(10)
-    if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
-    if (!result?.success) return
-    const unreadIds = Array.isArray(result.unreadIds) ? result.unreadIds.filter((id) => Number.isFinite(Number(id))) : []
-    if (!unreadIds.length) return
-    announcementUnreadIds = unreadIds
-    renderAnnouncementList(Array.isArray(result.announcements) ? result.announcements : [])
-    setModalVisible(ensureAnnouncementModal(), true, { motion: "neutral" })
-  } catch { /* ignore */ }
-}
-
-function scheduleAnnouncementCheck(delayMs = 0) {
-  if (announcementCheckTimer) window.clearTimeout(announcementCheckTimer)
-  announcementCheckTimer = window.setTimeout(() => {
-    announcementCheckTimer = 0
-    checkAnnouncements()
-  }, Math.max(0, Math.round(Number(delayMs) || 0)))
-}
-
+const announcements = window.A4Announcements.createAnnouncementController({ route: "study" })
 function openSettingsModal() {
   if (window.A4Router?.navigate?.("settings", { queue: true }) === true) return
   const href = "./settings.html?from=study"
@@ -1689,7 +1588,7 @@ function restore({ showStartupPrompts = false } = {}) {
         const seen = localStorage.getItem(INTRO_SEEN_KEY)
         if (!seen) requestAnimationFrame(() => openIntroModal())
       } catch { /* ignore */ }
-      scheduleAnnouncementCheck(300)
+      announcements.schedule(300)
     }
     return
   }
@@ -1800,7 +1699,7 @@ function restore({ showStartupPrompts = false } = {}) {
         const seen = localStorage.getItem(INTRO_SEEN_KEY)
         if (!seen) requestAnimationFrame(() => openIntroModal())
       } catch { /* ignore */ }
-      scheduleAnnouncementCheck(300)
+      announcements.schedule(300)
     }
     return
   }
@@ -1839,7 +1738,7 @@ function restore({ showStartupPrompts = false } = {}) {
   updateBadge()
   updateHint()
   persist()
-  if (showStartupPrompts) scheduleAnnouncementCheck(300)
+  if (showStartupPrompts) announcements.schedule(300)
 }
 
 function buildAllRoundsWordKeySet({ excludeRoundId } = {}) {
@@ -2466,14 +2365,7 @@ window.addEventListener("resize", () => {
 })
 
 window.addEventListener("a4-cloud-auth-changed", (e) => {
-  if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
-  const loggedIn = !!(e && e.detail && e.detail.loggedIn)
-  if (!loggedIn) {
-    announcementUnreadIds = []
-    if (announcementModal) setModalVisible(announcementModal, false)
-    return
-  }
-  scheduleAnnouncementCheck(200)
+  announcements.handleAuthChanged(!!(e && e.detail && e.detail.loggedIn))
 })
 
 updateMeaningToggle()
@@ -2487,7 +2379,7 @@ function enterStudyView({ initial = false } = {}) {
   restore({ showStartupPrompts: initial })
   updateBadge()
   updateHint()
-  scheduleAnnouncementCheck(initial ? 300 : 0)
+  announcements.schedule(initial ? 300 : 0)
 }
 
 const studyRouteRegistered = window.A4Router?.register?.("study", {
