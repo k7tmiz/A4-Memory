@@ -222,3 +222,28 @@ describe("paper layout", () => {
     assert.equal(second.style.left, `${b.x}px`)
   })
 })
+
+describe("wordbook manager", () => {
+  it("renames legacy generic remote wordbooks and keeps names unique against built-ins", () => {
+    const { wordbookManager, wordbookIo } = loadAppInternal()
+    const manager = wordbookManager.createWordbookManager({
+      appState: { builtInWordbooks: [{ id: "cet4", name: "CET4" }] },
+      dom: {},
+    })
+    const desc = "k7tmiz/english-vocabulary@main:cet6/words.json"
+    const books = manager.normalizeStoredCustomWordbooks([
+      { id: "a", name: "英语词库（k7tmiz）", description: desc, language: "en", words: [{ term: "apple", meaning: "苹果" }] },
+      { id: "b", name: "CET4", description: "", language: "en", words: [{ term: "pear", meaning: "梨" }] },
+      null,
+    ])
+    assert.equal(books.length, 2)
+    assert.equal(books[0].name, wordbookIo.inferWordbookNameFromDescription(desc))
+    assert.notEqual(books[1].name, "CET4")
+  })
+
+  it("returns an empty list for missing stored wordbooks", () => {
+    const { wordbookManager } = loadAppInternal()
+    const manager = wordbookManager.createWordbookManager({ appState: { builtInWordbooks: [] }, dom: {} })
+    assert.deepEqual(plain(manager.normalizeStoredCustomWordbooks(undefined)), [])
+  })
+})
