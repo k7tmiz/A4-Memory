@@ -129,6 +129,23 @@ body.settings-page #settingsModal .modal-panel {
   font-weight: var(--fw-semibold);
 }
 
+@keyframes settings-saved-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--success) 0%, transparent);
+  }
+}
+
+.settings-page-status.is-saved {
+  color: var(--success);
+}
+
+.settings-page-status.is-saved .settings-page-status-dot {
+  animation: settings-saved-pulse 900ms var(--motion-ease-out) both;
+}
+
 .settings-page-status-dot {
   width: 8px;
   height: 8px;
@@ -430,6 +447,40 @@ body.settings-page #settingsModal .settings-category-tabs {
   background: transparent;
 }
 
+/* 分组卡片：每个分区的设置行收进一张圆角表面，标题位于卡片上方；行间分隔线留在卡片内 */
+#settingsModal .settings-accordion-card > .settings-card-header {
+  min-height: 0;
+  margin-bottom: 10px;
+  padding: 0 4px;
+  border-bottom: 0;
+  font-size: var(--fs-lg);
+}
+
+#settingsModal .settings-accordion-content,
+#settingsModal #accountLoggedOut,
+#settingsModal #accountLoggedIn {
+  padding: 4px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--group-shadow, none);
+}
+
+#settingsModal #accountLoggedOut,
+#settingsModal #accountLoggedIn {
+  padding-block: 18px 20px;
+}
+
+#settingsModal .settings-accordion-content > .form-row:last-child,
+#settingsModal .settings-accordion-content > .form-help:last-child,
+#settingsModal .settings-accordion-content > :last-child > .form-row:last-child {
+  border-bottom: 0;
+}
+
+#settingsModal .settings-accordion-content > .form-help:last-child {
+  padding-bottom: 16px;
+}
+
 /* 4. Form Layouts & Seamless Rows */
 #settingsModal .form-row {
   margin: 0;
@@ -685,12 +736,14 @@ body.settings-page #settingsModal .settings-category-tabs {
 #settingsModal #settingsPanelAccount .account-panel > .section-title {
   min-height: 44px;
   margin-bottom: 14px;
-  padding: 10px 0 12px;
+  min-height: 0;
+  margin-bottom: 10px;
+  padding: 0 4px;
   display: flex;
   align-items: baseline;
   gap: 10px;
-  border-bottom: 1px solid var(--text);
-  font-size: var(--fs-xl);
+  border-bottom: 0;
+  font-size: var(--fs-lg);
   letter-spacing: -0.01em;
   counter-increment: settings-section;
 }
@@ -1381,9 +1434,9 @@ body.theme-dark .account-oauth-btn:hover {
   body.settings-page .settings-page-main {
     padding:
       max(18px, env(safe-area-inset-top))
-      max(16px, env(safe-area-inset-right))
+      max(var(--page-gutter), env(safe-area-inset-right))
       calc(120px + env(safe-area-inset-bottom))
-      max(16px, env(safe-area-inset-left));
+      max(var(--page-gutter), env(safe-area-inset-left));
   }
 
   .settings-page-intro {
@@ -1519,7 +1572,7 @@ body.theme-dark .account-oauth-btn:hover {
 
 @media (max-width: 370px) {
   body.settings-page .settings-page-main {
-    padding-inline: max(14px, env(safe-area-inset-left));
+    padding-inline: max(var(--page-gutter), env(safe-area-inset-left));
   }
 
   #settingsModal .settings-category-tabs {

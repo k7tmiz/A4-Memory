@@ -12,6 +12,8 @@
   let keydownHandler = null
   let batchClosing = false
   let nextLayerOrder = 0
+  // 可见入口把点击转发给隐藏的功能按钮时，用可见入口作为弹层的来源控件
+  let triggerProxy = null
 
   function prefersReducedMotion() {
     if (typeof window.matchMedia !== "function") return true
@@ -299,7 +301,7 @@
       document.body?.contains?.(target) &&
       (!topLayer || topLayer.contains?.(target))
     ) {
-      target.focus()
+      target.focus({ preventScroll: true })
     } else if (topLayer) {
       focusLayer(topLayer)
     }
@@ -315,9 +317,10 @@
     layer.classList?.remove("a4-layer-entering", "a4-layer-closing", "a4-layer-css-motion")
     layer.classList?.add("hidden")
     layer.setAttribute?.("aria-hidden", "true")
+    // 先解除页面冻结（inert）再恢复焦点，否则触发控件仍处于 inert 状态而无法获得焦点
+    if (openLayers.length === 0 && closingLayers.size === 0) unlockPage()
     if (restoreFocus && !batchClosing) restoreLayerFocus(layer)
     else previousFocus.delete(layer)
-    if (openLayers.length === 0 && closingLayers.size === 0) unlockPage()
     pending?.resolve?.(result)
     return result
   }
@@ -391,7 +394,8 @@
       const wasClosing = cancelLayerClose(layer)
       const openIndex = openLayers.indexOf(layer)
       if (openIndex >= 0) return false
-      const trigger = options.trigger || existingMotion?.trigger || document.activeElement || null
+      const requestedTrigger = options.trigger || existingMotion?.trigger || document.activeElement || null
+      const trigger = triggerProxy && requestedTrigger === triggerProxy.target ? triggerProxy.proxy : requestedTrigger
       const sourceRect = readRect(trigger) || existingMotion?.sourceRect || null
       if (!wasClosing) previousFocus.set(layer, document.activeElement || null)
       layerOpenOrder.set(layer, nextLayerOrder++)
@@ -435,6 +439,15 @@
     return true
   }
 
+  function withTriggerProxy(target, proxy, run) {
+    triggerProxy = target && proxy ? { target, proxy } : null
+    try {
+      return run?.()
+    } finally {
+      triggerProxy = null
+    }
+  }
+
   function getOpenLayers() {
     return openLayers.slice()
   }
@@ -468,6 +481,7 @@
     closeAll,
     getOpenLayers,
     hasOpenLayer,
+    withTriggerProxy,
     requestLayerDismiss,
     requestTopLayerClose,
   })

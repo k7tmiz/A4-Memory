@@ -940,6 +940,64 @@
   .desktop-status-stack {
     display: block;
   }
+
+  /* 右栏可见时「下一个单词」位于进度下方，底栏只保留导航；沉浸模式隐藏右栏，主操作回到底栏 */
+  body:not(.immersive) .app-dock-shell .app-next-action {
+    display: none;
+  }
+
+  body:not(.immersive) .app-dock-shell {
+    gap: 0;
+  }
+}
+
+.desktop-next-action {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 18px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--ctaText) 14%, transparent);
+  border-radius: var(--radius-pill);
+  background: var(--cta);
+  color: var(--ctaText);
+  box-shadow: var(--cta-shadow);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+}
+
+.desktop-next-action:hover {
+  border-color: color-mix(in srgb, var(--ctaText) 14%, transparent);
+  background: color-mix(in srgb, var(--cta) 88%, var(--ctaText));
+}
+
+.desktop-next-action svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  transition: transform 420ms var(--motion-ease-spring);
+}
+
+.desktop-next-action:hover svg,
+.desktop-next-action:active svg {
+  transform: rotate(90deg);
+}
+
+.desktop-next-action kbd {
+  margin-left: auto;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--ctaText) 30%, transparent);
+  border-radius: var(--radius-xs);
+  color: color-mix(in srgb, var(--ctaText) 75%, transparent);
+  font-family: var(--font-ui);
+  font-size: var(--fs-3xs);
+  font-weight: var(--fw-semibold);
 }
 
 @media (max-width: 700px) {
@@ -949,8 +1007,8 @@
 
   body:not(.records-page) .app {
     max-width: 540px;
-    padding: max(14px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
-      calc(92px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    padding: max(16px, env(safe-area-inset-top)) max(var(--page-gutter), env(safe-area-inset-right))
+      calc(92px + env(safe-area-inset-bottom)) max(var(--page-gutter), env(safe-area-inset-left));
   }
 
   body.home-page.immersive [data-a4-view="study"] .app {
@@ -1168,11 +1226,11 @@
   }
 
   .paper {
-    width: min(calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)), 520px);
+    width: min(calc(100vw - 2 * var(--page-gutter) - env(safe-area-inset-left) - env(safe-area-inset-right)), 520px);
     height: min(
       760px,
       max(
-        calc(min(calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)), 520px) * 297 / 210),
+        calc(min(calc(100vw - 2 * var(--page-gutter) - env(safe-area-inset-left) - env(safe-area-inset-right)), 520px) * 297 / 210),
         calc(100dvh - 172px - env(safe-area-inset-top) - env(safe-area-inset-bottom))
       )
     );
@@ -1293,7 +1351,7 @@
     z-index: 40;
     left: 50%;
     bottom: calc(18px + env(safe-area-inset-bottom));
-    width: min(calc(100vw - 16px), 420px);
+    width: min(calc(100vw - 2 * var(--page-gutter)), 420px);
     height: 56px;
     gap: 8px;
     transform: translateX(-50%);

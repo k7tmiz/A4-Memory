@@ -758,9 +758,9 @@ body.records-page .app.records .empty {
     margin: 0;
     padding:
       max(18px, env(safe-area-inset-top))
-      max(14px, env(safe-area-inset-right))
+      max(var(--page-gutter), env(safe-area-inset-right))
       calc(108px + env(safe-area-inset-bottom))
-      max(14px, env(safe-area-inset-left));
+      max(var(--page-gutter), env(safe-area-inset-left));
   }
 
   .records-page-intro {

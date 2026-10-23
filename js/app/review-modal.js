@@ -130,9 +130,12 @@
         dom.reviewCard.style.removeProperty("--card-back-scale")
       }
       dom.reviewCard.classList.toggle("is-flipped", flipped)
-      dom.reviewCardHint.textContent = appState.reviewCardFlipEnabled
+      const keyboardHint = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches
+        ? "；键盘 ← ↓ → 标记，空格朗读"
+        : ""
+      dom.reviewCardHint.textContent = (appState.reviewCardFlipEnabled
         ? "点单词发音；点空白翻面；背面点任意处翻回；左右滑动/拖拽可快速标记（右滑已掌握/左滑不会）"
-        : "点击单词可发音；左右滑动/拖拽可快速标记（右滑已掌握/左滑不会）"
+        : "点击单词可发音；左右滑动/拖拽可快速标记（右滑已掌握/左滑不会）") + keyboardHint
       dom.reviewKnownBtn.disabled = false
       dom.reviewLearningBtn.disabled = false
       dom.reviewUnknownBtn.disabled = false
@@ -230,20 +233,62 @@
       }
       appState.reviewIndex = next
       renderReviewCard()
+      playCardEnter()
+    }
+
+    // 下一张卡片以轻微放大与上浮进入，接续上一张的离场动画
+    function playCardEnter() {
+      dom.reviewCard.classList.remove("is-entering")
+      void dom.reviewCard.offsetWidth
+      dom.reviewCard.classList.add("is-entering")
+    }
+
+    const STATUS_BY_DIRECTION = new Map([
+      [1, STATUS_MASTERED],
+      [0, STATUS_LEARNING],
+      [-1, STATUS_UNKNOWN],
+    ])
+
+    // 按钮与键盘标记统一走滑动控制器的离场动画；动画进行中的重复操作被忽略
+    function markWithMotion(direction) {
+      if (reviewSwipeController) {
+        reviewSwipeController.commit(direction)
+        return
+      }
+      advanceReview(STATUS_BY_DIRECTION.get(direction))
+    }
+
+    // 复习弹窗位于最上层时：← / 1 不会，↓ / 2 学习中，→ / 3 已掌握，空格朗读
+    const REVIEW_KEY_DIRECTIONS = new Map([
+      ["ArrowLeft", -1],
+      ["1", -1],
+      ["ArrowDown", 0],
+      ["2", 0],
+      ["ArrowRight", 1],
+      ["3", 1],
+    ])
+
+    function onReviewKeydown(event) {
+      if (dom.reviewModal.classList.contains("hidden")) return
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
+      const openLayers = window.A4UI?.getOpenLayers?.() || []
+      if (openLayers.length && openLayers[openLayers.length - 1] !== dom.reviewModal) return
+      if (dom.reviewKnownBtn.disabled) return
+      const key = String(event.key || "")
+      if (REVIEW_KEY_DIRECTIONS.has(key)) {
+        event.preventDefault()
+        markWithMotion(REVIEW_KEY_DIRECTIONS.get(key))
+      } else if (key === " " || key === "Spacebar") {
+        event.preventDefault()
+        speakTerm(dom.reviewCardTerm.textContent)
+      }
     }
 
     function bindEvents() {
-      dom.reviewKnownBtn.addEventListener("click", () => {
-        advanceReview(STATUS_MASTERED)
-      })
-
-      dom.reviewLearningBtn.addEventListener("click", () => {
-        advanceReview(STATUS_LEARNING)
-      })
-
-      dom.reviewUnknownBtn.addEventListener("click", () => {
-        advanceReview(STATUS_UNKNOWN)
-      })
+      dom.reviewKnownBtn.addEventListener("click", () => markWithMotion(1))
+      dom.reviewLearningBtn.addEventListener("click", () => markWithMotion(0))
+      dom.reviewUnknownBtn.addEventListener("click", () => markWithMotion(-1))
+      document.addEventListener("keydown", onReviewKeydown)
 
       dom.reviewCardTerm.addEventListener("click", (e) => {
         if (reviewSwipeController.isInteractionBlocked()) return
@@ -255,7 +300,7 @@
       reviewSwipeController = createReviewSwipeController({
         card: dom.reviewCard,
         isReviewOpen: () => !dom.reviewModal.classList.contains("hidden"),
-        onCommit: (direction) => advanceReview(direction > 0 ? STATUS_MASTERED : STATUS_UNKNOWN),
+        onCommit: (direction) => advanceReview(STATUS_BY_DIRECTION.get(direction)),
       })
 
       dom.reviewCard.addEventListener("click", (e) => {

@@ -210,7 +210,7 @@ window.A4State = {
 ```
 
 ### `js/ui/layers.js`
-共享弹层控制器，暴露 `window.A4UI`。标准入口为 `setLayerVisible(layer, visible, { trigger, motion })`：`trigger` 保存实际触发元素与可用矩形；`motion: "origin"` 从来源控件展开并在关闭时按同一路径返回，`"sheet"` 自面板高度方向滑入（用于词书选择等底部面板，不从顶部触发点飞入），`"neutral"` 用于没有用户来源的自动弹层。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。动画可被快速反向、中断或立即清理，并在来源消失、Web Animations API 不可用或系统要求减少动态效果时安全降级。首页弹窗、查词、设置页内确认/预览、确认框、公告和 Android 下拉面板均通过该入口管理。视口宽度不超过 700px 时，除页面式设置根节点外的弹层由 CSS 呈现为带拖拽指示条的贴底面板，`setLayerVisible` 同时把动效统一改为 `sheet`。学习页手机「更多工具」与记录页工具菜单使用页面内 `details` 下拉，不进入弹层栈。路由切换按从顶层到底层的顺序向弹层所有者发送 `a4-layer-dismiss`，由所有者执行取消、请求中止、Promise 收敛和 DOM 清理，再同步收尾所有已打开或正在退出的共享弹层；批量收尾不恢复旧焦点，由目标视图独占最终焦点。
+共享弹层控制器，暴露 `window.A4UI`。标准入口为 `setLayerVisible(layer, visible, { trigger, motion })`：`trigger` 保存实际触发元素与可用矩形；`motion: "origin"` 从来源控件展开并在关闭时按同一路径返回，`"sheet"` 自面板高度方向滑入（用于词书选择等底部面板，不从顶部触发点飞入），`"neutral"` 用于没有用户来源的自动弹层。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。动画可被快速反向、中断或立即清理，并在来源消失、Web Animations API 不可用或系统要求减少动态效果时安全降级。首页弹窗、查词、设置页内确认/预览、确认框、公告和 Android 下拉面板均通过该入口管理。视口宽度不超过 700px 时，除页面式设置根节点外的弹层由 CSS 呈现为带拖拽指示条的贴底面板，`setLayerVisible` 同时把动效统一改为 `sheet`。学习页手机「更多工具」与记录页工具菜单使用页面内 `details` 下拉，不进入弹层栈。可见入口把点击转发给隐藏的功能按钮时，通过 `withTriggerProxy(target, proxy, run)` 让弹层以可见入口作为来源控件。关闭最后一个弹层时先解除页面 `inert` 再恢复焦点（`preventScroll`），确保焦点回到触发控件。路由切换按从顶层到底层的顺序向弹层所有者发送 `a4-layer-dismiss`，由所有者执行取消、请求中止、Promise 收敛和 DOM 清理，再同步收尾所有已打开或正在退出的共享弹层；批量收尾不恢复旧焦点，由目标视图独占最终焦点。
 
 ### `js/ui/router.js`
 持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
@@ -338,7 +338,7 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 |------|------|
 | `js/app/wordbook-io.js` | `wordbookIo`：TXT/CSV/TSV/JSON 词条解析、词书对象归一化、语言与名称推断、远程 JSON 词书结构提取、GitHub 仓库 JSON 文件列表与排序 |
 | `js/app/study-helpers.js` | `studyHelpers`：洗牌、纸面碰撞检测、单词元素构建、西语阴阳性简写展开、复习滑动阈值与橡皮筋阻尼 |
-| `js/app/review-swipe.js` | `reviewSwipe.createReviewSwipeController({ card, isReviewOpen, onCommit })`：复习卡指针拖动状态机，确认横向拖动后才捕获指针，轻点卡片单词仍可发音；返回 `resetToCenter`、`isInteractionBlocked`、`destroy` |
+| `js/app/review-swipe.js` | `reviewSwipe.createReviewSwipeController({ card, isReviewOpen, onCommit })`：复习卡指针拖动状态机，确认横向拖动后才捕获指针，轻点卡片单词仍可发音；返回 `resetToCenter`、`commit(direction)`、`isInteractionBlocked`、`destroy`；`commit` 供按钮与键盘标记复用离场动画（1 右飞已掌握、-1 左飞不会、0 下沉学习中），触屏设备提交时轻振一次，减少动态效果时直接提交。复习弹窗位于最上层时支持 ← / 1 不会、↓ / 2 学习中、→ / 3 已掌握、空格朗读，新卡片以独立的 `scale` / `translate` 属性进入而不干扰滑动变换 |
 | `js/app/wordbook-manager.js` | `wordbookManager.createWordbookManager({ appState, dom, persist, ... })`：词书选择（Android 使用应用内底部面板，其余平台保留原生 `<select>`）、本地文件/链接/GitHub 仓库在线导入、自定义词书管理与删除、已保存词书的名称迁移与去重；`bindEvents()` 绑定词书相关控件 |
 | `js/app/review-modal.js` | `reviewModal.createReviewModal({ appState, dom, persist, ... })`：手动复习（整轮、默认打乱）与「下一个单词」后的自动复习（新词置顶，普通轮按当前页）共用队列、卡片渲染、翻面与状态标记；状态写入 `lastReviewedAt` / `nextReviewAt` 并同步「不会」词表；`bindEvents()` 绑定标记按钮、点词发音、翻面、打乱与 `reviewSwipe` 滑动 |
 | `js/app/word-picker.js` | `wordPicker.createWordPicker({ appState, getCurrentRound, ... })`：按「不会」词优先、其余随机建立按 `term + meaning + language` 去重的词池，跳过本轮已有词条，词池用尽后重新洗牌；`pickNextWordPreferUnseenFirst` 优先挑选历史轮次未出现过的词条 |
@@ -351,7 +351,7 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 - 轮次推进与状态写回
 - 创建 `paperLayout`、`wordbookManager`、`reviewModal`、`wordPicker` 与公告控制器并注入所需状态和回调
 
-宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在词书行旁的 `.mobile-more-tools` 下拉菜单；宽度达到 701px 时，A4 在视口居中，词书/工具与进度卡分居两侧，低频入口常驻在左侧 `#desktopToolsList`。两种布局共用纸面复习/释义操作和悬浮底栏；沉浸模式下纸面工具栏显示独立退出操作。「下一个单词」只在学习视图可用，页码控件仅在当前轮包含多张 A4 时显示。学习页根视口裁切横向溢出，页面手势仅允许纵向平移并禁用双击/双指缩放；A4 保持原始布局比例，复习卡仍独立处理横向标记手势。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
+宽度不超过 700px 时，学习视图使用紧凑词书状态，低频入口集中在词书行旁的 `.mobile-more-tools` 下拉菜单；宽度达到 701px 时，A4 在视口居中，词书/工具与进度卡分居两侧，低频入口常驻在左侧 `#desktopToolsList`。两种布局共用纸面复习/释义操作和悬浮底栏；沉浸模式下纸面工具栏显示独立退出操作。「下一个单词」只在学习视图可用：宽度达到 1200px 且未处于沉浸模式时位于右栏进度下方（`#desktopNextBtn`，标注 Space），底栏只保留导航；其余宽度与沉浸模式下位于底栏（`#dockNextBtn`）。页码控件仅在当前轮包含多张 A4 时显示。手机与平板宽度的页面两侧留白统一使用 `--page-gutter`（18–28px，随屏宽伸缩）。学习页根视口裁切横向溢出，页面手势仅允许纵向平移并禁用双击/双指缩放；A4 保持原始布局比例，复习卡仍独立处理横向标记手势。路由 `leave` 生命周期负责保存学习状态并收起视图工具，`enter` 生命周期重新读取存储并刷新纸面，活动路由的 `exit` 负责文档卸载前的最终保存。
 
 ### `js/records.js`
 记录视图控制器（UI 层）。进入视图时重新读取存储并刷新统计与列表，离开后仍保持控制器和 DOM 挂载。负责：
@@ -422,7 +422,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 4. **AI** — OpenAI、Gemini、DeepSeek 和自定义 OpenAI 兼容 API 配置、模型选择、词书生成与查词补充（联网补充可复用同一 API 配置）；模型名可自由输入，也可从服务商 `/models` 接口实时获取后通过应用内面板选择，不保留内置、缓存或回退列表。
 5. **账号** — 云端账号（登录、注册、重置密码、登录状态卡片与云同步上传/下载）、数据管理（完整 JSON 备份导入导出）和版本信息；版本信息仅在 Tauri 桌面端与 Android 应用中显示。登录状态卡片在宽度不超过 430px 时常显单词数、连续天数和当前轮，其余统计通过「更多学习统计」展开且每次打开设置默认折叠；平板和桌面宽度默认直接展示全部统计。
 
-所有宽度共用一条顶部分段导航，样式对齐记录页「轮次 / 状态」切换，并使用与底栏相同的 Liquid Glass 滑动胶囊。各分区以编号标题与细线表单行呈现，内容铺在页面底色上，不用浮起的卡片盒；明暗模式分段选择与账号操作切换使用纯 CSS 的滑动指示块（按选中项序号定位），开关按住时滑块拉长并以回弹曲线复位。页眉、分类导航与各分区共用宽 720px 的单一居中阅读栏，分区自上而下排列、间距 40–56px，表单行最小高度 60px，说明文字限宽 36em 而分隔线保持通栏；账号区的数据管理与版本信息位于账号表单下方。所有宽度均复用 App Shell 的学习、记录、设置悬浮底栏。
+所有宽度共用一条顶部分段导航，样式对齐记录页「轮次 / 状态」切换，并使用与底栏相同的 Liquid Glass 滑动胶囊。各分区以编号标题与细线表单行呈现，各分区以分组卡片承载；明暗模式分段选择与账号操作切换使用纯 CSS 的滑动指示块（按选中项序号定位），开关按住时滑块拉长并以回弹曲线复位。页眉、分类导航与各分区共用宽 720px 的单一居中阅读栏；每个分区的设置行收进一张分组卡片（`--card` 表面、圆角与细边框，极简风格带轻阴影，瑞士风格改为顶部粗线），分区标题位于卡片上方；每次修改后页眉状态短暂显示「已保存」并让状态点脉冲一次；分区自上而下排列、间距 40–56px，表单行最小高度 60px，说明文字限宽 36em 而分隔线保持通栏；账号区的数据管理与版本信息位于账号表单下方。所有宽度均复用 App Shell 的学习、记录、设置悬浮底栏。
 
 类别导航采用 `tab` / `tabpanel` 语义。左、右、上、下方向键循环切换类别，`Home` / `End` 分别切换到第一个和最后一个类别。
 

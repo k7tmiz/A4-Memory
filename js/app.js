@@ -135,6 +135,7 @@
     paperMeaningLabel: document.getElementById("paperMeaningLabel"),
     paperImmersiveExitBtn: document.getElementById("paperImmersiveExitBtn"),
     dockNextBtn: document.getElementById("dockNextBtn"),
+    desktopNextBtn: document.getElementById("desktopNextBtn"),
     desktopToolsList: document.getElementById("desktopToolsList"),
     importWordbookBtn: document.getElementById("importWordbookBtn"),
     importFile: document.getElementById("importFile"),
@@ -1269,6 +1270,7 @@
   }
 
   dom.dockNextBtn?.addEventListener("click", () => dom.nextBtn.click())
+  dom.desktopNextBtn?.addEventListener("click", () => dom.nextBtn.click())
   dom.paperReviewBtn?.addEventListener("click", (event) => {
     openReviewCurrentRound(event.currentTarget)
   })
@@ -1277,7 +1279,10 @@
   // 桌面左栏常驻学习工具：直接转发到对应的功能按钮
   dom.desktopToolsList?.querySelectorAll("[data-action-target]").forEach((button) => {
     button.addEventListener("click", () => {
-      document.getElementById(button.dataset.actionTarget || "")?.click?.()
+      const target = document.getElementById(button.dataset.actionTarget || "")
+      if (!target) return
+      if (window.A4UI?.withTriggerProxy) window.A4UI.withTriggerProxy(target, button, () => target.click())
+      else target.click()
     })
   })
 

@@ -1,6 +1,7 @@
 /**
  * 学习视图模块：复习卡左右滑动标记。
- * 管理指针拖动、方向锁定、橡皮筋阻尼、甩动提交与回弹状态机；提交方向通过 onCommit(1 | -1) 交给学习控制器。
+ * 管理指针拖动、方向锁定、橡皮筋阻尼、甩动提交与回弹状态机；提交方向通过 onCommit(1 | 0 | -1) 交给学习控制器。
+ * 按钮与键盘标记同样经 commit() 播放离场动画：右飞已掌握、左飞不会、下沉学习中。
  */
 ;(function () {
   const ns = (window.A4AppInternal = window.A4AppInternal || {})
@@ -84,6 +85,7 @@
     function resetReviewSwipeVisual({ hard } = {}) {
       if (hard) card.style.transition = "none"
       card.style.setProperty("--swipe-x", "0px")
+      card.style.setProperty("--swipe-y", "0px")
       card.style.setProperty("--swipe-rot", "0deg")
       card.style.setProperty("--swipe-opacity", "1")
       card.style.setProperty("--swipe-right-alpha", "0")
@@ -134,8 +136,23 @@
       }, 340)
     }
 
+    function prefersReducedMotion() {
+      return !!window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+    }
+
+    // 触屏设备在标记时给出一次轻触感反馈
+    function hapticTick() {
+      if (!window.matchMedia?.("(pointer: coarse)")?.matches) return
+      try {
+        window.navigator?.vibrate?.(8)
+      } catch {
+        /* 不支持振动时忽略 */
+      }
+    }
+
     function commitReviewSwipe(dir, { fromPointerType } = {}) {
-      const d = dir >= 0 ? 1 : -1
+      const d = dir > 0 ? 1 : dir < 0 ? -1 : 0
+      hapticTick()
       cleanupReviewPointerListeners()
       clearReviewSwipeRaf()
       clearReviewSwipeSettleTimer()
@@ -144,6 +161,14 @@
       setReviewSwipeState("animating-out")
       blockClickUntil = Date.now() + 420
 
+      if (prefersReducedMotion()) {
+        resetReviewSwipeVisual({ hard: true })
+        cleanupReviewSwipeCore()
+        setReviewSwipeState("idle")
+        onCommit(d)
+        return
+      }
+
       const w = getReviewCardWidth()
       const outX = d * (w * 1.35 + 90)
       const outRot = d * (String(fromPointerType || "") === "mouse" ? 18 : 16)
@@ -151,6 +176,7 @@
       card.style.setProperty("--swipe-right-alpha", d > 0 ? "1" : "0")
       card.style.setProperty("--swipe-left-alpha", d < 0 ? "1" : "0")
       card.style.setProperty("--swipe-x", `${outX.toFixed(0)}px`)
+      card.style.setProperty("--swipe-y", d === 0 ? "42px" : "0px")
       card.style.setProperty("--swipe-rot", `${outRot.toFixed(0)}deg`)
       card.style.setProperty("--swipe-opacity", "0")
 
@@ -297,6 +323,12 @@
 
     return {
       resetToCenter: resetReviewToCenter,
+      // 按钮或键盘标记：播放与滑动一致的离场动画后提交；动画进行中返回 false
+      commit(direction) {
+        if (swipe.animating || swipe.dragging) return false
+        commitReviewSwipe(direction)
+        return true
+      },
       // 拖动中、回弹/飞出动画中或刚结束拖动时屏蔽点击（发音、翻面）
       isInteractionBlocked() {
         return (!!blockClickUntil && Date.now() < blockClickUntil) || swipe.dragging || swipe.animating

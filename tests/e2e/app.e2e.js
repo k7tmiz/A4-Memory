@@ -74,6 +74,30 @@ describe("A4 Memory end-to-end", { skip: findChrome() ? false : "未找到 Chrom
     assert.deepEqual(page.errors, [])
   })
 
+  it("adds words from the desktop progress rail and marks review cards from the keyboard", async () => {
+    await browser.freshApp(page)
+    assert.equal(await page.evaluate(`getComputedStyle(document.getElementById("dockNextBtn")).display`), "none")
+    await page.click("#desktopNextBtn")
+    await page.waitFor(`${wordCount} === 1`)
+    await page.waitFor(isVisible("reviewModal"))
+    await page.evaluate(`document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }))`)
+    await page.waitFor(isHidden("reviewModal"))
+    await page.waitFor(`document.getElementById("roundStatusCounts").textContent.includes("已掌握 1")`)
+    assert.deepEqual(page.errors, [])
+  })
+
+  it("returns focus to the visible tool that opened a dialog", async () => {
+    await browser.freshApp(page)
+    const tool = `document.querySelector('#desktopToolsList [data-action-target="introBtn"]')`
+    await page.evaluate(`${tool}.focus()`)
+    await page.evaluate(`${tool}.click()`)
+    await page.waitFor(isVisible("introModal"))
+    await page.click("#closeIntroBtn")
+    await page.waitFor(isHidden("introModal"))
+    await page.waitFor(`document.activeElement === ${tool}`)
+    assert.deepEqual(page.errors, [])
+  })
+
   it("speaks the review term on tap without flipping or closing the card", async () => {
     await browser.freshApp(page, { state: { version: 2, pronunciationEnabled: true, reviewCardFlipEnabled: true } })
     await page.click("#dockNextBtn")

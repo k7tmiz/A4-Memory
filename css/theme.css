@@ -226,6 +226,7 @@ body.theme-style-minimal {
   --cta: #0e1116;
   --ctaText: #ffffff;
   --cta-shadow: 0 10px 26px -10px rgba(14, 17, 22, 0.5);
+  --group-shadow: 0 1px 2px rgba(14, 17, 22, 0.04), 0 8px 24px -16px rgba(14, 17, 22, 0.12);
 }
 
 body.theme-dark.theme-style-minimal {
@@ -557,6 +558,11 @@ body.theme-style-swiss .settings-segmented > button {
   border-radius: 0;
 }
 
+body.theme-style-swiss .desktop-next-action,
+body.theme-style-swiss .desktop-next-action kbd {
+  border-radius: 0;
+}
+
 body.theme-style-swiss .app-next-action {
   border: 0;
   border-radius: 0;
@@ -693,6 +699,14 @@ body.theme-style-swiss .desktop-status-eyebrow::before {
   margin-right: 8px;
   background: var(--mark);
   vertical-align: 0;
+}
+
+body.theme-style-swiss #settingsModal .settings-accordion-content,
+body.theme-style-swiss #settingsModal #accountLoggedOut,
+body.theme-style-swiss #settingsModal #accountLoggedIn {
+  border: 0;
+  border-top: 2px solid var(--text);
+  background: var(--card);
 }
 
 body.theme-style-swiss .desktop-status-card {

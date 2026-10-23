@@ -42,7 +42,7 @@ describe("responsive application shell", () => {
   })
 
   it("uses a roomy full-width mobile dock instead of compressing the destinations", () => {
-    assert.match(shellStyle, /@media \(max-width:\s*700px\)[^]*?\.app-dock-shell\s*\{[^}]*bottom:\s*calc\(18px \+ env\(safe-area-inset-bottom\)\)[^}]*width:\s*min\(calc\(100vw - 16px\),\s*420px\)/s)
+    assert.match(shellStyle, /@media \(max-width:\s*700px\)[^]*?\.app-dock-shell\s*\{[^}]*bottom:\s*calc\(18px \+ env\(safe-area-inset-bottom\)\)[^}]*width:\s*min\(calc\(100vw - 2 \* var\(--page-gutter\)\),\s*420px\)/s)
     assert.match(shellStyle, /\.app-dock-nav\s*\{[^}]*flex:\s*1 1 auto/s)
     assert.match(shellStyle, /\.app-dock-item\s*\{[^}]*flex:\s*1 1 0/s)
     assert.match(shellStyle, /\.app-dock-item span\s*\{[^}]*max-width:\s*none[^}]*opacity:\s*1/s)
@@ -393,6 +393,18 @@ describe("study paper bounds and intro focus", () => {
   it("spreads restored words and falls back to the least-overlap position", () => {
     assert.match(appCode, /function renderCurrentRound[^]*?\n\s*fitPlacedWordsInPaper\(\)\n\s*spreadOverlappingWords\(\)/)
     assert.match(appCode, /function placeWordElement[^]*?overlapArea[^]*?total < bestOverlap/)
+  })
+
+  it("moves the next-word action into the desktop progress rail", () => {
+    assert.match(indexMarkup, /class="desktop-status-card"[^]*?id="desktopNextBtn"[^>]*aria-keyshortcuts="Space"/)
+    assert.match(shellStyle, /@media \(min-width: 1200px\)[^]*?body:not\(\.immersive\) \.app-dock-shell \.app-next-action\s*\{\s*display:\s*none/s)
+    assert.match(appCode, /desktopNextBtn\?\.addEventListener\("click", \(\) => dom\.nextBtn\.click\(\)\)/)
+  })
+
+  it("restores dialog focus only after the page is no longer inert", () => {
+    const layersCode = fs.readFileSync(path.join(ROOT, "js", "ui", "layers.js"), "utf8")
+    assert.match(layersCode, /unlockPage\(\)\n\s*if \(restoreFocus && !batchClosing\) restoreLayerFocus\(layer\)/)
+    assert.match(layersCode, /function withTriggerProxy\(target, proxy, run\)/)
   })
 
   it("presents dialogs as bottom sheets with sheet motion on phones", () => {

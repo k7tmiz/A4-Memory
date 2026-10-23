@@ -48,12 +48,29 @@
   media?.addEventListener?.("change", onSystemThemeChange)
   if (!media?.addEventListener) media?.addListener?.(onSystemThemeChange)
 
+  // 每次修改设置后，页眉状态短暂显示「已保存」并让状态点脉冲一次
+  let savedFlashTimer = 0
+  function flashSaved() {
+    const text = document.getElementById("settingsPageStatusText")
+    const status = text?.closest(".settings-page-status")
+    if (!text || !status) return
+    text.textContent = "已保存"
+    status.classList.remove("is-saved")
+    void status.offsetWidth
+    status.classList.add("is-saved")
+    window.clearTimeout(savedFlashTimer)
+    savedFlashTimer = window.setTimeout(() => {
+      text.textContent = "设置会自动保存在本机"
+      status.classList.remove("is-saved")
+    }, 1600)
+  }
+
   const controller = settings?.createSettingsModalController?.({
     getState: () => state,
     setState: (patch) => Object.assign(state, patch),
     persist,
     applyTheme,
-    onAfterChange: () => {},
+    onAfterChange: flashSaved,
     getWordbookLanguage,
     presentation: "page",
   })

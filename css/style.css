@@ -114,6 +114,8 @@ html {
   --radius-xl: 22px;
   --radius-pill: 999px;
   --radius-paper: 16px;
+  /* 手机两侧留白：随屏宽在 18–28px 间伸缩，内容不贴屏幕边缘 */
+  --page-gutter: clamp(18px, 5.5vw, 28px);
   --word-pad: 5px 9px;
   --word-pad-compact: 2px 5px;
   --word-radius: 9px;
@@ -1702,7 +1704,7 @@ body.android-wordbook-picker .wordbook-picker-btn {
   --swipe-opacity: 1;
   --swipe-right-alpha: 0;
   --swipe-left-alpha: 0;
-  transform: translate3d(var(--swipe-x), 0, 0) rotate(var(--swipe-rot));
+  transform: translate3d(var(--swipe-x), var(--swipe-y, 0px), 0) rotate(var(--swipe-rot));
   opacity: var(--swipe-opacity);
   transition:
     transform 220ms cubic-bezier(0.2, 0.9, 0.25, 1),
@@ -1712,6 +1714,49 @@ body.android-wordbook-picker .wordbook-picker-btn {
 .review-card,
 .review-card * {
   -webkit-user-drag: none;
+}
+
+/* 新卡片进入：使用独立的 scale / translate 属性，不干扰滑动所用的 transform */
+@keyframes a4-review-card-enter {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 12px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+.review-card.is-entering {
+  animation: a4-review-card-enter 320ms var(--motion-ease-out) backwards;
+}
+
+/* 桌面端在复习按钮上提示对应的方向键 */
+@media (hover: hover) and (pointer: fine) {
+  .review-btn::after {
+    margin-left: 8px;
+    padding: 0 6px;
+    border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+    border-radius: var(--radius-xs);
+    font-size: var(--fs-2xs);
+    font-weight: var(--fw-semibold);
+    opacity: 0.72;
+  }
+
+  .review-btn-unknown::after {
+    content: "←";
+  }
+
+  .review-btn-learning::after {
+    content: "↓";
+  }
+
+  .review-btn-known::after {
+    content: "→";
+  }
 }
 
 .review-card.is-dragging {
