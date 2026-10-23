@@ -44,6 +44,12 @@
     return layer?.querySelector?.(".modal-backdrop") || null
   }
 
+  // 窄屏下弹窗以底部面板呈现，统一使用自下而上的面板动效；页面式设置根节点除外
+  function isCompactSheetLayer(layer) {
+    if (layer?.classList?.contains?.("settings-page-root")) return false
+    return !!window.matchMedia?.("(max-width: 700px)")?.matches
+  }
+
   function getOriginTransform(sourceRect, panelRect, motion) {
     if (motion === "sheet") {
       const distance = Math.max(160, Math.round(Number(panelRect?.height) || 320))
@@ -402,7 +408,9 @@
         panel,
         backdrop,
         panelRect,
-        motion: options.motion || existingMotion?.motion || (sourceRect ? "origin" : "neutral"),
+        motion: isCompactSheetLayer(layer)
+          ? "sheet"
+          : options.motion || existingMotion?.motion || (sourceRect ? "origin" : "neutral"),
         animations: [],
       })
       if (!pageWasLocked) lockPage()

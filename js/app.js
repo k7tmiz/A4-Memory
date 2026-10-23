@@ -578,7 +578,12 @@
     badgeLabel.className = "badge-label"
     badgeLabel.textContent = `第${roundNo}轮 · 第${pageIndex + 1}/${pageCount}张`
     dom.roundBadge.replaceChildren(badgeCount, badgeLabel)
-    if (dom.mobileRoundBadge) dom.mobileRoundBadge.textContent = `${appState.placed.length} / ${cap}`
+    if (dom.mobileRoundBadge) {
+      const mobileCap = document.createElement("small")
+      mobileCap.textContent = ` / ${cap}`
+      dom.mobileRoundBadge.replaceChildren(String(appState.placed.length), mobileCap)
+      dom.mobileRoundBadge.style.setProperty("--round-progress", `${Math.min(100, (appState.placed.length / cap) * 100)}%`)
+    }
     if (dom.paperMeta) {
       const total = Array.isArray(round?.items) ? round.items.length : 0
       dom.paperMeta.textContent = `第 ${roundNo} 轮 · ${total} 个词`

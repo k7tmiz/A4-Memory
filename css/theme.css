@@ -584,6 +584,7 @@ body.theme-style-swiss .paper-toolbar-meta {
 }
 
 body.theme-style-swiss .paper-toolbar-action,
+body.theme-style-swiss .records-tools summary,
 body.theme-style-swiss .mobile-round-chip,
 body.theme-style-swiss .badge,
 body.theme-style-swiss .round-tag,
@@ -594,10 +595,6 @@ body.theme-style-swiss .account-badge,
 body.theme-style-swiss .records-focus-done,
 body.theme-style-swiss .announcement-item-badge {
   border-radius: 0;
-}
-
-body.theme-style-swiss .mobile-round-chip {
-  background: var(--mark);
 }
 
 body.theme-style-swiss .status-progress,
@@ -647,6 +644,14 @@ body.theme-style-swiss .records-focus {
   box-shadow: none;
 }
 
+body.theme-style-swiss .records-stat-grid {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 10px;
+}
+
 body.theme-style-swiss .records-stat-card {
   padding: 12px 2px 4px;
 }
@@ -683,9 +688,19 @@ body.theme-style-swiss .desktop-status-eyebrow::before {
   vertical-align: 0;
 }
 
-body.theme-style-swiss.home-page .home-controls .controls-row-wordbook,
 body.theme-style-swiss .desktop-status-card {
   border-top: 2px solid var(--text);
+}
+
+@media (min-width: 701px) {
+  body.theme-style-swiss.home-page .home-controls .controls-row-wordbook {
+    border-top: 2px solid var(--text);
+  }
+}
+
+body.theme-style-swiss .mobile-more-button {
+  border-radius: 0;
+  border-color: var(--text);
 }
 
 body.theme-style-swiss .desktop-status-card .status-meta-part::before,

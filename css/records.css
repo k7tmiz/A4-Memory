@@ -66,7 +66,7 @@ body.records-page .app.records {
   display: grid;
   place-items: center;
   border: 1px solid var(--border3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background: var(--control);
   color: var(--muted);
   cursor: pointer;
@@ -783,12 +783,26 @@ body.records-page .app.records .empty {
     margin-bottom: 13px;
   }
 
+  /* 三项统计合并为一张分栏卡片，减少手机上的方块堆叠 */
   .records-stat-grid {
-    gap: 7px;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card);
+    box-shadow: var(--shadow);
   }
 
   .records-stat-card {
-    padding: 12px;
+    padding: 14px 12px 13px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .records-stat-card + .records-stat-card {
+    border-left: 1px solid var(--border2);
   }
 
   .records-stat-card span {
@@ -835,7 +849,19 @@ body.records-page .app.records .empty {
   }
 
   .records-goal {
-    padding: 12px;
+    padding: 14px 0 0;
+    border: 0;
+    border-top: 1px solid var(--border2);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .records-focus-action {
+    min-height: 48px;
+  }
+
+  .round-primary-actions button {
+    min-height: 46px;
   }
 
   .round-summary {

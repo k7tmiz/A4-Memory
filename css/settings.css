@@ -1370,6 +1370,41 @@ body.theme-dark .account-oauth-btn:hover {
   }
 }
 
+/* 手机：标签与控件按内容比例分栏；文本输入、模型选择与账号表单改为上下排列 */
+@media (max-width: 520px) {
+  #settingsModal .form-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 12px;
+    padding: 13px 0;
+  }
+
+  #settingsModal .form-row:has(> .form-control > .text-input),
+  #settingsModal .form-row:has(.ai-model-control),
+  #settingsModal .account-panel .form-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+  }
+
+  #settingsModal .form-label {
+    font-size: var(--fs-sm);
+  }
+
+  #settingsModal select,
+  #settingsModal input.text-input,
+  #settingsModal input[type="number"] {
+    min-height: 46px;
+  }
+
+  #settingsModal .settings-accordion-card > .settings-card-header {
+    font-size: var(--fs-lg);
+  }
+
+  .settings-page-intro p {
+    font-size: var(--fs-sm);
+  }
+}
+
 @media (max-width: 370px) {
   body.settings-page .settings-page-main {
     padding-inline: max(8px, env(safe-area-inset-left));

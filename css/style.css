@@ -1901,8 +1901,21 @@ body.android-wordbook-picker .wordbook-picker-btn {
 
 .review-card-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* 按钮顺序与滑动方向一致：左滑不会，右滑已掌握 */
+.review-btn-unknown {
+  order: 1;
+}
+
+.review-btn-learning {
+  order: 2;
+}
+
+.review-btn-known {
+  order: 3;
 }
 
 .review-btn {
@@ -1932,25 +1945,11 @@ body.android-wordbook-picker .wordbook-picker-btn {
   color: var(--mark);
 }
 
-@media (min-width: 420px) {
-  .review-card-actions {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-}
-
 @media (max-width: 679px) {
-  .review-card-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
   .review-card-actions .review-btn {
-    flex: 0 0 calc(50% - 5px);
-  }
-
-  .review-card-actions .review-btn-unknown {
-    order: 3;
+    min-height: 52px;
+    padding-inline: 6px;
+    white-space: nowrap;
   }
 }
 
@@ -3084,6 +3083,79 @@ body.android-wordbook-picker .wordbook-picker-btn {
 
   .word-meaning {
     font-size: 8px;
+  }
+}
+
+/* 手机与 Android：所有弹窗以贴底面板呈现，顶部带拖拽指示条；页面式设置根节点除外 */
+@media (max-width: 700px) {
+  .modal:not(.settings-page-root),
+  .wordbook-picker-modal,
+  .android-select-picker-modal {
+    place-items: end stretch;
+    padding: max(28px, env(safe-area-inset-top)) 0 0;
+  }
+
+  .modal:not(.settings-page-root) .modal-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(92dvh, 860px);
+    border-bottom: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .modal:not(.settings-page-root) .modal-panel:not(.wordbook-picker-panel)::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 36px;
+    height: 4px;
+    margin: 8px auto 0;
+    border-radius: var(--radius-pill);
+    background: var(--border3);
+  }
+
+  .android-select-picker-panel {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .android-select-picker-panel.has-search {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+
+  .mobile-sheet-grab {
+    background: var(--border3);
+  }
+
+  .modal-header {
+    padding: 12px 12px 12px 18px;
+  }
+
+  .modal-body {
+    padding: 14px 16px 18px;
+  }
+
+  .lookup-modal .lookup-panel {
+    translate: none;
+  }
+
+  #updateModal {
+    padding: max(28px, env(safe-area-inset-top)) 0 0;
+  }
+
+  #updateModal .update-card {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(92dvh, 860px);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .review-card {
+    min-height: clamp(220px, 34dvh, 320px);
+    align-content: center;
+  }
+
+  .review-card-term {
+    font-size: clamp(2.1rem, 11vw, 2.8rem);
   }
 }
 

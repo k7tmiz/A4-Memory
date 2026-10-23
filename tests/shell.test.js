@@ -394,6 +394,14 @@ describe("study paper bounds and intro focus", () => {
     assert.match(appCode, /function placeWordElement[^]*?overlapArea[^]*?total < bestOverlap/)
   })
 
+  it("presents dialogs as bottom sheets with sheet motion on phones", () => {
+    const layersCode = fs.readFileSync(path.join(ROOT, "js", "ui", "layers.js"), "utf8")
+    assert.match(layersCode, /function isCompactSheetLayer\(layer\)[^}]*settings-page-root[^]*?matchMedia\?\.\("\(max-width: 700px\)"\)/)
+    assert.match(layersCode, /motion: isCompactSheetLayer\(layer\)\s*\?\s*"sheet"/)
+    assert.match(sharedStyle, /@media \(max-width: 700px\)[^]*?\.modal:not\(\.settings-page-root\) \.modal-panel\s*\{[^}]*border-radius:\s*var\(--radius-xl\) var\(--radius-xl\) 0 0/s)
+    assert.match(sharedStyle, /\.review-btn-unknown\s*\{\s*order:\s*1;[^]*?\.review-btn-known\s*\{\s*order:\s*3;/s)
+  })
+
   it("marks paper words with their review status on every render", () => {
     assert.match(appCode, /function renderCurrentRound[^]*?el\.dataset\.status = getPaperWordStatus\(item\)/)
     assert.match(appCode, /function renderStats[^]*?placed\.el\.dataset\.status = getPaperWordStatus\(placed\.roundItem\)/)
