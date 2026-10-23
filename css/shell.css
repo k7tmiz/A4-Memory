@@ -197,11 +197,11 @@
 }
 
 .app-view.a4-view-entering-forward {
-  animation: a4-view-enter-forward 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: a4-view-enter-forward var(--motion-duration-move) var(--motion-ease-out) both;
 }
 
 .app-view.a4-view-entering-back {
-  animation: a4-view-enter-back 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: a4-view-enter-back var(--motion-duration-move) var(--motion-ease-out) both;
 }
 
 .app-view.a4-view-leaving-forward {
@@ -225,11 +225,11 @@
 }
 
 #settingsModal .settings-category-panel.settings-panel-enter-forward {
-  animation: settings-panel-enter-forward 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: settings-panel-enter-forward var(--motion-duration-move) var(--motion-ease-out) both;
 }
 
 #settingsModal .settings-category-panel.settings-panel-enter-back {
-  animation: settings-panel-enter-back 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: settings-panel-enter-back var(--motion-duration-move) var(--motion-ease-out) both;
 }
 
 .paper-toolbar {
@@ -243,10 +243,8 @@
   justify-content: space-between;
   gap: 10px;
   border-bottom: 1px solid var(--border2);
-  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  background: var(--paper);
   color: var(--muted);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
 }
 
 .paper-toolbar-meta {
@@ -558,7 +556,7 @@
 
 .app-next-action svg,
 .paper-toolbar-action svg {
-  transition: transform 420ms var(--motion-ease-spring);
+  transition: transform var(--motion-duration-move) var(--motion-ease-out);
 }
 
 .app-next-action:active svg {
@@ -729,11 +727,11 @@
     stroke-width: 1.6;
     stroke-linecap: round;
     stroke-linejoin: round;
-    transition: stroke 160ms ease, transform 260ms var(--motion-ease-spring);
+    transition: stroke 160ms ease, transform var(--motion-duration-fast) var(--motion-ease-out);
   }
 
   .desktop-tools button span {
-    transition: transform 260ms var(--motion-ease-spring);
+    transition: transform var(--motion-duration-fast) var(--motion-ease-out);
   }
 
   .desktop-tools button kbd {
@@ -981,7 +979,7 @@
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linecap: round;
-  transition: transform 420ms var(--motion-ease-spring);
+  transition: transform var(--motion-duration-move) var(--motion-ease-out);
 }
 
 .desktop-next-action:hover svg,

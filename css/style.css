@@ -122,7 +122,10 @@ html {
   --word-weight: var(--fw-bold);
   --word-tracking: -0.01em;
   --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 全局动效：统一使用同一条减速曲线；位移类动效（视图、指示块、面板）共用 320ms，按压与悬停反馈 180ms */
+  --motion-ease-spring: var(--motion-ease-out);
+  --motion-ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-duration-move: 320ms;
   --motion-duration-fast: 180ms;
   --motion-duration-page: 300ms;
 }
@@ -142,7 +145,6 @@ body {
   font-family: var(--font-ui);
   color: var(--text);
   background: var(--bg-canvas, var(--bg));
-  background-attachment: fixed;
   min-height: 100dvh;
   -webkit-text-size-adjust: 100%;
   font-variant-numeric: tabular-nums;
@@ -351,7 +353,7 @@ button {
     border-color 160ms ease,
     color 160ms ease,
     box-shadow 200ms var(--motion-ease-out),
-    transform 320ms var(--motion-ease-spring);
+    transform var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 button:hover {
@@ -363,7 +365,7 @@ button:hover {
 button:active:not(:disabled),
 .button-link:active:not(.disabled) {
   transform: scale(0.97);
-  transition-duration: 160ms, 160ms, 160ms, 200ms, 90ms;
+  transition-duration: 120ms, 120ms, 120ms, 120ms, 90ms;
 }
 
 button:focus-visible,
@@ -3270,8 +3272,15 @@ body.android-wordbook-picker .wordbook-picker-btn {
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 380ms;
+  animation-duration: var(--motion-duration-move);
   animation-timing-function: var(--motion-ease-out);
+}
+
+/* 切换明暗与风格期间暂停所有逐元素过渡，避免各组件按不同速度变色；整页改由一次交叉淡入完成 */
+.a4-theme-switching *,
+.a4-theme-switching *::before,
+.a4-theme-switching *::after {
+  transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

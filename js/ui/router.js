@@ -5,8 +5,9 @@
     records: Object.freeze({ href: "./records.html", bodyClass: "records-page", title: "学习记录 - A4 Memory" }),
     settings: Object.freeze({ href: "./settings.html", bodyClass: "settings-page", title: "设置 - A4 Memory" }),
   })
-  const DEFAULT_EXIT_MS = 140
-  const DEFAULT_ENTER_MS = 280
+  // 视图切换为单段动效：旧视图立即让位，新视图与底栏指示块同节奏（320ms）进入，避免「先退场、停顿、再进场」
+  const DEFAULT_EXIT_MS = 0
+  const DEFAULT_ENTER_MS = 320
 
   function normalizeViewName(value) {
     const name = String(value || "").trim().toLowerCase()
