@@ -66,7 +66,7 @@
       modal,
       backdrop: modal.querySelector("#settingsBackdrop"),
       closeBtn: modal.querySelector("#closeSettingsBtn"),
-      themeModeSelect: modal.querySelector("#themeModeSelect"),
+      themeModeButtons: Array.from(modal.querySelectorAll("[data-theme-mode]")),
       themePaletteButtons: Array.from(modal.querySelectorAll("[data-theme-palette]")),
       dailyGoalRoundsInput: modal.querySelector("#dailyGoalRoundsInput"),
       dailyGoalWordsInput: modal.querySelector("#dailyGoalWordsInput"),
@@ -183,7 +183,6 @@
     window.A4Utils?.installAndroidSelectPicker?.(
       modal,
       [
-        "#themeModeSelect",
         "#dailyGoalRoundsInput",
         "#dailyGoalWordsInput",
         "#roundCapInput",
@@ -223,7 +222,10 @@
 
     function render() {
       const state = getStateSafe()
-      if (dom.themeModeSelect) dom.themeModeSelect.value = normalizeThemeMode(state?.themeMode)
+      const themeMode = normalizeThemeMode(state?.themeMode)
+      for (const button of dom.themeModeButtons) {
+        button.setAttribute("aria-checked", button.dataset.themeMode === themeMode ? "true" : "false")
+      }
       const themePalette = normalizeThemePalette(state?.themePalette)
       for (const button of dom.themePaletteButtons) {
         const active = button.dataset.themePalette === themePalette
@@ -337,19 +339,29 @@
     dom.backdrop?.addEventListener("click", () => close())
     dom.closeBtn?.addEventListener("click", () => close())
 
-    dom.themeModeSelect?.addEventListener("change", () => {
-      const themeMode = normalizeThemeMode(dom.themeModeSelect.value)
-      setStateSafe({ themeMode })
-      if (typeof applyTheme === "function") applyTheme()
-      persistSafe()
-      afterChange("themeMode")
-    })
+    // 切换明暗或视觉风格时整页交叉淡入
+    function applyThemeWithTransition() {
+      if (typeof applyTheme !== "function") return
+      if (window.A4Motion?.crossfade) window.A4Motion.crossfade(applyTheme)
+      else applyTheme()
+    }
+
+    for (const button of dom.themeModeButtons) {
+      button.addEventListener("click", () => {
+        const themeMode = normalizeThemeMode(button.dataset.themeMode)
+        setStateSafe({ themeMode })
+        applyThemeWithTransition()
+        render()
+        persistSafe()
+        afterChange("themeMode")
+      })
+    }
 
     for (const button of dom.themePaletteButtons) {
       button.addEventListener("click", () => {
         const themePalette = normalizeThemePalette(button.dataset.themePalette)
         setStateSafe({ themePalette })
-        if (typeof applyTheme === "function") applyTheme()
+        applyThemeWithTransition()
         render()
         persistSafe()
         afterChange("themePalette")

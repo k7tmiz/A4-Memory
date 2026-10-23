@@ -57,7 +57,8 @@ describe("responsive application shell", () => {
       assert.match(indexMarkup, new RegExp(`data-action-target="${target}"`))
     }
     assert.match(shellStyle, /\.mobile-more-menu\s*\{[^}]*animation:\s*a4-menu-enter/s)
-    assert.match(shellStyle, /\.desktop-tools-popover\s*\{[^}]*animation:\s*a4-menu-enter/s)
+    assert.match(indexMarkup, /<nav class="desktop-tools desktop-only" id="desktopToolsList" aria-label="学习工具">/)
+    assert.match(indexMarkup, /data-action-target="newRoundBtn"[^>]*aria-keyshortcuts="N"/)
   })
 
   it("places Review and Meaning in a shared paper toolbar while keeping real action targets", () => {
@@ -286,8 +287,8 @@ describe("responsive application shell", () => {
     assert.match(indexMarkup, /<body class="home-page"/)
     assert.doesNotMatch(indexMarkup, /<header class="app-header"/)
     assert.match(indexMarkup, /class="desktop-status-stack"/)
-    assert.match(indexMarkup, /id="desktopToolsBtn"[^>]*aria-expanded="false"/)
-    assert.match(indexMarkup, /id="desktopToolsPopover"/)
+    assert.match(indexMarkup, /id="desktopToolsList"/)
+    assert.doesNotMatch(indexMarkup, /id="desktopToolsPopover"/)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.home-page \.app\s*\{[^}]*justify-items:\s*center/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.home-page \.home-controls\s*\{[^}]*position:\s*fixed/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*\.desktop-status-stack\s*\{[^}]*position:\s*fixed/s)
@@ -298,7 +299,7 @@ describe("responsive application shell", () => {
   it("renders Records and Settings as desktop page surfaces above the shared dock", () => {
     assert.doesNotMatch(indexMarkup, /<header class="app-header"/)
     assert.match(indexMarkup, /data-a4-view="records"[^]*class="records-page-intro"/)
-    assert.match(indexMarkup, /id="recordsLookupBtn"[^>]*>查词<\/button>/)
+    assert.match(indexMarkup, /id="recordsLookupBtn"[^>]*>[\s\S]*?<span>查词<\/span><\/button>/)
     assert.match(recordsStyle, /body\.records-page \.app\.records\s*\{[^}]*width:\s*min\(100%,\s*1120px\)/s)
     assert.match(shellStyle, /@media \(min-width:\s*701px\)[^]*body\.settings-page \.settings-page-main\s*\{[^}]*padding-bottom:\s*96px/s)
   })

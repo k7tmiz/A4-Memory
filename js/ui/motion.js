@@ -63,7 +63,22 @@
     return true
   }
 
+  // 整页交叉淡入地执行一次界面更新（如切换明暗或视觉风格）；不支持、页面隐藏或要求减少动态效果时直接更新
+  function crossfade(update) {
+    if (typeof update !== "function") return
+    if (prefersReducedMotion() || document.hidden || typeof document.startViewTransition !== "function") {
+      update()
+      return
+    }
+    const transition = document.startViewTransition(() => update())
+    // 被跳过或中断的过渡会拒绝这些 Promise；更新已在回调中执行，忽略即可
+    for (const promise of [transition?.ready, transition?.finished, transition?.updateCallbackDone]) {
+      promise?.catch?.(() => {})
+    }
+  }
+
   window.A4Motion = Object.freeze({
+    crossfade,
     navigate,
     installPageTransitions,
     prefersReducedMotion,

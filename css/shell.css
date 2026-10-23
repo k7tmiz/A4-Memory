@@ -539,6 +539,46 @@
   transform: scale(0.97);
 }
 
+/* 底栏与纸面工具栏的图标微动效 */
+@keyframes a4-dock-icon-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.app-dock-item.active svg {
+  animation: a4-dock-icon-pop 420ms var(--motion-ease-out) both;
+}
+
+.app-next-action svg,
+.paper-toolbar-action svg {
+  transition: transform 420ms var(--motion-ease-spring);
+}
+
+.app-next-action:active svg {
+  transform: rotate(90deg) scale(0.9);
+}
+
+.paper-toolbar-action:active svg {
+  transform: scale(0.84);
+}
+
+@media (hover: hover) {
+  .app-next-action:hover svg {
+    transform: rotate(90deg);
+  }
+
+  #paperReviewBtn:hover svg {
+    transform: rotate(-50deg);
+  }
+}
+
 @media (min-width: 701px) {
   body.home-page {
     overflow: hidden;
@@ -650,72 +690,76 @@
     display: none;
   }
 
-  .desktop-tools-card {
-    position: relative;
-    display: block;
-  }
-
-  .desktop-tools-button {
-    width: 100%;
-    min-height: 42px;
-    padding: 0 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-radius: var(--radius-md);
-    background: transparent;
-    font-size: var(--fs-sm);
-    font-weight: var(--fw-semibold);
-  }
-
-  .desktop-tools-popover {
-    position: absolute;
-    z-index: 32;
-    top: calc(100% + 8px);
-    left: 0;
-    width: 100%;
-    padding: 6px;
+  /* 左栏常驻学习工具：图标 + 文字 + 快捷键，悬停时轻推与高亮 */
+  .desktop-tools {
+    padding-top: 16px;
     display: grid;
     gap: 2px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--surface);
-    box-shadow: var(--shadowModal);
-    transform-origin: top left;
-    animation: a4-menu-enter var(--motion-duration-fast) var(--motion-ease-out) both;
+    border-top: 1px solid var(--border);
   }
 
-  .desktop-tools-popover.hidden {
-    display: none;
+  .desktop-tools .desktop-section-label {
+    margin-bottom: 8px;
   }
 
-  .desktop-tools-popover button {
+  .desktop-tools button {
+    position: relative;
     min-height: 38px;
-    padding: 8px 12px;
+    margin: 0 -10px;
+    padding: 0 10px;
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 11px;
     border: 0;
     border-radius: var(--radius-sm);
     background: transparent;
-    box-shadow: none !important;
+    box-shadow: none;
     color: var(--text);
     text-align: left;
     font-size: var(--fs-sm);
-    font-weight: var(--fw-semibold);
-    transition: background 0.15s ease, color 0.15s ease;
+    font-weight: var(--fw-medium);
   }
 
-  .desktop-tools-popover button:hover {
-    background: var(--surfaceHover);
-    box-shadow: none !important;
-    transform: none;
+  .desktop-tools button svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 160ms ease, transform 260ms var(--motion-ease-spring);
   }
 
-  .desktop-tools-popover button span {
-    width: 22px;
+  .desktop-tools button span {
+    transition: transform 260ms var(--motion-ease-spring);
+  }
+
+  .desktop-tools button kbd {
+    margin-left: auto;
+    min-width: 20px;
+    padding: 1px 6px;
+    border: 1px solid var(--border3);
+    border-radius: var(--radius-xs);
     color: var(--muted);
+    font-family: var(--font-ui);
+    font-size: var(--fs-3xs);
+    font-weight: var(--fw-semibold);
     text-align: center;
+  }
+
+  .desktop-tools button:hover {
+    background: var(--surfaceHover);
+  }
+
+  .desktop-tools button:hover svg {
+    stroke: var(--text);
+    transform: scale(1.08);
+  }
+
+  .desktop-tools button:hover span {
+    transform: translateX(2px);
   }
 
   body.home-page .paper-wrap {

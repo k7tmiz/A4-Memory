@@ -15,7 +15,7 @@ function createClassList() {
   }
 }
 
-function loadMotion({ reducedMotion = false } = {}) {
+function loadMotion({ reducedMotion = false, startViewTransition } = {}) {
   const code = fs.readFileSync(motionPath, "utf8")
   const listeners = new Map()
   const body = {
@@ -27,6 +27,7 @@ function loadMotion({ reducedMotion = false } = {}) {
     body,
     readyState: "loading",
     addEventListener(type, listener) { listeners.set(type, listener) },
+    startViewTransition,
   }
   const window = {
     document,
@@ -82,5 +83,34 @@ describe("A4Motion page transitions", () => {
 
     assert.deepEqual(destinations, ["./records.html"])
     assert.equal(body.classList.contains("a4-page-leaving"), false)
+  })
+})
+
+describe("A4Motion crossfade", () => {
+  it("runs the update inside a view transition and swallows skipped-transition rejections", async () => {
+    const calls = []
+    const rejected = () => {
+      const promise = Promise.reject(new Error("Transition was skipped"))
+      return promise
+    }
+    const { A4Motion } = loadMotion({
+      startViewTransition(callback) {
+        calls.push("transition")
+        callback()
+        return { ready: rejected(), finished: rejected(), updateCallbackDone: Promise.resolve() }
+      },
+    })
+    A4Motion.crossfade(() => calls.push("update"))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    assert.deepEqual(calls, ["transition", "update"])
+  })
+
+  it("updates immediately when reduced motion is requested or the API is missing", () => {
+    for (const options of [{ reducedMotion: true, startViewTransition: () => assert.fail("no transition") }, {}]) {
+      const { A4Motion } = loadMotion(options)
+      let updated = false
+      A4Motion.crossfade(() => { updated = true })
+      assert.equal(updated, true)
+    }
   })
 })

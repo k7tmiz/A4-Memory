@@ -167,13 +167,11 @@ describe("A4 Memory end-to-end", { skip: findChrome() ? false : "未找到 Chrom
 
   it("persists the theme from settings and keeps the Google entry hidden", async () => {
     await browser.freshApp(page, { query: "?view=settings" })
-    await page.waitFor(`!!document.getElementById("themeModeSelect")`)
+    await page.waitFor(`!!document.querySelector('[data-theme-mode="dark"]')`)
     assert.equal(await page.evaluate(`document.getElementById("accountOauthEntry").offsetParent === null`), true)
-    await page.evaluate(`(() => {
-      const select = document.getElementById("themeModeSelect")
-      select.value = "dark"
-      select.dispatchEvent(new Event("change", { bubbles: true }))
-    })()`)
+    await page.click("#settingsTabAppearance")
+    await page.click('[data-theme-mode="dark"]')
+    assert.equal(await page.evaluate(`document.querySelector('[data-theme-mode="dark"]').getAttribute("aria-checked")`), "true")
     await page.waitFor(`document.body.classList.contains("theme-dark")`)
     await page.goto(`${browser.origin}/index.html`)
     await page.waitFor(`document.readyState === "complete" && document.body.classList.contains("theme-dark")`)

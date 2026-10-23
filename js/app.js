@@ -135,8 +135,7 @@
     paperMeaningLabel: document.getElementById("paperMeaningLabel"),
     paperImmersiveExitBtn: document.getElementById("paperImmersiveExitBtn"),
     dockNextBtn: document.getElementById("dockNextBtn"),
-    desktopToolsBtn: document.getElementById("desktopToolsBtn"),
-    desktopToolsPopover: document.getElementById("desktopToolsPopover"),
+    desktopToolsList: document.getElementById("desktopToolsList"),
     importWordbookBtn: document.getElementById("importWordbookBtn"),
     importFile: document.getElementById("importFile"),
     importModal: document.getElementById("importModal"),
@@ -1275,23 +1274,10 @@
   })
   dom.paperMeaningBtn?.addEventListener("click", () => dom.toggleMeaningBtn.click())
 
-  function setDesktopToolsVisible(visible) {
-    if (!dom.desktopToolsPopover) return
-    dom.desktopToolsPopover.classList.toggle("hidden", !visible)
-    dom.desktopToolsBtn?.setAttribute("aria-expanded", visible ? "true" : "false")
-  }
-
-  dom.desktopToolsBtn?.addEventListener("click", (event) => {
-    event.stopPropagation()
-    setDesktopToolsVisible(dom.desktopToolsPopover?.classList.contains("hidden") === true)
-  })
-
-  dom.desktopToolsPopover?.addEventListener("click", (event) => event.stopPropagation())
-  dom.desktopToolsPopover?.querySelectorAll("[data-action-target]").forEach((button) => {
+  // 桌面左栏常驻学习工具：直接转发到对应的功能按钮
+  dom.desktopToolsList?.querySelectorAll("[data-action-target]").forEach((button) => {
     button.addEventListener("click", () => {
-      const target = document.getElementById(button.dataset.actionTarget || "")
-      setDesktopToolsVisible(false)
-      target?.click?.()
+      document.getElementById(button.dataset.actionTarget || "")?.click?.()
     })
   })
 
@@ -1313,14 +1299,12 @@
   })
 
   document.addEventListener("click", (event) => {
-    setDesktopToolsVisible(false)
     if (dom.mobileMoreTools?.open && !dom.mobileMoreTools.contains(event.target)) {
       setMobileMoreVisible(false)
     }
   })
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return
-    setDesktopToolsVisible(false)
     setMobileMoreVisible(false)
   })
 
@@ -1457,7 +1441,8 @@
 
     if (k === "d") {
       appState.themeMode = appState.themeMode === "dark" ? "light" : "dark"
-      applyTheme()
+      if (window.A4Motion?.crossfade) window.A4Motion.crossfade(applyTheme)
+      else applyTheme()
       persist()
     }
   })
@@ -1492,7 +1477,6 @@
     enter: ({ initial }) => enterStudyView({ initial }),
     leave: () => {
       persistNow()
-      setDesktopToolsVisible(false)
       setMobileMoreVisible(false)
     },
     exit: persistNow,

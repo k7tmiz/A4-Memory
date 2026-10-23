@@ -466,20 +466,20 @@ describe("A4Settings responsive category navigation", () => {
     const tabs = [...navigation[1].matchAll(
       /<button class="settings-category-tab" id="([^"]+)" type="button" role="tab" aria-controls="([^"]+)" aria-selected="(true|false)" tabindex="(-?\d+)">([^<]+)<\/button>/g
     )]
-    assert.deepEqual(tabs.map((match) => match[5]), ["账号", "学习", "发音", "AI", "更多"])
+    assert.deepEqual(tabs.map((match) => match[5]), ["学习", "外观", "发音", "AI", "账号"])
     assert.deepEqual(tabs.map((match) => match[1]), [
-      "settingsTabAccount",
       "settingsTabLearning",
+      "settingsTabAppearance",
       "settingsTabPronunciation",
       "settingsTabAi",
-      "settingsTabMore",
+      "settingsTabAccount",
     ])
     assert.deepEqual(tabs.map((match) => match[2]), [
-      "settingsPanelAccount",
       "settingsPanelLearning",
+      "settingsPanelAppearance",
       "settingsPanelPronunciation",
       "settingsPanelAi",
-      "settingsPanelMore",
+      "settingsPanelAccount",
     ])
     assert.deepEqual(tabs.map((match) => match[3]), ["true", "false", "false", "false", "false"])
     assert.deepEqual(tabs.map((match) => match[4]), ["0", "-1", "-1", "-1", "-1"])
@@ -493,21 +493,28 @@ describe("A4Settings responsive category navigation", () => {
   })
 
   it("maps every settings group into permanent open bento cards", () => {
-    const account = getCategoryPanelMarkup("settingsPanelAccount", "settingsPanelLearning")
-    const learning = getCategoryPanelMarkup("settingsPanelLearning", "settingsPanelPronunciation")
+    const learning = getCategoryPanelMarkup("settingsPanelLearning", "settingsPanelAppearance")
+    const appearance = getCategoryPanelMarkup("settingsPanelAppearance", "settingsPanelPronunciation")
     const pronunciation = getCategoryPanelMarkup("settingsPanelPronunciation", "settingsPanelAi")
-    const ai = getCategoryPanelMarkup("settingsPanelAi", "settingsPanelMore")
-    const more = getCategoryPanelMarkup("settingsPanelMore")
+    const ai = getCategoryPanelMarkup("settingsPanelAi", "settingsPanelAccount")
+    const account = getCategoryPanelMarkup("settingsPanelAccount")
 
     assert.match(account, /<section class="panel account-panel" id="accountPanel">/)
-    assert.doesNotMatch(account, /settings-accordion-card/)
-    assertAccordionGroups(learning, ["外观与目标", "复习节奏", "学习体验"])
+    assertAccordionGroups(learning, ["每日目标", "复习节奏", "学习体验"])
+    assertAccordionGroups(appearance, ["视觉风格", "明暗模式"])
     assertAccordionGroups(pronunciation, ["发音方式", "离线语音包", "系统语音"])
-    assertAccordionGroups(ai, ["模型配置", "生成参数"])
-    assertAccordionGroups(more, ["联网补充", "数据管理", "版本信息"])
+    assertAccordionGroups(ai, ["模型配置", "生成参数", "查词补充"])
+    assertAccordionGroups(account, ["数据管理", "版本信息"])
+
+    for (const id of ["themePaletteGroup", "themeModeGroup"]) {
+      assert.match(appearance, new RegExp(`id="${id}"`), `${id} should be in 外观`)
+    }
+    for (const mode of ["auto", "light", "dark"]) {
+      assert.match(appearance, new RegExp(`role="radio" data-theme-mode="${mode}"`))
+    }
 
     for (const id of [
-      "themeModeSelect", "dailyGoalRoundsInput", "dailyGoalWordsInput", "roundCapInput",
+      "dailyGoalRoundsInput", "dailyGoalWordsInput", "roundCapInput",
       "reviewSystemToggleBtn", "reviewIntervalsPanel", "reviewUnknownDaysInput",
       "reviewLearningDaysInput", "reviewMasteredDaysInput", "continuousStudyModeToggleBtn",
       "reviewCardFlipToggleBtn",
@@ -527,9 +534,13 @@ describe("A4Settings responsive category navigation", () => {
 
     for (const id of [
       "lookupOnlineToggleBtn", "lookupOnlineSourceSelect", "lookupSpanishToggleBtn",
-      "lookupCacheToggleBtn", "lookupCacheDaysInput", "exportBackupBtn", "importBackupBtn",
-      "importBackupFile", "versionPanel", "versionText", "checkUpdateBtn", "updateStatus",
-    ]) assert.match(more, new RegExp(`id="${id}"`), `${id} should be in 更多`)
+      "lookupCacheToggleBtn", "lookupCacheDaysInput",
+    ]) assert.match(ai, new RegExp(`id="${id}"`), `${id} should be in AI`)
+
+    for (const id of [
+      "exportBackupBtn", "importBackupBtn", "importBackupFile", "versionPanel", "versionText",
+      "checkUpdateBtn", "updateStatus",
+    ]) assert.match(account, new RegExp(`id="${id}"`), `${id} should be in 账号`)
   })
 
   it("activates categories on click and with wrapping arrow, Home, and End keys", () => {

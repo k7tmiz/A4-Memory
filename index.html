@@ -17,11 +17,11 @@
     <link rel="mask-icon" href="./assets/mask-icon.svg" color="#0b1220" />
     <link rel="apple-touch-icon" href="./assets/icon.svg" />
     <link rel="preload" href="./assets/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="./css/style.css?v=927e857bb3" />
-    <link rel="stylesheet" href="./css/theme.css?v=fc36fb333a" />
-    <link rel="stylesheet" href="./css/shell.css?v=9f5368e9a2" />
-    <link rel="stylesheet" href="./css/records.css?v=bd99ca282e" />
-    <link rel="stylesheet" href="./css/settings.css?v=605d29f6a7" />
+    <link rel="stylesheet" href="./css/style.css?v=341dac8958" />
+    <link rel="stylesheet" href="./css/theme.css?v=5110cf8e9e" />
+    <link rel="stylesheet" href="./css/shell.css?v=04ed655e23" />
+    <link rel="stylesheet" href="./css/records.css?v=af112018d1" />
+    <link rel="stylesheet" href="./css/settings.css?v=6623aa4453" />
   </head>
   <body class="home-page" data-a4-current-view="study">
     <div class="app-view-stage" id="appViewStage">
@@ -76,11 +76,11 @@
               <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.4"></circle><circle cx="10" cy="10" r="1.4"></circle><circle cx="16" cy="10" r="1.4"></circle></svg>
             </summary>
             <div class="mobile-more-menu" id="mobileMoreMenu">
-              <button data-action-target="newRoundBtn" type="button">新建一轮</button>
-              <button data-action-target="lookupBtn" type="button">查词</button>
-              <button data-action-target="importWordbookBtn" type="button">导入词书</button>
-              <button data-action-target="toggleImmersiveBtn" type="button">沉浸模式</button>
-              <button data-action-target="introBtn" type="button">用法介绍</button>
+              <button data-action-target="newRoundBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.5h6.2l3.8 3.8v9.2H5z"></path><path d="M11 3.5v4h4"></path><path d="M10 10v4.2M7.9 12.1h4.2"></path></svg><span>新建一轮</span></button>
+              <button data-action-target="lookupBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.8" cy="8.8" r="5.1"></circle><path d="m12.6 12.6 3.9 3.9"></path></svg><span>查词</span></button>
+              <button data-action-target="importWordbookBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v9.2"></path><path d="m6.6 9.4 3.4 3.4 3.4-3.4"></path><path d="M4 13.6v2.9h12v-2.9"></path></svg><span>导入词书</span></button>
+              <button data-action-target="toggleImmersiveBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 3.5h-4v4"></path><path d="M12.5 3.5h4v4"></path><path d="M7.5 16.5h-4v-4"></path><path d="M12.5 16.5h4v-4"></path></svg><span>沉浸模式</span></button>
+              <button data-action-target="introBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.6"></circle><path d="M8.1 8.1a1.95 1.95 0 1 1 2.7 1.8c-.5.2-.8.6-.8 1.1v.5"></path><path d="M10 13.7v.1"></path></svg><span>用法介绍</span></button>
             </div>
           </details>
           <input id="importFile" type="file" accept=".csv,.txt,.json" hidden />
@@ -89,18 +89,14 @@
           <button class="ghost" id="toggleMeaningBtn" type="button">显示释义：关</button>
           <button class="ghost" id="toggleImmersiveBtn" type="button">沉浸模式：关</button>
         </div>
-        <div class="desktop-tools-card desktop-only">
-          <button class="desktop-tools-button" id="desktopToolsBtn" type="button" aria-haspopup="true" aria-expanded="false">
-            <span>更多学习工具</span><span aria-hidden="true">•••</span>
-          </button>
-          <div class="desktop-tools-popover hidden" id="desktopToolsPopover" aria-label="更多学习工具">
-            <button data-action-target="newRoundBtn" type="button"><span aria-hidden="true">＋</span>新建一轮</button>
-            <button data-action-target="lookupBtn" type="button"><span aria-hidden="true">⌕</span>查词</button>
-            <button data-action-target="importWordbookBtn" type="button"><span aria-hidden="true">⇧</span>导入词书</button>
-            <button data-action-target="toggleImmersiveBtn" type="button"><span aria-hidden="true">◫</span>沉浸模式</button>
-            <button data-action-target="introBtn" type="button"><span aria-hidden="true">?</span>用法介绍</button>
-          </div>
-        </div>
+        <nav class="desktop-tools desktop-only" id="desktopToolsList" aria-label="学习工具">
+          <span class="desktop-section-label">学习工具</span>
+          <button data-action-target="newRoundBtn" type="button" aria-keyshortcuts="N"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.5h6.2l3.8 3.8v9.2H5z"></path><path d="M11 3.5v4h4"></path><path d="M10 10v4.2M7.9 12.1h4.2"></path></svg><span>新建一轮</span><kbd>N</kbd></button>
+          <button data-action-target="lookupBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.8" cy="8.8" r="5.1"></circle><path d="m12.6 12.6 3.9 3.9"></path></svg><span>查词</span></button>
+          <button data-action-target="importWordbookBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v9.2"></path><path d="m6.6 9.4 3.4 3.4 3.4-3.4"></path><path d="M4 13.6v2.9h12v-2.9"></path></svg><span>导入词书</span></button>
+          <button data-action-target="toggleImmersiveBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 3.5h-4v4"></path><path d="M12.5 3.5h4v4"></path><path d="M7.5 16.5h-4v-4"></path><path d="M12.5 16.5h4v-4"></path></svg><span>沉浸模式</span></button>
+          <button data-action-target="introBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.6"></circle><path d="M8.1 8.1a1.95 1.95 0 1 1 2.7 1.8c-.5.2-.8.6-.8 1.1v.5"></path><path d="M10 13.7v.1"></path></svg><span>用法介绍</span></button>
+        </nav>
       </section>
 
       <section class="page-nav hidden" id="pageNav" aria-label="A4 翻页">
@@ -114,11 +110,11 @@
           <div class="paper-toolbar">
             <span class="paper-toolbar-meta" id="paperMeta">第 1 轮 · 0 个词</span>
             <div class="paper-toolbar-actions">
-              <button class="paper-toolbar-action" id="paperReviewBtn" type="button">
+              <button class="paper-toolbar-action" id="paperReviewBtn" type="button" title="复习本轮（R）" aria-keyshortcuts="R">
                 <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.3 7.5a6.2 6.2 0 1 1 1.6 6.6"></path><path d="M4.3 3.8v3.7H8"></path></svg>
                 <span>复习</span>
               </button>
-              <button class="paper-toolbar-action" id="paperMeaningBtn" type="button" aria-pressed="false">
+              <button class="paper-toolbar-action" id="paperMeaningBtn" type="button" aria-pressed="false" title="显示 / 隐藏释义（M）" aria-keyshortcuts="M">
                 <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 10s2.7-4.4 7.5-4.4 7.5 4.4 7.5 4.4-2.7 4.4-7.5 4.4S2.5 10 2.5 10Z"></path><circle cx="10" cy="10" r="2"></circle></svg>
                 <span id="paperMeaningLabel">释义关</span>
               </button>
@@ -144,12 +140,12 @@
               <p>先处理今天，再回看每一轮。</p>
             </div>
             <details class="records-tools no-print">
-              <summary id="recordsToolsBtn" aria-label="记录工具">•••</summary>
+              <summary id="recordsToolsBtn" aria-label="记录工具"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.4"></circle><circle cx="10" cy="10" r="1.4"></circle><circle cx="16" cy="10" r="1.4"></circle></svg></summary>
               <div class="records-tools-menu" id="recordsToolsMenu">
-                <button id="recordsLookupBtn" type="button">查词</button>
-                <button id="exportCsvBtn" type="button">导出全部 CSV</button>
-                <button id="printPdfBtn" type="button">导出全部 PDF</button>
-                <button id="clearBtn" type="button">清空记录</button>
+                <button id="recordsLookupBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.8" cy="8.8" r="5.1"></circle><path d="m12.6 12.6 3.9 3.9"></path></svg><span>查词</span></button>
+                <button id="exportCsvBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 4.5h13v11h-13z"></path><path d="M3.5 8.2h13M3.5 11.8h13M8 4.5v11"></path></svg><span>导出全部 CSV</span></button>
+                <button id="printPdfBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 3.5h6.2l3.8 3.8v9.2H5z"></path><path d="M11 3.5v4h4"></path><path d="M7.6 11.2h4.8M7.6 13.8h3.2"></path></svg><span>导出全部 PDF</span></button>
+                <button id="clearBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 6h12"></path><path d="M8 6V4.2h4V6"></path><path d="M5.6 6l.8 10.3h7.2L14.4 6"></path></svg><span>清空记录</span></button>
               </div>
             </details>
           </div>
@@ -190,7 +186,7 @@
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5h13M3.5 10h13M3.5 15h13"></path><circle cx="7" cy="5" r="1.4"></circle><circle cx="13" cy="10" r="1.4"></circle><circle cx="8.5" cy="15" r="1.4"></circle></svg><span>设置</span>
         </a>
       </nav>
-      <button class="app-next-action" id="dockNextBtn" type="button">
+      <button class="app-next-action" id="dockNextBtn" type="button" aria-keyshortcuts="Space">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12"></path></svg><span>下一个单词</span>
       </button>
     </div>
@@ -460,7 +456,7 @@ ability,n.,能力</pre>
     <script src="./js/core/common.js?v=051ddf834e"></script>
     <script src="./js/core/state-schema.js?v=508e24334c"></script>
     <script src="./js/ui/layers.js?v=5ba7c1dd2c"></script>
-    <script src="./js/ui/motion.js?v=990d3b4df3"></script>
+    <script src="./js/ui/motion.js?v=d771d65889"></script>
     <script src="./js/ui/router.js?v=a7e199ed99"></script>
     <script src="./js/ui/dock-glass.js?v=c808506626"></script>
     <script src="./js/core/sanitize.js?v=b8c20c20bf"></script>
@@ -474,11 +470,11 @@ ability,n.,能力</pre>
     <script src="./js/settings/ai.js?v=308143d912"></script>
     <script src="./js/settings/account.js?v=b82310142b"></script>
     <script src="./js/settings/tts.js?v=946a3ab496"></script>
-    <script src="./js/settings/dom.js?v=589918bb2f"></script>
+    <script src="./js/settings/dom.js?v=edd9566636"></script>
     <script src="./js/settings/account-settings.js?v=ce74c30da1"></script>
     <script src="./js/settings/voice-settings.js?v=4e43d7e52e"></script>
     <script src="./js/settings/ai-settings.js?v=b3192c9b99"></script>
-    <script src="./js/settings/controller.js?v=4dbecea054"></script>
+    <script src="./js/settings/controller.js?v=36007607b2"></script>
     <script src="./js/settings.js?v=9467cb3f30"></script>
     <script src="./js/lookup.js?v=50aa0ae6e4"></script>
     <script src="./js/app/wordbook-io.js?v=36222150bd"></script>
@@ -488,7 +484,7 @@ ability,n.,能力</pre>
     <script src="./js/app/wordbook-manager.js?v=5d2859e640"></script>
     <script src="./js/app/review-modal.js?v=50aab05f31"></script>
     <script src="./js/app/word-picker.js?v=60eed442a7"></script>
-    <script src="./js/app.js?v=4077798534"></script>
+    <script src="./js/app.js?v=c28ced806d"></script>
     <script src="./js/records.js?v=b0519954ce"></script>
     <script src="./js/settings-page.js?v=3b6611c35a"></script>
   </body>

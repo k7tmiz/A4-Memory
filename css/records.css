@@ -136,6 +136,10 @@ body.records-page .app.records {
   color: var(--records-danger);
 }
 
+.records-tools-menu #clearBtn svg {
+  color: var(--records-danger);
+}
+
 .records-view-switch {
   --records-view-index: 0;
   position: relative;
