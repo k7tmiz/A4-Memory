@@ -64,14 +64,20 @@ body.settings-page #settingsModal .modal-panel {
   border-radius: var(--radius-md);
 }
 
-/* 1. Header & Page Intro */
+/* 1. Header & Page Intro：与内容同一阅读栏，保存状态随说明文字排在标题下方 */
+#settingsModal .settings-page-intro,
+#settingsModal .settings-shell {
+  width: min(100%, 720px);
+  margin-inline: auto;
+}
+
 .settings-page-intro {
   min-width: 0;
-  margin-bottom: clamp(18px, 2.5vw, 24px);
+  margin-bottom: clamp(24px, 3.5vw, 36px);
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
   color: var(--text);
   padding-bottom: 0;
 }
@@ -109,7 +115,7 @@ body.settings-page #settingsModal .modal-panel {
 }
 
 .settings-page-status {
-  min-height: 36px;
+  min-height: 0;
   padding: 0;
   flex: 0 0 auto;
   display: inline-flex;
@@ -339,7 +345,7 @@ body.settings-page #settingsModal .settings-category-tabs {
 #settingsModal .settings-accordion-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  gap: clamp(40px, 6vw, 56px);
   align-items: start;
   counter-reset: settings-section;
 }
@@ -427,7 +433,8 @@ body.settings-page #settingsModal .settings-category-tabs {
 /* 4. Form Layouts & Seamless Rows */
 #settingsModal .form-row {
   margin: 0;
-  padding: 12px 0;
+  min-height: 60px;
+  padding: 14px 0;
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr);
   align-items: center;
@@ -442,12 +449,13 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 /* 说明文字紧贴所属的表单行，分隔线移到说明下方 */
 #settingsModal .form-row:has(+ .form-help) {
-  padding-bottom: 6px;
+  min-height: 0;
+  padding-bottom: 4px;
   border-bottom: 0;
 }
 
 #settingsModal .settings-accordion-content > .form-help {
-  padding-bottom: 12px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--border2);
 }
 
@@ -457,8 +465,18 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 #settingsModal .form-label {
   color: var(--text);
-  font-size: var(--fs-md);
+  font-size: var(--fs-base);
   font-weight: var(--fw-semibold);
+}
+
+/* 说明文字作为所属设置的注释：较小、限宽、行距放松 */
+#settingsModal .settings-accordion-content > .form-help,
+#settingsModal .account-panel .form-help {
+  /* 文字限宽但分隔线保持通栏 */
+  padding-right: max(0px, calc(100% - 36em));
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: 1.65;
 }
 
 #settingsModal .form-control {
@@ -659,7 +677,7 @@ body.settings-page #settingsModal .settings-category-tabs {
 }
 
 #settingsModal #settingsPanelAccount .settings-account-extras {
-  margin-top: 36px;
+  margin-top: clamp(40px, 6vw, 56px);
   counter-reset: none;
 }
 
@@ -698,7 +716,7 @@ body.settings-page #settingsModal .settings-category-tabs {
 
 /* 登录 / 注册 / 重置表单保持易读宽度，不随桌面宽度拉长 */
 #settingsModal #accountLoggedOut {
-  max-width: 560px;
+  max-width: 100%;
 }
 
 #settingsModal .view-tabs.account-tabs {
@@ -743,6 +761,12 @@ body.settings-page #settingsModal .settings-category-tabs {
   justify-content: flex-end;
 }
 
+#settingsModal .form-control:has(.settings-compact-select) .android-select-picker-btn {
+  width: auto;
+  min-width: 6.4em;
+  min-height: 42px;
+}
+
 #settingsModal select.settings-compact-select {
   width: auto;
   min-width: 5.6em;
@@ -751,7 +775,8 @@ body.settings-page #settingsModal .settings-category-tabs {
   padding: 6px 28px 6px 12px;
 }
 
-.settings-switch {
+.settings-switch,
+#settingsModal .settings-switch {
   width: 52px;
   height: 32px;
   padding: 0;
@@ -1326,16 +1351,18 @@ body.theme-dark .account-oauth-btn:hover {
   }
 }
 
+/* 桌面：单一居中阅读栏。分区自上而下排列，留足行距与分区间距，避免仪表盘式的双栏拥挤 */
 @media (min-width: 760px) {
   #settingsModal .settings-shell {
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
+    gap: 36px;
   }
 
   #settingsModal .settings-category-tabs {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    width: min(100%, 640px);
+    width: 100%;
   }
 
   #settingsModal .settings-category-tab {
@@ -1344,64 +1371,9 @@ body.theme-dark .account-oauth-btn:hover {
     font-size: var(--fs-md);
   }
 
-  #settingsModal .settings-accordion-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-  }
-
-  /* Balanced Learning Tab：左列每日目标与学习体验，右列较长的复习节奏 */
-  #settingsPanelLearning .settings-accordion-grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-  }
-
-  #settingsPanelLearning .settings-accordion-card:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  #settingsPanelLearning .settings-accordion-card:nth-child(2) {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-
-  #settingsPanelLearning .settings-accordion-card:nth-child(3) {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  /* Pronunciation Tab */
-  #settingsPanelPronunciation .settings-accordion-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  #settingsPanelPronunciation .settings-accordion-card:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  #settingsPanelPronunciation .settings-accordion-card:nth-child(3) {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  #settingsPanelPronunciation .settings-accordion-card:nth-child(2) {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  #settingsModal .settings-accordion-wide {
-    grid-column: 1 / -1;
-  }
-
-  /* AI Tab */
-  #settingsPanelAi .settings-accordion-grid {
-    grid-template-columns: 1.15fr 1fr;
-  }
-
-  /* Account Tab：账号表单下方并排数据管理与版本信息 */
-  #settingsPanelAccount .settings-account-extras {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  #settingsModal .form-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 24px;
   }
 }
 
@@ -1409,9 +1381,9 @@ body.theme-dark .account-oauth-btn:hover {
   body.settings-page .settings-page-main {
     padding:
       max(18px, env(safe-area-inset-top))
-      max(12px, env(safe-area-inset-right))
+      max(16px, env(safe-area-inset-right))
       calc(120px + env(safe-area-inset-bottom))
-      max(12px, env(safe-area-inset-left));
+      max(16px, env(safe-area-inset-left));
   }
 
   .settings-page-intro {
@@ -1547,7 +1519,7 @@ body.theme-dark .account-oauth-btn:hover {
 
 @media (max-width: 370px) {
   body.settings-page .settings-page-main {
-    padding-inline: max(8px, env(safe-area-inset-left));
+    padding-inline: max(14px, env(safe-area-inset-left));
   }
 
   #settingsModal .settings-category-tabs {
