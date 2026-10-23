@@ -1128,6 +1128,11 @@ body.android-wordbook-picker .wordbook-picker-btn {
   animation: a4-layer-fallback-exit 210ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
+/* 居中卡片式弹窗略高于几何中心，视觉上更居中 */
+.modal.modal-centered .modal-panel {
+  translate: 0 clamp(-56px, -6dvh, -24px);
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -3138,14 +3143,14 @@ body.android-wordbook-picker .wordbook-picker-btn {
 
 /* 手机与 Android：所有弹窗以贴底面板呈现，顶部带拖拽指示条；页面式设置根节点除外 */
 @media (max-width: 700px) {
-  .modal:not(.settings-page-root),
+  .modal:not(.settings-page-root):not(.modal-centered),
   .wordbook-picker-modal,
   .android-select-picker-modal {
     place-items: end stretch;
     padding: max(28px, env(safe-area-inset-top)) 0 0;
   }
 
-  .modal:not(.settings-page-root) .modal-panel {
+  .modal:not(.settings-page-root):not(.modal-centered) .modal-panel {
     width: 100%;
     max-width: 100%;
     max-height: min(92dvh, 860px);
@@ -3154,7 +3159,7 @@ body.android-wordbook-picker .wordbook-picker-btn {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  .modal:not(.settings-page-root) .modal-panel:not(.wordbook-picker-panel)::before {
+  .modal:not(.settings-page-root):not(.modal-centered) .modal-panel:not(.wordbook-picker-panel)::before {
     content: "";
     flex: 0 0 auto;
     width: 36px;
@@ -3186,6 +3191,17 @@ body.android-wordbook-picker .wordbook-picker-btn {
 
   .lookup-modal .lookup-panel {
     translate: none;
+  }
+
+  /* 复习卡居中浮起而不是贴底：注意力在卡片上，按钮仍在拇指可及范围 */
+  .modal.modal-centered {
+    padding: max(20px, env(safe-area-inset-top)) var(--page-gutter) max(20px, env(safe-area-inset-bottom));
+  }
+
+  .modal.modal-centered .modal-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(84dvh, 760px);
   }
 
   #updateModal {

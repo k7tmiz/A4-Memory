@@ -46,9 +46,10 @@
     return layer?.querySelector?.(".modal-backdrop") || null
   }
 
-  // 窄屏下弹窗以底部面板呈现，统一使用自下而上的面板动效；页面式设置根节点除外
+  // 窄屏下弹窗以底部面板呈现，统一使用自下而上的面板动效；页面式设置根节点与居中卡片式弹窗（复习）除外
   function isCompactSheetLayer(layer) {
     if (layer?.classList?.contains?.("settings-page-root")) return false
+    if (layer?.classList?.contains?.("modal-centered")) return false
     return !!window.matchMedia?.("(max-width: 700px)")?.matches
   }
 
