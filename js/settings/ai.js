@@ -7,6 +7,15 @@
   const common = window.A4Common || {}
   const normalizeAiProvider = common.normalizeAiProvider
 
+  // 必须是各页面与 Tauri CSP connect-src 已放行的官方源。不要在这里加入任意 HTTPS 域名。
+  const AI_ALLOWED_ORIGINS = Object.freeze([
+    "https://api.openai.com",
+    "https://generativelanguage.googleapis.com",
+    "https://api.deepseek.com",
+    "https://api.anthropic.com",
+    "https://api.siliconflow.cn",
+  ])
+
   const AI_PROVIDER_PRESETS = {
     openai: {
       baseUrl: "https://api.openai.com/v1",
@@ -73,7 +82,30 @@
     return raw
   }
 
+  function describeAiEndpoint(baseUrl) {
+    const text = String(baseUrl || "").trim()
+    if (!text) return { ok: false, code: "empty", reason: "请先填写 API Base URL。" }
+    let url
+    try {
+      url = new URL(text)
+    } catch {
+      return { ok: false, code: "invalid", reason: "请先填写有效的 HTTPS API Base URL。" }
+    }
+    if (url.protocol !== "https:" || url.username || url.password) {
+      return { ok: false, code: "invalid", reason: "请先填写有效的 HTTPS API Base URL。" }
+    }
+    if (!AI_ALLOWED_ORIGINS.includes(url.origin)) {
+      return {
+        ok: false,
+        code: "blocked",
+        reason: "这个地址不在应用允许的连接范围内。请改用 OpenAI、Gemini、DeepSeek、Anthropic 或 SiliconFlow 的官方接口。",
+      }
+    }
+    return { ok: true, code: "", reason: "", origin: url.origin }
+  }
+
   function buildChatCompletionsUrl(baseUrl) {
+    if (!describeAiEndpoint(baseUrl).ok) return ""
     const b = String(baseUrl || "").trim().replace(/\/+$/, "")
     if (!b) return ""
     if (!b.startsWith("https://")) return ""
@@ -85,6 +117,7 @@
   }
 
   function buildModelsUrl(baseUrl) {
+    if (!describeAiEndpoint(baseUrl).ok) return ""
     const b = String(baseUrl || "").trim().replace(/\/+$/, "")
     if (!b || !b.startsWith("https://")) return ""
     if (b.endsWith("/models")) return b
@@ -176,6 +209,8 @@
     AI_PROVIDER_PRESETS,
     getAiPreset,
     getAiEndpointOrigin,
+    AI_ALLOWED_ORIGINS,
+    describeAiEndpoint,
     shouldResetAiApiKey,
     computeAiConfigOnProviderChange,
     stripJsonFromText,

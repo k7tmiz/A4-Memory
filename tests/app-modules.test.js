@@ -85,6 +85,22 @@ describe("app modules", () => {
     assert.equal(wordbookIo.inferWordbookLanguage({ words: [{ term: "hello" }] }), "")
   })
 
+  it("ranks wordbook files over the import limit below importable files", () => {
+    const oversized = wordbookIo.scoreGithubJsonPath("words/json-simple/cet4.json", 2 * 1024 * 1024)
+    const importable = wordbookIo.scoreGithubJsonPath("words/cet4.json", 200 * 1024)
+    assert.ok(oversized < importable)
+  })
+
+  it("stops reading a remote wordbook once it exceeds 1 MB", async () => {
+    await assert.rejects(
+      () => wordbookIo.readBoundedResponseText({
+        headers: { get: () => String(2 * 1024 * 1024) },
+        text: () => Promise.reject(new Error("should not read the body")),
+      }),
+      /1 MB/
+    )
+  })
+
   it("extracts remote wordbooks and derives unique names", () => {
     const book = wordbookIo.extractWordbookFromRemoteJson({
       title: "  Core  Words ",

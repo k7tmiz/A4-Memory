@@ -568,6 +568,74 @@
     return { term, pos, meaning, example, tags, lang }
   }
 
+  // 与可同步的词书规模对齐：先拒掉过大的文件，再限制词数和字段长度。
+  const MAX_WORDBOOK_WORDS = 5000
+  const MAX_WORDBOOK_FILE_BYTES = 1024 * 1024
+  const MAX_WORD_FIELD_CHARS = 2000
+  const MAX_CUSTOM_WORDBOOKS = 200
+  const MAX_WORDBOOK_NAME_CHARS = 500
+  const MAX_WORDBOOK_DESCRIPTION_CHARS = 5000
+
+  function utf8ByteLength(value) {
+    const text = String(value ?? "")
+    let bytes = 0
+    for (let i = 0; i < text.length; i += 1) {
+      const code = text.charCodeAt(i)
+      if (code < 0x80) bytes += 1
+      else if (code < 0x800) bytes += 2
+      else if (code >= 0xd800 && code <= 0xdbff) {
+        bytes += 4
+        i += 1
+      } else bytes += 3
+    }
+    return bytes
+  }
+
+  function clampText(value, max) {
+    return String(value ?? "").trim().slice(0, max)
+  }
+
+  function assertWordbookFileSize(byteLength) {
+    const size = Number(byteLength)
+    if (Number.isFinite(size) && size > MAX_WORDBOOK_FILE_BYTES) {
+      throw new Error("文件过大（上限 1 MB）")
+    }
+  }
+
+  function assertCustomWordbookCapacity(count) {
+    if ((Number(count) || 0) >= MAX_CUSTOM_WORDBOOKS) {
+      throw new Error("自定义词书已达 200 本上限")
+    }
+  }
+
+  function prepareImportedWords(words) {
+    const list = (Array.isArray(words) ? words : []).map(normalizeWordObject).filter(Boolean)
+    if (list.length > MAX_WORDBOOK_WORDS) {
+      throw new Error("词书超过 5000 个词，请拆分后再导入")
+    }
+    return list
+      .map((word) => ({
+        ...word,
+        term: clampText(word.term, MAX_WORD_FIELD_CHARS),
+        pos: clampText(word.pos, MAX_WORD_FIELD_CHARS),
+        meaning: clampText(word.meaning, MAX_WORD_FIELD_CHARS),
+        example: clampText(word.example, MAX_WORD_FIELD_CHARS),
+        lang: clampText(word.lang, 50),
+        tags: Array.isArray(word.tags)
+          ? word.tags.map((tag) => clampText(tag, 200)).filter(Boolean).slice(0, 20)
+          : [],
+      }))
+      .filter((word) => word.term)
+  }
+
+  function prepareImportedWordbookMeta({ name, description, language } = {}) {
+    return {
+      name: clampText(name, MAX_WORDBOOK_NAME_CHARS),
+      description: clampText(description, MAX_WORDBOOK_DESCRIPTION_CHARS),
+      language: clampText(language, 50),
+    }
+  }
+
   window.A4Common = {
     clamp,
     makeUuid,
@@ -623,5 +691,14 @@
     getWordsFromGlobal,
     getWordbooksFromGlobal,
     normalizeWordObject,
+    MAX_WORDBOOK_WORDS,
+    MAX_WORDBOOK_FILE_BYTES,
+    MAX_WORD_FIELD_CHARS,
+    MAX_CUSTOM_WORDBOOKS,
+    utf8ByteLength,
+    assertWordbookFileSize,
+    assertCustomWordbookCapacity,
+    prepareImportedWords,
+    prepareImportedWordbookMeta,
   }
 })()

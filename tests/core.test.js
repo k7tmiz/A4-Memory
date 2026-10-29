@@ -238,6 +238,22 @@ describe("A4Common core utilities", () => {
     assert.equal(legacyOnline.onlineTtsEnabled, true)
   })
 
+  it("rejects oversized wordbook imports and clamps long fields", () => {
+    assert.equal(A4Common.utf8ByteLength("中"), 3)
+    assert.doesNotThrow(() => A4Common.assertWordbookFileSize(1024 * 1024))
+    assert.throws(() => A4Common.assertWordbookFileSize(1024 * 1024 + 1), /1 MB/)
+    assert.throws(() => A4Common.assertCustomWordbookCapacity(200), /200/)
+    assert.throws(
+      () => A4Common.prepareImportedWords(Array.from({ length: 5001 }, (_, index) => ({ term: `w${index}`, meaning: "x" }))),
+      /5000/
+    )
+
+    const [word] = A4Common.prepareImportedWords([{ term: `  ${"a".repeat(2005)}`, meaning: "b".repeat(2005), pos: "n." }])
+    assert.equal(word.term.length, 2000)
+    assert.equal(word.meaning.length, 2000)
+    assert.equal(word.pos, "n.")
+  })
+
   it("toLocalDateKey formats date as local YYYY-MM-DD", () => {
     const key = A4Common.toLocalDateKey(new Date(2026, 5, 17))
     assert.equal(key, "2026-06-17")

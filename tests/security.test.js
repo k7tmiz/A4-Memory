@@ -34,6 +34,19 @@ describe("network endpoint security policy", () => {
       assert.match(tauriCsp, new RegExp(origin.replaceAll(".", "\\.")))
     }
 
+    const aiSource = fs.readFileSync(path.join(ROOT, "js", "settings", "ai.js"), "utf8")
+    const allowlist = aiSource.match(/const AI_ALLOWED_ORIGINS = Object\.freeze\(\[([\s\S]*?)\]\)/)
+    assert.ok(allowlist, "AI endpoint allowlist must stay next to the URL builders")
+    const origins = [...allowlist[1].matchAll(/"(https:\/\/[^"]+)"/g)].map((match) => match[1])
+    assert.ok(origins.length >= 5)
+    for (const origin of origins) {
+      const pattern = new RegExp(origin.replaceAll(".", "\\."))
+      assert.match(indexCsp, pattern, origin)
+      assert.match(recordsCsp, pattern, origin)
+      assert.match(settingsCsp, pattern, origin)
+      assert.match(tauriCsp, pattern, origin)
+    }
+
     const rawGithub = "https://raw.githubusercontent.com"
     assert.match(indexCsp, new RegExp(rawGithub.replaceAll(".", "\\.")))
     assert.match(settingsCsp, new RegExp(rawGithub.replaceAll(".", "\\.")))

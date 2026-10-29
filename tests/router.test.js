@@ -47,7 +47,39 @@ function createElement({ view = "", route = "" } = {}) {
   return element
 }
 
+function createClock() {
+  let now = 0
+  let nextId = 1
+  const timers = []
+
+  function setTimeout(fn, delay) {
+    const id = nextId++
+    timers.push({ id, at: now + Math.max(0, Number(delay) || 0), fn })
+    timers.sort((a, b) => a.at - b.at || a.id - b.id)
+    return id
+  }
+
+  function clearTimeout(id) {
+    const index = timers.findIndex((timer) => timer.id === id)
+    if (index >= 0) timers.splice(index, 1)
+  }
+
+  function advance(ms) {
+    const target = now + Math.max(0, Number(ms) || 0)
+    while (timers.length && timers[0].at <= target) {
+      const timer = timers.shift()
+      now = timer.at
+      timer.fn()
+      timers.sort((a, b) => a.at - b.at || a.id - b.id)
+    }
+    now = target
+  }
+
+  return { setTimeout, clearTimeout, advance }
+}
+
 function loadRouter({ pathname = "/index.html", search = "", reducedMotion = false, A4UI = null } = {}) {
+  const clock = createClock()
   const code = fs.readFileSync(routerPath, "utf8")
   const views = ["study", "records", "settings"].map((view) => createElement({ view }))
   for (const view of views) view.focusTarget = createElement()
@@ -92,15 +124,15 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
     },
     matchMedia: () => ({ matches: reducedMotion }),
     addEventListener(type, listener) { windowListeners.set(type, listener) },
-    setTimeout,
-    clearTimeout,
+    setTimeout: clock.setTimeout,
+    clearTimeout: clock.clearTimeout,
     requestAnimationFrame(callback) { callback() },
     scrollY: 0,
     scrollTo(options) { scrollCalls.push(options) },
   }
   if (A4UI) window.A4UI = A4UI
   window.window = window
-  const sandbox = { window, document, URL, URLSearchParams, setTimeout, clearTimeout }
+  const sandbox = { window, document, URL, URLSearchParams, setTimeout: clock.setTimeout, clearTimeout: clock.clearTimeout }
   vm.createContext(sandbox)
   vm.runInContext(code, sandbox)
   const A4Router = window.A4Router.createRouter({
@@ -122,6 +154,7 @@ function loadRouter({ pathname = "/index.html", search = "", reducedMotion = fal
     views,
     window,
     windowListeners,
+    clock,
   }
 }
 
@@ -179,7 +212,7 @@ describe("A4Router persistent application shell", () => {
     assert.equal(harness.A4Router.navigate("settings"), false)
     assert.deepEqual(events, ["leave:records"])
 
-    await new Promise((resolve) => setTimeout(resolve, 14))
+    harness.clock.advance(14)
     assert.equal(harness.A4Router.getCurrentView(), "records")
     assert.deepEqual(events, ["leave:records", "enter:study"])
     const historyCall = harness.historyCalls.at(-1)
@@ -194,19 +227,19 @@ describe("A4Router persistent application shell", () => {
 
     assert.equal(harness.A4Router.navigate("settings", { exitMs: 0, enterMs: 12 }), true)
     assert.equal(harness.views[2].classList.contains("a4-view-entering-forward"), true)
-    await new Promise((resolve) => setTimeout(resolve, 16))
+    harness.clock.advance(16)
 
     assert.equal(harness.A4Router.navigate("records", { exitMs: 0, enterMs: 12 }), true)
     assert.equal(harness.views[1].classList.contains("a4-view-entering-back"), true)
-    await new Promise((resolve) => setTimeout(resolve, 16))
+    harness.clock.advance(16)
 
     assert.equal(harness.A4Router.navigate("study", { exitMs: 12, enterMs: 0 }), true)
     assert.equal(harness.views[1].classList.contains("a4-view-leaving-back"), true)
-    await new Promise((resolve) => setTimeout(resolve, 16))
+    harness.clock.advance(16)
 
     assert.equal(harness.A4Router.navigate("records", { exitMs: 12, enterMs: 0 }), true)
     assert.equal(harness.views[0].classList.contains("a4-view-leaving-forward"), true)
-    await new Promise((resolve) => setTimeout(resolve, 16))
+    harness.clock.advance(16)
   })
 
   it("uses popstate without adding a second history entry", async () => {
@@ -216,7 +249,7 @@ describe("A4Router persistent application shell", () => {
     harness.location.search = ""
 
     harness.windowListeners.get("popstate")()
-    await new Promise((resolve) => setTimeout(resolve, 16))
+    harness.clock.advance(16)
 
     assert.equal(harness.A4Router.getCurrentView(), "records")
     assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 0)
@@ -229,7 +262,7 @@ describe("A4Router persistent application shell", () => {
     harness.location.pathname = "/settings.html"
 
     harness.windowListeners.get("popstate")()
-    await new Promise((resolve) => setTimeout(resolve, 28))
+    harness.clock.advance(28)
 
     assert.equal(harness.A4Router.getCurrentView(), "settings")
     assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 1)
@@ -246,7 +279,7 @@ describe("A4Router persistent application shell", () => {
       button: 0,
       preventDefault() { prevented = true },
     })
-    await new Promise((resolve) => setTimeout(resolve, 28))
+    harness.clock.advance(28)
 
     assert.equal(prevented, true)
     assert.equal(harness.A4Router.getCurrentView(), "settings")
@@ -260,7 +293,7 @@ describe("A4Router persistent application shell", () => {
     harness.location.pathname = "/index.html"
 
     harness.windowListeners.get("popstate")()
-    await new Promise((resolve) => setTimeout(resolve, 28))
+    harness.clock.advance(28)
 
     assert.equal(harness.A4Router.getCurrentView(), "study")
     assert.equal(harness.historyCalls.filter(([kind]) => kind === "push").length, 1)

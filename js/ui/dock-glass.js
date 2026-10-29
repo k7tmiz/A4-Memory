@@ -2,6 +2,7 @@
   const DRAG_THRESHOLD_PX = 6
   const FLING_VELOCITY = 0.35
   const MAX_SHIFT_PX = 4
+  const MAX_OVERSHOOT_PX = 8
 
   function prefersReducedMotion(windowRef) {
     return !!windowRef.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
@@ -12,8 +13,7 @@
   }
 
   function rubberBand(overshoot) {
-    const dampingRange = 120
-    return overshoot * 0.4 * (dampingRange / (dampingRange + overshoot))
+    return MAX_OVERSHOOT_PX * overshoot / (overshoot + MAX_OVERSHOOT_PX / 0.4)
   }
 
   function attachGlassSlider({
@@ -32,6 +32,10 @@
     let lastTime = 0
     let velocity = 0
     let dragPx = 0
+    let dragFrom = 0
+    let dragWidth = 1
+    let minDrag = 0
+    let maxDrag = 0
     let suppressedClick = false
     let stretchTimer = null
 
@@ -77,6 +81,10 @@
       lastTime = event.timeStamp
       velocity = 0
       dragPx = 0
+      dragFrom = currentIndex()
+      dragWidth = tabWidth()
+      minDrag = -dragFrom * dragWidth
+      maxDrag = Math.max(0, items().length - 1 - dragFrom) * dragWidth
       nav.classList.add("is-lifting")
     }
 
@@ -88,11 +96,11 @@
       velocity = velocity * 0.55 + (delta / dt) * 0.45
       lastX = event.clientX
       lastTime = now
-      const maxDrag = tabWidth() * Math.max(0, items().length - 1)
       const rawDrag = event.clientX - startX
-      const overshoot = Math.abs(rawDrag) - maxDrag
-      dragPx = overshoot > 0 && maxDrag > 0 ? Math.sign(rawDrag) * (maxDrag + rubberBand(overshoot)) : rawDrag
-      if (Math.abs(dragPx) > DRAG_THRESHOLD_PX) {
+      const boundedDrag = clamp(rawDrag, minDrag, maxDrag)
+      const overshoot = Math.abs(rawDrag - boundedDrag)
+      dragPx = boundedDrag + Math.sign(rawDrag - boundedDrag) * rubberBand(overshoot)
+      if (Math.abs(rawDrag) > DRAG_THRESHOLD_PX || nav.classList.contains("is-dragging")) {
         if (!nav.classList.contains("is-dragging")) {
           try {
             nav.setPointerCapture?.(event.pointerId)
@@ -100,10 +108,10 @@
             void 0
           }
         }
-        const motion = clamp(Math.abs(dragPx) / Math.max(1, tabWidth()), 0, 1)
-        const over = maxDrag > 0 ? clamp(overshoot / 90, 0, 1) : 0
+        const motion = clamp(Math.abs(dragPx) / dragWidth, 0, 1)
+        const over = clamp(overshoot / 90, 0, 1)
         nav.classList.add("is-dragging")
-        nav.classList.toggle("is-clamped", overshoot > 0 && maxDrag > 0)
+        nav.classList.toggle("is-clamped", overshoot > 0)
         setVar("--a4-dock-drag", `${dragPx}px`)
         setVar("--a4-dock-shift", `${clamp(dragPx * 0.08, -MAX_SHIFT_PX, MAX_SHIFT_PX)}px`)
         setVar("--a4-dock-sweep", `${clamp(dragPx * -0.45, -48, 48).toFixed(1)}px`)
@@ -117,17 +125,13 @@
     function handlePointerUp(event) {
       if (event.pointerId !== pointerId) return
       const wasDragging = nav.classList.contains("is-dragging")
-      const from = currentIndex()
+      const from = dragFrom
       const maxIndex = items().length - 1
-      let target = clamp(from + Math.round(dragPx / tabWidth()), 0, maxIndex)
-      if (Math.abs(velocity) > FLING_VELOCITY && Math.sign(velocity) === Math.sign(dragPx)) {
+      let target = clamp(from + Math.round(dragPx / dragWidth), 0, maxIndex)
+      if (target === from && Math.abs(velocity) > FLING_VELOCITY && Math.sign(velocity) === Math.sign(dragPx)) {
         target = clamp(from + Math.sign(velocity), 0, maxIndex)
       }
-      if (wasDragging && Math.abs(dragPx) > DRAG_THRESHOLD_PX) {
-        suppressedClick = true
-      } else {
-        suppressedClick = false
-      }
+      suppressedClick = wasDragging
 
       if (!prefersReducedMotion(windowRef) && wasDragging) {
         const speed = Math.abs(velocity)

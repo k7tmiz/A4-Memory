@@ -288,6 +288,39 @@
     return { name, description, language, words }
   }
 
+  async function readBoundedResponseText(response, maxBytes = window.A4Common?.MAX_WORDBOOK_FILE_BYTES || 1024 * 1024) {
+    const declared = Number(response?.headers?.get?.("content-length"))
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      throw new Error("文件过大（上限 1 MB）")
+    }
+    if (response?.body && typeof response.body.getReader === "function") {
+      const reader = response.body.getReader()
+      const chunks = []
+      let received = 0
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const size = Number(value?.byteLength) || 0
+        received += size
+        if (received > maxBytes) {
+          try { await reader.cancel() } catch { /* ignore */ }
+          throw new Error("文件过大（上限 1 MB）")
+        }
+        if (value) chunks.push(value)
+      }
+      const merged = new Uint8Array(received)
+      let offset = 0
+      for (const chunk of chunks) {
+        merged.set(chunk, offset)
+        offset += chunk.byteLength
+      }
+      return new TextDecoder().decode(merged)
+    }
+    const text = await response.text()
+    window.A4Common?.assertWordbookFileSize?.(window.A4Common?.utf8ByteLength?.(text) ?? text.length)
+    return text
+  }
+
   async function fetchGithubTree({ owner, repo, branch }) {
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, {
       cache: "no-store",
@@ -330,6 +363,8 @@
       if (s < 10_000) score -= 40
       else if (s > 15_000_000) score -= 80
       else if (s >= 120_000 && s <= 7_000_000) score += 30
+      const maxBytes = window.A4Common?.MAX_WORDBOOK_FILE_BYTES || 1024 * 1024
+      if (s > maxBytes) score -= 400
     }
     return score
   }
@@ -377,6 +412,7 @@
     inferWordbookNameFromDescription,
     makeUniqueWordbookName,
     extractWordbookFromRemoteJson,
+    readBoundedResponseText,
     fetchGithubTree,
     formatFileSize,
     scoreGithubJsonPath,

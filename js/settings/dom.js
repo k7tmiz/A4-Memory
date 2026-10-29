@@ -408,8 +408,9 @@
               </div>
               <div class="form-row">
                 <div class="form-label">API Base URL</div>
-                <div class="form-control"><input id="aiBaseUrlInput" class="text-input" type="text" placeholder="https://api.example.com/v1" /></div>
+                <div class="form-control"><input id="aiBaseUrlInput" class="text-input" type="text" placeholder="https://api.siliconflow.cn/v1" /></div>
               </div>
+              <div class="form-help">仅可连接 OpenAI、Gemini、DeepSeek、Anthropic、SiliconFlow 的官方接口。其他域名会被拦截。</div>
               <div class="form-row">
                 <div class="form-label">API Key</div>
                 <div class="form-control"><input id="aiApiKeyInput" class="text-input" type="password" placeholder="仅保留在当前会话内存中" /></div>

@@ -318,6 +318,8 @@
 
   function canUseCustomLookupFallback(state) {
     const cfg = normalizeAiConfigFromState(state)
+    const endpoint = window.A4Settings?.describeAiEndpoint?.(cfg.baseUrl)
+    if (endpoint && !endpoint.ok) return false
     const url = window.A4Settings?.buildChatCompletionsUrl?.(cfg.baseUrl) || ""
     return !!(url && cfg.model)
   }
@@ -386,6 +388,8 @@
     const t = String(term || "").trim()
     if (!t) return { ok: false, data: [], error: "empty" }
     const cfg = normalizeAiConfigFromState(state)
+    const endpoint = window.A4Settings?.describeAiEndpoint?.(cfg.baseUrl)
+    if (endpoint?.code === "blocked") return { ok: false, data: [], error: "blocked_origin" }
     const url = window.A4Settings?.buildChatCompletionsUrl?.(cfg.baseUrl) || ""
     const model = String(cfg.model || "").trim()
     if (!url || !model) return { ok: false, data: [], error: "not_configured" }
@@ -1273,6 +1277,10 @@
         panel.appendChild(el("div", "form-help", "未配置自定义 API：已仅显示本地结果。"))
         return
       }
+      if (status === "blocked_origin") {
+        panel.appendChild(el("div", "form-help", "自定义接口不在允许的连接范围内，已仅显示本地结果。"))
+        return
+      }
       if (status === "error") {
         panel.appendChild(el("div", "form-help", "在线补充暂不可用，已显示本地结果。"))
         return
@@ -1481,6 +1489,7 @@
       if (queryId !== lastQueryId || signal?.aborted) return
 
       if (!res.ok) {
+        let fallbackError = ""
         const canFallback = onlineSource === "builtin" && canUseCustomLookupFallback(state)
         if (canFallback) {
           renderOnlineSection({ status: "loading", items: [], source: "custom", base, fallbackFrom: "builtin" })
@@ -1496,8 +1505,13 @@
             })
             return
           }
+          fallbackError = fallbackRes.error
         }
-        if (res.error === "not_configured") renderOnlineSection({ status: "not_configured", items: [], source: onlineSource, base })
+        const onlineError = res.error === "blocked_origin" || fallbackError === "blocked_origin"
+          ? "blocked_origin"
+          : res.error
+        if (onlineError === "not_configured") renderOnlineSection({ status: "not_configured", items: [], source: onlineSource, base })
+        else if (onlineError === "blocked_origin") renderOnlineSection({ status: "blocked_origin", items: [], source: onlineSource, base })
         else renderOnlineSection({ status: "error", items: [], source: onlineSource, base })
         return
       }

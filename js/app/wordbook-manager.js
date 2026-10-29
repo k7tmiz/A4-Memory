@@ -4,7 +4,18 @@
  */
 ;(function () {
   const ns = (window.A4AppInternal = window.A4AppInternal || {})
-  const { ROUND_TYPE_NORMAL, normalizeRoundType, normalizeWordObject, setModalVisible } = window.A4Common || {}
+  const {
+    ROUND_TYPE_NORMAL,
+    normalizeRoundType,
+    normalizeWordObject,
+    setModalVisible,
+    MAX_WORDBOOK_FILE_BYTES,
+    assertWordbookFileSize,
+    assertCustomWordbookCapacity,
+    prepareImportedWords,
+    prepareImportedWordbookMeta,
+    utf8ByteLength,
+  } = window.A4Common || {}
   const { showToast, showConfirmDialog, sanitizeFilename, downloadJsonFile } = window.A4Utils || {}
   const {
     normalizeWordbookObject,
@@ -18,6 +29,7 @@
     extractWordbookFromRemoteJson,
     formatFileSize,
     listGithubJsonFiles,
+    readBoundedResponseText,
   } = ns.wordbookIo || {}
 
   function createWordbookManager(deps) {
@@ -315,8 +327,30 @@
       }
     }
 
+    function applyImportedBook({ id, name, description, language, words }) {
+      assertCustomWordbookCapacity(Array.isArray(appState.customWordbooks) ? appState.customWordbooks.length : 0)
+      const limitedWords = prepareImportedWords(words)
+      const meta = prepareImportedWordbookMeta({ name, description, language })
+      const book = normalizeWordbookObject({
+        id,
+        name: meta.name || "导入词书",
+        description: meta.description,
+        language: meta.language,
+        words: limitedWords,
+      })
+      if (!book || !book.words.length) throw new Error("文件中没有可用单词")
+      appState.customWordbooks = [...appState.customWordbooks, book]
+      appState.selectedWordbookId = book.id
+      renderWordbookSelect()
+      startNextRound()
+      persist()
+      return book
+    }
+
     async function importWordbookFile(file) {
+      assertWordbookFileSize(file?.size)
       const text = await file.text()
+      assertWordbookFileSize(utf8ByteLength(text))
       let name = stripFileExtension(file.name)
       let description = ""
       let language
@@ -350,16 +384,13 @@
         language = inferWordbookLanguage({ rawLanguage: "", name, filename: file.name, words })
       }
 
-      const id = `import-${makeId()}`
-      const book = normalizeWordbookObject({ id, name: name || "导入词书", description, language, words })
-      if (!book || !book.words.length) throw new Error("文件中没有可用单词")
-
-      appState.customWordbooks = [...appState.customWordbooks, book]
-      appState.selectedWordbookId = book.id
-      renderWordbookSelect()
-      startNextRound()
-      persist()
-      return book
+      return applyImportedBook({
+        id: `import-${makeId()}`,
+        name: name || "导入词书",
+        description,
+        language,
+        words,
+      })
     }
 
     async function importWordbookFromUrl({ url, name, language, description } = {}) {
@@ -374,7 +405,7 @@
       }
       if (!res.ok) throw new Error(`下载失败（HTTP ${res.status}）`)
       const ct = String(res.headers?.get?.("content-type") || "").toLowerCase()
-      const text = await res.text()
+      const text = await readBoundedResponseText(res)
 
       let words
       let parsedMeta = { name: "", description: "", language: "" }
@@ -410,15 +441,13 @@
         filename: filename || url,
         words,
       })
-      const book = normalizeWordbookObject({ id, name: finalName, description: finalDesc, language: inferredLang, words })
-      if (!book || !book.words.length) throw new Error("词书中没有可用单词")
-
-      appState.customWordbooks = [...appState.customWordbooks, book]
-      appState.selectedWordbookId = book.id
-      renderWordbookSelect()
-      startNextRound()
-      persist()
-      return book
+      return applyImportedBook({
+        id,
+        name: finalName,
+        description: finalDesc,
+        language: inferredLang,
+        words,
+      })
     }
 
     let remoteImportCtx = null
@@ -583,6 +612,10 @@
       dom.confirmRemoteImportBtn?.addEventListener("click", async () => {
         const it = getSelectedRemoteImportItem()
         if (!it) return
+        if (Number(it.size) > (MAX_WORDBOOK_FILE_BYTES || 1024 * 1024)) {
+          setRemoteImportHint("导入失败：文件过大（上限 1 MB）")
+          return
+        }
         const ctx = remoteImportCtx || {}
         const rawUrl = `https://raw.githubusercontent.com/${it.owner}/${it.repo}/${it.branch}/${it.path}`
         const desc = `${it.owner}/${it.repo}@${it.branch}:${it.path}`

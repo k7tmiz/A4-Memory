@@ -383,11 +383,17 @@ describe("A4Settings live AI model discovery", () => {
 
     assert.equal(settings.buildModelsUrl("https://api.openai.com/v1"), "https://api.openai.com/v1/models")
     assert.equal(
-      settings.buildModelsUrl("https://example.com/v1/chat/completions"),
-      "https://example.com/v1/models"
+      settings.buildModelsUrl("https://api.siliconflow.cn/v1/chat/completions"),
+      "https://api.siliconflow.cn/v1/models"
     )
-    assert.equal(settings.buildModelsUrl("https://example.com/v1/models/"), "https://example.com/v1/models")
-    assert.equal(settings.buildModelsUrl("http://example.com/v1"), "")
+    assert.equal(settings.buildModelsUrl("https://api.deepseek.com/v1/models/"), "https://api.deepseek.com/v1/models")
+    assert.equal(settings.buildModelsUrl("http://api.openai.com/v1"), "")
+    assert.equal(settings.buildModelsUrl("https://example.com/v1"), "")
+    assert.equal(settings.describeAiEndpoint("https://example.com/v1").code, "blocked")
+    assert.match(settings.describeAiEndpoint("https://example.com/v1").reason, /允许的连接范围/)
+    for (const origin of settings.AI_ALLOWED_ORIGINS) {
+      assert.equal(settings.describeAiEndpoint(`${origin}/v1`).ok, true)
+    }
   })
 
   it("parses, trims, deduplicates, and sorts standard model IDs", () => {

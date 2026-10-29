@@ -14,6 +14,7 @@
     shouldResetAiApiKey,
     computeAiConfigOnProviderChange,
     stripJsonFromText,
+    describeAiEndpoint,
     buildChatCompletionsUrl,
     buildModelsUrl,
     parseModelIds,
@@ -96,7 +97,7 @@
       const cfg = getAiConfigFromState(state)
       const preset = getAiPreset(cfg.provider)
       if (dom.aiProviderSelect) dom.aiProviderSelect.value = cfg.provider
-      if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.placeholder = preset.baseUrl || "https://api.example.com/v1"
+      if (dom.aiBaseUrlInput) dom.aiBaseUrlInput.placeholder = preset.baseUrl || "https://api.siliconflow.cn/v1"
       if (dom.aiModelInput) dom.aiModelInput.placeholder = "可直接输入或获取实时模型"
     }
 
@@ -337,6 +338,11 @@
       const savedConfig = getAiConfigFromState(getStateSafe())
       const baseUrl = String(dom.aiBaseUrlInput?.value || savedConfig.baseUrl || "").trim()
       const apiKey = String(dom.aiApiKeyInput?.value || savedConfig.apiKey || "").trim()
+      const endpointCheck = describeAiEndpoint(baseUrl)
+      if (!endpointCheck.ok) {
+        setAiStatus(endpointCheck.reason)
+        return
+      }
       const endpoint = buildModelsUrl(baseUrl)
       if (!endpoint) {
         setAiStatus("请先填写有效的 HTTPS API Base URL。")
@@ -467,6 +473,8 @@
       setAiStatus("")
       const state = getStateSafe()
       const cfg = getAiConfigFromState(state)
+      const endpointCheck = describeAiEndpoint(cfg.baseUrl)
+      if (!endpointCheck.ok) return setAiStatus(endpointCheck.reason)
       const endpoint = buildChatCompletionsUrl(cfg.baseUrl)
 
       if (!endpoint) return setAiStatus("请先填写 API Base URL。")
@@ -573,6 +581,17 @@
 
       const state = getStateSafe()
       const nextBooks = Array.isArray(state?.customWordbooks) ? [...state.customWordbooks] : []
+      try {
+        window.A4Common?.assertCustomWordbookCapacity?.(nextBooks.length)
+        const meta = window.A4Common?.prepareImportedWordbookMeta?.(wordbook) || wordbook
+        wordbook.name = meta.name || wordbook.name
+        wordbook.description = meta.description || ""
+        wordbook.language = meta.language || ""
+        wordbook.words = window.A4Common?.prepareImportedWords?.(wordbook.words) || wordbook.words
+      } catch (error) {
+        showAppToast({ message: error?.message || "无法保存词书", kind: "error" })
+        return
+      }
       nextBooks.push(wordbook)
       setStateSafe({ customWordbooks: nextBooks })
       persistSafe()

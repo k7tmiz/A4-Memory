@@ -344,8 +344,7 @@ describe("responsive application shell", () => {
   it("applies rubber-band limits and press feedback to the glass dock", () => {
     const dockGlassCode = fs.readFileSync(path.join(ROOT, "js", "ui", "dock-glass.js"), "utf8")
     const settingsStyle = fs.readFileSync(path.join(ROOT, "css", "settings.css"), "utf8")
-    assert.match(dockGlassCode, /const overshoot = Math\.abs\(rawDrag\) - maxDrag/)
-    assert.match(dockGlassCode, /classList\.toggle\("is-clamped", overshoot > 0 && maxDrag > 0\)/)
+    assert.match(dockGlassCode, /classList\.toggle\("is-clamped", overshoot > 0\)/)
     assert.match(dockGlassCode, /setVar\("--a4-dock-over"/)
     assert.match(dockGlassCode, /setVar\("--a4-dock-glow"/)
     assert.match(shellStyle, /\.app-dock-nav\.is-lifting\s*\{[^}]*--a4-dock-press:\s*0\.988/s)

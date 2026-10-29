@@ -216,7 +216,7 @@ window.A4State = {
 持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
 
 ### `js/ui/dock-glass.js`
-悬浮底栏 Liquid Glass 交互层，暴露 `window.A4DockGlass`。按住底栏任意位置时胶囊浮起（放大、上浮、高光增强并附带轻微色差投影），整条底栏经 `--a4-dock-press` 轻微下沉贴合按压；横向拖动时胶囊跟手滑动且整条底栏按拖动方向小幅偏移，并以 `--a4-dock-sweep` / `--a4-dock-dir` / `--a4-dock-motion` 暴露拖动的高光位移、方向与幅度，驱动 shell.css 与 settings.css 中镜面高光扫过、拖动前缘厚度与边缘色散装饰层。拖出首末项范围时进入橡皮筋限位：位移经渐进阻力衰减，`is-clamped` 状态增亮接触边缘，松手回弹且不切换视图。松手后按位移与甩动速度决定切换相邻视图或阻尼回弹；甩动时底栏产生速度形变并快速复位。拖动产生的点击由捕获阶段拦截，避免与 `data-a4-route` 链接默认导航冲突；`prefers-reduced-motion: reduce` 下不做速度形变并隐藏装饰光学层，直接拖动与点击仍可用。
+悬浮底栏 Liquid Glass 交互层，暴露 `window.A4DockGlass`。按住底栏任意位置时胶囊浮起（放大、上浮、高光增强并附带轻微色差投影），整条底栏经 `--a4-dock-press` 轻微下沉贴合按压；横向拖动时胶囊跟手滑动且整条底栏按拖动方向小幅偏移，并以 `--a4-dock-sweep` / `--a4-dock-dir` / `--a4-dock-motion` 暴露拖动的高光位移、方向与幅度，驱动 shell.css 与 settings.css 中镜面高光扫过、拖动前缘厚度与边缘色散装饰层。拖动边界按当前选中项到首末项的距离计算；超出边界的位移经渐进阻力衰减，弹性余量最多 8px，`is-clamped` 状态增亮接触边缘。已处于端点时向外拖动，松手回到原端点；从其他项拖到边界外时，松手选中对应端点。松手后按位移与甩动速度决定切换相邻视图或阻尼回弹；甩动时底栏产生速度形变并快速复位。拖动产生的点击由捕获阶段拦截，避免与 `data-a4-route` 链接默认导航冲突；`prefers-reduced-motion: reduce` 下不做速度形变并隐藏装饰光学层，直接拖动与点击仍可用。
 
 ```javascript
 window.A4Router = {
@@ -302,7 +302,7 @@ window.A4Speech = {
 | 文件 | 职责 |
 |------|------|
 | `js/settings/state-normalize.js` | 备份导入 / 云恢复清洗：偏好字段交给 `A4State.normalizePreferences`，自身负责轮次、词书、`pageIndex` 按 `roundCap` 补分与待办意图清理 |
-| `js/settings/ai.js` | AI 提供商预设、Base URL / origin 归一化、请求构建与模型列表解析 |
+| `js/settings/ai.js` | AI 提供商预设、Base URL / origin 归一化、允许连接的官方源校验、请求构建与模型列表解析 |
 | `js/settings/account.js` | 账号表单校验、错误文案映射、验证码冷却读写与 429 退避解析 |
 | `js/settings/tts.js` | 发音测试选项构造与离线语音展示辅助 |
 | `js/settings/dom.js` | 设置面板 DOM 模板、类别导航与数值下拉辅助 |
@@ -336,7 +336,7 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 
 | 文件 | 职责 |
 |------|------|
-| `js/app/wordbook-io.js` | `wordbookIo`：TXT/CSV/TSV/JSON 词条解析、词书对象归一化、语言与名称推断、远程 JSON 词书结构提取、GitHub 仓库 JSON 文件列表与排序 |
+| `js/app/wordbook-io.js` | `wordbookIo`：TXT/CSV/TSV/JSON 词条解析、词书对象归一化、语言与名称推断、远程 JSON 词书结构提取、有界下载、GitHub 仓库 JSON 文件列表与排序。超过 1 MB 的文件会降权，导入时拒绝 |
 | `js/app/study-helpers.js` | `studyHelpers`：洗牌、纸面碰撞检测、单词元素构建、西语阴阳性简写展开、复习滑动阈值与橡皮筋阻尼 |
 | `js/app/review-swipe.js` | `reviewSwipe.createReviewSwipeController({ card, isReviewOpen, onCommit })`：复习卡指针拖动状态机，确认横向拖动后才捕获指针，轻点卡片单词仍可发音；返回 `resetToCenter`、`commit(direction)`、`isInteractionBlocked`、`destroy`；`commit` 供按钮与键盘标记复用离场动画（1 右飞已掌握、-1 左飞不会、0 下沉学习中），触屏设备提交时轻振一次，减少动态效果时直接提交。复习弹窗位于最上层时支持 ← / 1 不会、↓ / 2 学习中、→ / 3 已掌握、空格朗读，新卡片以独立的 `scale` / `translate` 属性进入而不干扰滑动变换 |
 | `js/app/wordbook-manager.js` | `wordbookManager.createWordbookManager({ appState, dom, persist, ... })`：词书选择（Android 使用应用内底部面板，其余平台保留原生 `<select>`）、本地文件/链接/GitHub 仓库在线导入、自定义词书管理与删除、已保存词书的名称迁移与去重；`bindEvents()` 绑定词书相关控件 |
@@ -419,7 +419,7 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 1. **学习** — 每日目标（每日轮次/单词、每轮上限）、复习节奏（轻量复习与各状态间隔）和学习体验（持续背书、复习卡翻面）。
 2. **外观** — 视觉风格（纸本/极简/瑞士，带迷你纸面预览与选中标记）和明暗模式（跟随系统/浅色/深色分段选择）；切换时经 `A4Motion.crossfade` 整页交叉淡入。
 3. **发音** — 朗读开关、发音方式（在线 TTS / 离线 TTS / 系统语音）和在线发音源；「离线语音包」分区与当前首选发音方式相互独立，桌面端和 Android 应用可随时下载、删除、试听及选择模型，选中离线 TTS 时分区自动展开。Web 端保留该分区并明确提示不支持模型管理。
-4. **AI** — OpenAI、Gemini、DeepSeek 和自定义 OpenAI 兼容 API 配置、模型选择、词书生成与查词补充（联网补充可复用同一 API 配置）；模型名可自由输入，也可从服务商 `/models` 接口实时获取后通过应用内面板选择，不保留内置、缓存或回退列表。
+4. **AI** — OpenAI、Gemini、DeepSeek 和自定义 OpenAI 兼容 API 配置、模型选择、词书生成与查词补充（联网补充可复用同一 API 配置）。自定义 Base URL 只能指向 OpenAI、Gemini、DeepSeek、Anthropic、SiliconFlow 的官方源，其他域名在请求前被拒绝。模型名可自由输入，也可从服务商 `/models` 接口实时获取后通过应用内面板选择，不保留内置、缓存或回退列表。
 5. **账号** — 云端账号（登录、注册、重置密码、登录状态卡片与云同步上传/下载）、数据管理（完整 JSON 备份导入导出）和版本信息；版本信息仅在 Tauri 桌面端与 Android 应用中显示。登录状态卡片在宽度不超过 430px 时常显单词数、连续天数和当前轮，其余统计通过「更多学习统计」展开且每次打开设置默认折叠；平板和桌面宽度默认直接展示全部统计。
 
 所有宽度共用一条顶部分段导航，样式对齐记录页「轮次 / 状态」切换，并使用与底栏相同的 Liquid Glass 滑动胶囊。各分区以编号标题与细线表单行呈现，各分区以分组卡片承载；明暗模式分段选择与账号操作切换使用纯 CSS 的滑动指示块（按选中项序号定位），开关按住时滑块拉长并以回弹曲线复位。页眉、分类导航与各分区共用宽 720px 的单一居中阅读栏；每个分区的设置行收进一张分组卡片（`--card` 表面、圆角与细边框，极简风格带轻阴影，瑞士风格改为顶部粗线），分区标题位于卡片上方；每次修改后页眉状态短暂显示「已保存」并让状态点脉冲一次；分区自上而下排列、间距 40–56px，表单行最小高度 60px，说明文字限宽 36em 而分隔线保持通栏；账号区的数据管理与版本信息位于账号表单下方。所有宽度均复用 App Shell 的学习、记录、设置悬浮底栏。
