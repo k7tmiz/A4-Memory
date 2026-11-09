@@ -1,8 +1,32 @@
 import js from "@eslint/js";
 
+// Node 环境下运行的工具脚本与测试：只启用推荐规则，不套用前端源码的风格规则。
+const nodeGlobals = {
+  process: "readonly",
+  console: "readonly",
+  Buffer: "readonly",
+  URL: "readonly",
+  URLSearchParams: "readonly",
+  Blob: "readonly",
+  fetch: "readonly",
+  setTimeout: "readonly",
+  clearTimeout: "readonly",
+  setInterval: "readonly",
+  clearInterval: "readonly",
+  AbortController: "readonly",
+  AbortSignal: "readonly",
+  WebSocket: "readonly",
+  TextEncoder: "readonly",
+  TextDecoder: "readonly",
+  performance: "readonly",
+  structuredClone: "readonly",
+};
+
 export default [
   js.configs.recommended,
   {
+    // 前端源码：以 <script> 顺序加载的 IIFE 模块
+    files: ["js/**/*.js", "data/**/*.js"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",
@@ -28,8 +52,6 @@ export default [
         navigator: "readonly",
         location: "readonly",
         history: "readonly",
-        alert: "readonly",
-        confirm: "readonly",
         DOMParser: "readonly",
         HTMLElement: "readonly",
         HTMLDivElement: "readonly",
@@ -58,6 +80,7 @@ export default [
         cancelAnimationFrame: "readonly",
         performance: "readonly",
         AbortController: "readonly",
+        AbortSignal: "readonly",
         TextDecoder: "readonly",
         WebSocket: "readonly",
         Uint8Array: "readonly",
@@ -77,7 +100,23 @@ export default [
       "no-redeclare": "error",
       "no-empty": "warn",
       "no-useless-assignment": "warn",
+      // 应用拥有的提示统一走 A4Utils 共享组件，不调用 WebView 原生弹窗
+      "no-alert": "error",
     },
+  },
+  {
+    files: ["scripts/**/*.mjs", "eslint.config.mjs", "vite.config.js"],
+    languageOptions: { ecmaVersion: 2023, sourceType: "module", globals: nodeGlobals },
+  },
+  {
+    files: ["tests/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: "commonjs",
+      globals: { ...nodeGlobals, require: "readonly", module: "writable", __dirname: "readonly", __filename: "readonly" },
+    },
+    // 测试用正则断言源码文本，保留与源码一致的空格和转义写法
+    rules: { "no-regex-spaces": "off", "no-useless-escape": "off" },
   },
   {
     // dist/ is build output — skip lint

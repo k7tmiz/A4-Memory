@@ -66,6 +66,11 @@ const updater = readText(join("js", "updater.js"));
 const updaterMatch = updater.match(/APP_VERSION\s*=\s*"([^"]+)"/);
 record("js/updater.js APP_VERSION", updaterMatch ? updaterMatch[1] : null);
 
+// Release 工作流发版时会校验发布说明里的 Android 安装包文件名，本地提前拦截。
+const releaseWorkflow = readText(join(".github", "workflows", "release.yml"));
+const apkMatch = releaseWorkflow.match(/a4-memory-v(\d+\.\d+\.\d+)-android\.apk/);
+record("release.yml 发布说明中的 APK 文件名", apkMatch ? apkMatch[1] : null);
+
 console.log(`以 package.json 版本 ${expected} 为基准：\n`);
 let ok = true;
 for (const { label, value } of results) {
@@ -81,4 +86,4 @@ if (!ok) {
   console.error("\n版本声明不一致，请将以上各处统一后再发布。");
   process.exit(1);
 }
-console.log("\n六处版本声明全部一致。");
+console.log("\n六处版本声明与发布说明的 APK 文件名全部一致。");
