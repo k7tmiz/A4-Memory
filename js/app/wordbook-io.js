@@ -325,6 +325,7 @@
     const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, {
       cache: "no-store",
       headers: { Accept: "application/vnd.github+json" },
+      signal: window.A4Utils?.createTimeoutSignal?.(15000),
     })
     if (res.status === 403 || res.status === 429) {
       throw new Error("GitHub API 请求过于频繁，请稍后再试")

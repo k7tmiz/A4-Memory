@@ -131,8 +131,12 @@ describe("records round presentation model", () => {
       status,
       pageIndex: 0,
     }))
+    // 最后两个「不会」从未复习过，按新词统计
     const latestStatusMap = new Map(
-      statuses.map((status, index) => [`word-${index}`, { status }])
+      statuses.map((status, index) => [
+        `word-${index}`,
+        { status, lastReviewedAt: index >= statuses.length - 2 ? "" : "2026-01-01T00:00:00.000Z" },
+      ])
     )
 
     const model = buildRoundCardModel(
@@ -151,9 +155,10 @@ describe("records round presentation model", () => {
       cap: 30,
       pageCount: 1,
       due: 2,
+      fresh: 2,
       mastered: 5,
       learning: 4,
-      unknown: 4,
+      unknown: 2,
       completed: false,
       typeLabel: "普通",
     })

@@ -238,21 +238,31 @@
     return due
   }
 
+  // 词条的当前展示状态：取该词在所有轮次中的最新状态；从未复习过的「不会」视为新词。
+  function resolveDisplayStatus(item, latestStatusMap) {
+    const key = getWordKey ? getWordKey(item?.word) : String(item?.word?.term || "").trim().toLowerCase()
+    const latest = key ? latestStatusMap?.get(key) : null
+    const source = latest || item
+    const status = normalizeStatus(source?.status)
+    const reviewed = !!String(source?.lastReviewedAt || "").trim()
+    return { key, status, kind: status === STATUS_UNKNOWN && !reviewed ? "new" : status }
+  }
+
   function computeStatusCounts(items, latestStatusMap, dueKeySet) {
+    let fresh = 0
     let mastered = 0
     let learning = 0
     let unknown = 0
     let due = 0
     for (const it of Array.isArray(items) ? items : []) {
-      const key = getWordKey ? getWordKey(it?.word) : String(it?.word?.term || "").trim().toLowerCase()
-      const s =
-      key && latestStatusMap?.get(key) ? normalizeStatus(latestStatusMap.get(key).status) : normalizeStatus(it?.status)
-      if (s === STATUS_MASTERED) mastered += 1
-      else if (s === STATUS_LEARNING) learning += 1
-      else unknown += 1
+      const { key, kind } = resolveDisplayStatus(it, latestStatusMap)
+      if (kind === STATUS_MASTERED) mastered += 1
+      else if (kind === STATUS_LEARNING) learning += 1
+      else if (kind === STATUS_UNKNOWN) unknown += 1
+      else fresh += 1
       if (key && dueKeySet?.has(key)) due += 1
     }
-    return { mastered, learning, unknown, due }
+    return { fresh, mastered, learning, unknown, due }
   }
 
   function getCompactRoundTypeLabel(type) {
@@ -270,6 +280,7 @@
       cap: normalizeRoundCap(cap),
       pageCount: getRoundPageCount(round),
       due: counts.due,
+      fresh: counts.fresh,
       mastered: counts.mastered,
       learning: counts.learning,
       unknown: counts.unknown,
@@ -446,6 +457,12 @@
       progress.setAttribute("aria-valuemax", String(model.cap))
       progress.setAttribute("aria-valuenow", String(model.wordCount))
       progress.style.setProperty("--round-progress", `${progressValue}%`)
+      // 进度条按状态分段：已掌握 → 学习中 → 不会，余下为新词；各段终点以已填充部分的百分比表示
+      const segmentEnd = (count) =>
+        model.wordCount > 0 ? `${Math.min(100, (count / model.wordCount) * 100).toFixed(2)}%` : "0%"
+      progress.style.setProperty("--round-seg-mastered", segmentEnd(model.mastered))
+      progress.style.setProperty("--round-seg-learning", segmentEnd(model.mastered + model.learning))
+      progress.style.setProperty("--round-seg-unknown", segmentEnd(model.mastered + model.learning + model.unknown))
       card.appendChild(progress)
 
       const statusLine = el("div", "round-status-line")
@@ -454,6 +471,7 @@
         ["is-learning", "学习中", model.learning],
         ["is-unknown", "不会", model.unknown],
       ]
+      if (model.fresh > 0) statusItems.push(["is-new", "新词", model.fresh])
       if (model.due > 0) statusItems.unshift(["is-due", "待复习", model.due])
       for (const [className, label, value] of statusItems) {
         const item = el("span", `round-status-item ${className}`)
@@ -532,14 +550,12 @@
           const row = el("div", "word-row")
           const w = el("div", "w")
           w.textContent = word?.term || ""
-          const termKey = getWordKey ? getWordKey(word) : String(word?.term || "").trim().toLowerCase()
-          const currentStatus =
-            termKey && latestStatusMap.get(termKey) ? latestStatusMap.get(termKey).status : it?.status
+          const display = resolveDisplayStatus(it, latestStatusMap)
           w.appendChild(
             el(
               "span",
-              `word-status word-status-${normalizeStatus(currentStatus)}`,
-              ` ${getStatusLabel(currentStatus)}`
+              `word-status word-status-${display.kind}`,
+              ` ${display.kind === "new" ? "新词" : getStatusLabel(display.status)}`
             )
           )
           row.appendChild(w)
@@ -704,6 +720,7 @@
       goalTarget,
       goalPercent,
       goalText,
+      goalProgressText: goalParts.join(" · "),
       goalPending: goalParts.length > 0 && !goalDone,
       totalText: `累计 ${stats.totalWords} 个词 · 完成 ${stats.completedRounds} 轮`,
     }
@@ -1028,8 +1045,15 @@
             ? "没有待复习的单词"
             : "今天的复习已经完成"
       const description = document.createElement("p")
+      // 目标进度只在右侧目标卡展示一次，这里说明下一步
       description.textContent =
-        summary.dueWords > 0 ? `${summary.goalText}。趁记忆还热，完成今天最重要的一组。` : summary.goalText
+        summary.dueWords > 0
+          ? "趁记忆还热，完成今天最重要的一组。"
+          : summary.goalPending
+            ? "今天的目标还没完成，再学一组新词。"
+            : summary.goalTarget > 0
+              ? "今天的目标已达成。"
+              : "尚未设置每日目标，可在设置的「学习」分类中开启。"
       focusCopy.append(kicker, title, description)
 
       const goal = document.createElement("div")
@@ -1039,8 +1063,7 @@
       const goalText = document.createElement("span")
       goalText.textContent = summary.goalTarget > 0 ? "今日目标" : "学习概览"
       const goalValue = document.createElement("strong")
-      goalValue.textContent =
-        summary.goalTarget > 0 ? `${summary.goalCurrent} / ${summary.goalTarget}` : `${summary.todayWords} 个词`
+      goalValue.textContent = summary.goalTarget > 0 ? summary.goalProgressText : `${summary.todayWords} 个词`
       goalLabel.append(goalText, goalValue)
 
       const progress = document.createElement("div")

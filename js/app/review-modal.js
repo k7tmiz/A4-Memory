@@ -130,12 +130,12 @@
         dom.reviewCard.style.removeProperty("--card-back-scale")
       }
       dom.reviewCard.classList.toggle("is-flipped", flipped)
-      const keyboardHint = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches
-        ? "；键盘 ← ↓ → 标记，空格朗读"
-        : ""
-      dom.reviewCardHint.textContent = (appState.reviewCardFlipEnabled
-        ? "点单词发音；点空白翻面；背面点任意处翻回；左右滑动/拖拽可快速标记（右滑已掌握/左滑不会）"
-        : "点击单词可发音；左右滑动/拖拽可快速标记（右滑已掌握/左滑不会）") + keyboardHint
+      // 标记键位已标在按钮上，提示只补充按钮没有说明的操作
+      const finePointer = !!window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches
+      const speakHint = finePointer ? "点击单词或按空格发音" : "点击单词发音"
+      const flipHint = appState.reviewCardFlipEnabled ? "，点空白处翻面" : ""
+      const markHint = finePointer ? "，左右拖动可快速标记" : "，右滑已掌握、左滑不会"
+      dom.reviewCardHint.textContent = speakHint + flipHint + markHint
       dom.reviewKnownBtn.disabled = false
       dom.reviewLearningBtn.disabled = false
       dom.reviewUnknownBtn.disabled = false

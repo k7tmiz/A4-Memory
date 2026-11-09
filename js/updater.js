@@ -421,7 +421,10 @@
     }
 
     const url = "https://api.github.com/repos/" + REPO + "/releases/latest"
-    return fetch(url, { headers: { Accept: "application/vnd.github+json" } })
+    return fetch(url, {
+      headers: { Accept: "application/vnd.github+json" },
+      signal: window.A4Utils?.createTimeoutSignal?.(15000),
+    })
       .then(function (res) {
         if (!res.ok) throw new Error("GitHub API returned " + res.status)
         return res.json()

@@ -892,6 +892,10 @@
     background: var(--faint);
   }
 
+  .desktop-status-card .status-meta-part[data-kind="new"]::before {
+    background: var(--text);
+  }
+
   .desktop-status-card .status-meta-part[data-kind="mastered"]::before {
     background: var(--success);
   }
@@ -1511,5 +1515,24 @@
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* 手机宽度的触控热区：外观尺寸不变，把可点区域补足到约 44px */
+@media (max-width: 700px) {
+  .home-controls .controls-row-wordbook #wordbookSelect,
+  .home-controls .controls-row-wordbook .wordbook-picker-btn {
+    height: 44px;
+    margin-block: -7px;
+  }
+
+  .paper-toolbar-action {
+    position: relative;
+  }
+
+  .paper-toolbar-action::after {
+    position: absolute;
+    content: "";
+    inset: -5px 0;
   }
 }

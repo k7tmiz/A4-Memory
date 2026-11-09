@@ -935,7 +935,7 @@ body.settings-page #settingsModal .settings-category-tabs {
   font-weight: var(--fw-bold);
   letter-spacing: -0.01em;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color var(--motion-duration-fast) var(--motion-ease-out), background-color var(--motion-duration-fast) var(--motion-ease-out), box-shadow var(--motion-duration-fast) var(--motion-ease-out), transform var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 .account-oauth-btn:hover {
@@ -1344,7 +1344,7 @@ body.theme-dark .account-oauth-btn:hover {
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
   box-shadow: none;
-  transition: all 0.2s ease;
+  transition: border-color var(--motion-duration-fast) var(--motion-ease-out), background-color var(--motion-duration-fast) var(--motion-ease-out), color var(--motion-duration-fast) var(--motion-ease-out);
 }
 
 .account-logout-action:hover {

@@ -81,10 +81,23 @@
       return null
     }
 
+    // 其他轮次的词条集合只在轮次列表或当前轮变化时改变，逐词加入时复用同一份结果。
+    let seenCache = null
+
     function buildAllRoundsWordKeySet({ excludeRoundId } = {}) {
       const exclude = String(excludeRoundId || "")
+      const rounds = Array.isArray(appState.rounds) ? appState.rounds : []
+      if (
+        exclude &&
+        seenCache &&
+        seenCache.rounds === rounds &&
+        seenCache.roundCount === rounds.length &&
+        seenCache.exclude === exclude
+      ) {
+        return seenCache.set
+      }
       const set = new Set()
-      for (const r of Array.isArray(appState.rounds) ? appState.rounds : []) {
+      for (const r of rounds) {
         if (exclude && String(r?.id || "") === exclude) continue
         const items = Array.isArray(r?.items) ? r.items : []
         for (const it of items) {
@@ -92,6 +105,7 @@
           if (key) set.add(key)
         }
       }
+      seenCache = exclude ? { rounds, roundCount: rounds.length, exclude, set } : null
       return set
     }
 

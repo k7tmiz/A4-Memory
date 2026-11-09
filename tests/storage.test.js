@@ -72,4 +72,27 @@ describe("A4Storage", () => {
     assert.equal(parsed.roundCap, 25)
     assert.deepEqual(parsed.rounds, [{ id: "r1" }])
   })
+
+  it("tells the user when a save fails, at most once per minute", () => {
+    const filePath = path.join(__dirname, "..", "js", "storage.js")
+    const toasts = []
+    const sandbox = {
+      window: { A4Utils: { showToast: (opts) => toasts.push(opts) } },
+      localStorage: {
+        getItem: () => null,
+        setItem: () => {
+          throw new Error("QuotaExceededError")
+        },
+      },
+    }
+    sandbox.window.window = sandbox.window
+    vm.createContext(sandbox)
+    vm.runInContext(fs.readFileSync(filePath, "utf8"), sandbox)
+
+    assert.equal(sandbox.window.A4Storage.saveState({ rounds: [] }), false)
+    assert.equal(sandbox.window.A4Storage.saveState({ rounds: [] }), false)
+    assert.equal(toasts.length, 1)
+    assert.equal(toasts[0].kind, "error")
+    assert.match(toasts[0].message, /保存失败/)
+  })
 })

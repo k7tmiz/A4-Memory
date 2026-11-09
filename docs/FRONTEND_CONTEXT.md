@@ -67,9 +67,12 @@ A4-Memory/
 │   └── utils.js           # 文件下载与清洗工具
 ├── scripts/
 │   ├── build.mjs          # 生产构建脚本（复制文件到 dist/，按 dist 内容重算缓存版本号，Android 构建时准备原生 TTS）
+│   ├── bump-version.mjs   # 一次改齐全部版本声明与发布说明中的 Android 安装包文件名
 │   ├── cache-bust.mjs     # 以文件内容哈希改写 HTML 入口中的 ?v= 缓存版本号（--check 只检查）
+│   ├── check-version.mjs  # 校验各处版本声明与发布说明中的 Android 安装包文件名一致
 │   └── prepare-android-tts.mjs # 幂等安装 Android TTS AAR、桥接、Gradle 与 ProGuard 配置
-├── eslint.config.mjs      # ESLint 代码规范配置
+├── eslint.config.mjs      # ESLint 代码规范配置（前端源码、工具脚本与测试各一组规则）
+├── .editorconfig          # 编辑器缩进、换行与编码约定
 ├── src-tauri/             # Tauri 桌面端脚手架（Rust）
 └── docs/
     └── ...                # 文档目录
@@ -120,7 +123,7 @@ A4-Memory/
 
 `index.html` 是唯一的运行时 App Shell。学习、记录、设置三个视图在首次加载时完成挂载，内部导航由 `js/ui/router.js` 通过 History API 切换，不重复加载脚本或重建底栏。设置是一级 App Shell 路由，其页面呈现不使用弹窗式标题或返回头。非活动视图同时设置 `hidden`、`inert` 与 `aria-hidden="true"`；切换时调用视图的 `leave` / `enter` 生命周期，并恢复各视图的滚动位置和主内容焦点。浏览器前进/后退走同一条路由链路。页面退出时只有活动视图接收 `exit` 生命周期，非活动控制器不会用旧的完整状态快照覆盖存储。
 
-App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。字体文件随应用本地分发（`assets/fonts/`，`css/style.css` 中以 `@font-face` 声明并在 `index.html` 预加载），不依赖外部字体服务，CSP 的 `font-src` 只放行 `'self'`。结构令牌统一定义在 `css/style.css` 的 `:root`：三套本地字体栈 `--font-sans`（Plus Jakarta Sans）、`--font-serif`（Newsreader，中文回退宋体系）、`--font-grotesk`（Inter），由风格映射到 `--font-ui` / `--font-display` / `--font-word`；`--fs-3xs`～`--fs-6xl` 字号层级与页面大标题 `--fs-display` / `--fs-display-compact`；`--fw-regular`～`--fw-heavy` 五档字重；`--radius-*` 圆角与 `--word-*` 单词形态。颜色令牌（`--bg`、`--text`、`--surface`、`--paper`、`--ink`、`--mark`、`--glass*`、`--cta` 等）全部定义在 `css/theme.css`：未带风格类名的 `body` 使用纸本令牌，`body.theme-style-minimal` / `body.theme-style-swiss` 及其 `.theme-dark` 组合覆盖为对应风格。各样式文件只引用这些变量，仅打印、极小屏释义和动态数字字号保留局部取值。纸面单词以 `data-status`（`new` / `mastered` / `learning` / `unknown`，由 `renderStats` 按 `lastReviewedAt` 与状态写入）驱动墨色、底色与下划线。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；底栏在纸本与极简风格下为 Liquid Glass 玻璃质感，瑞士风格改为实色直角条与朱红下划线指示器（同一套拖动交互），按住浮起、横向拖动可切换视图；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。动效统一使用 `--motion-ease-out` 一条减速曲线：位移类动效（视图进入、底栏/分类/分段指示块、设置分区切换）共用 `--motion-duration-move`（320ms），按压与悬停反馈使用 `--motion-duration-fast`；仅风格选中标记使用 `--motion-ease-pop` 回弹。视图切换为单段动效（路由默认退场 0ms、进场 320ms），新视图与底栏指示块同节奏到位。切换明暗或视觉风格时 `A4Motion.crossfade` 在根元素加 `a4-theme-switching` 暂停所有逐元素过渡，颜色在同一帧完成后整页交叉淡入。宽度不超过 700px 时固定与吸顶元素（底栏、页码、记录视图切换、设置分类导航）不使用背景模糊，改用近乎不透明的表面；纸面工具栏在所有宽度均为实色纸面。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
+App Shell 按 `css/style.css → css/theme.css → css/shell.css → css/records.css → css/settings.css` 加载样式。字体文件随应用本地分发（`assets/fonts/`，`css/style.css` 中以 `@font-face` 声明并在 `index.html` 预加载），不依赖外部字体服务，CSP 的 `font-src` 只放行 `'self'`。结构令牌统一定义在 `css/style.css` 的 `:root`：三套本地字体栈 `--font-sans`（Plus Jakarta Sans）、`--font-serif`（Newsreader，中文回退宋体系）、`--font-grotesk`（Inter），由风格映射到 `--font-ui` / `--font-display` / `--font-word`；`--fs-3xs`～`--fs-6xl` 字号层级与页面大标题 `--fs-display` / `--fs-display-compact`；`--fw-regular`～`--fw-heavy` 五档字重；`--radius-*` 圆角与 `--word-*` 单词形态。颜色令牌（`--bg`、`--text`、`--surface`、`--paper`、`--ink`、`--mark`、`--glass*`、`--cta` 等）全部定义在 `css/theme.css`：未带风格类名的 `body` 使用纸本令牌，`body.theme-style-minimal` / `body.theme-style-swiss` 及其 `.theme-dark` 组合覆盖为对应风格。各样式文件只引用这些变量，仅打印、极小屏释义和动态数字字号保留局部取值。纸面单词以 `data-status`（`new` / `mastered` / `learning` / `unknown`，由 `renderStats` 按 `lastReviewedAt` 与状态写入）驱动墨色、底色与下划线：「不会」用 `--word-unknown-line` 实线，「学习中」用 `--word-learning-line` 点状线（极简风格以底色区分，两条线均为透明）。右栏进度清单与记录页的轮次卡、单词徽章按同一口径把尚未复习的词计为「新词」；记录页轮次进度条按已掌握、学习中、不会、新词分段着色。基础组件、主题变量、响应式壳层与聚焦页面样式保持单向覆盖关系；`records.css` 只负责记录概览、轮次/状态卡和按需 A4 预览，`settings.css` 只负责设置仪表盘与分类布局。学习、记录、设置共用一个 `.app-dock-shell`：移动端距视口底部 18px（另加安全区），选中态由同一个滑动胶囊承载；底栏在纸本与极简风格下为 Liquid Glass 玻璃质感，瑞士风格改为实色直角条与朱红下划线指示器（同一套拖动交互），按住浮起、横向拖动可切换视图；离开学习视图时「下一个单词」平滑收起，导航区同步扩展。动效统一使用 `--motion-ease-out` 一条减速曲线：位移类动效（视图进入、底栏/分类/分段指示块、设置分区切换）共用 `--motion-duration-move`（320ms），按压与悬停反馈使用 `--motion-duration-fast`；仅风格选中标记使用 `--motion-ease-pop` 回弹。视图切换为单段动效（路由默认退场 0ms、进场 320ms），新视图与底栏指示块同节奏到位。切换明暗或视觉风格时 `A4Motion.crossfade` 在根元素加 `a4-theme-switching` 暂停所有逐元素过渡，颜色在同一帧完成后整页交叉淡入。宽度不超过 700px 时固定与吸顶元素（底栏、页码、记录视图切换、设置分类导航）不使用背景模糊，改用近乎不透明的表面；纸面工具栏在所有宽度均为实色纸面。有方向的视图切换、分类切换、详情展开和 A4 翻页动效在 `prefers-reduced-motion: reduce` 下停用。
 
 学习视图纸面使用 `.paper-toolbar` 承载复习与释义切换。宽度达到 701px 时，A4 纸面在视口水平居中，宽度由 `--desktop-paper-w` 按视口高度伸缩（456–600px，沉浸模式 470–680px）并为两侧工具栏预留空间；左侧词书/工具与右侧轮次进度相对纸面两侧固定排布。701–1099px 宽度下左栏固定在左侧、纸面在右侧剩余空间居中。手机端页眉为网格：眉标「当前词书」与以展示字体呈现的词书名（Android 为应用内选择按钮）在左，`#mobileRoundBadge` 以大号计数与 `--round-progress` 进度细线在右；低频工具收在 `.mobile-more-tools` 下拉菜单（与记录页 `.records-tools` 同构，菜单项带图标并依次浮现），桌面端左栏以常驻的 `#desktopToolsList` 列出新建一轮、查词、导入词书、沉浸模式与用法介绍（图标、文字与快捷键提示）。手机沉浸模式的纸面高度使用动态视口与安全区计算，纸面底部和悬浮底栏顶部保持 15px 间距；模式切换后按归一化坐标重新渲染当前页单词。查词弹窗由 `js/lookup.js` 构建为 `.lookup-modal`，采用圆形关闭钮与搜索行布局；词书选择底部面板为 `.wordbook-picker-panel`。
 
@@ -251,7 +254,7 @@ window.A4Sanitize = {
 ```
 
 ### `js/storage.js`
-`localStorage` 读写封装，暴露 `window.A4Storage`。写入时自动清除 `apiKey` 等敏感字段，防止旧版本数据或导入数据中的 API Key 被持久化到 localStorage。
+`localStorage` 读写封装，暴露 `window.A4Storage`。写入时自动清除 `apiKey` 等敏感字段，防止旧版本数据或导入数据中的 API Key 被持久化到 localStorage。写入失败（通常是本机存储空间已满）时 `saveState` 返回 `false`，并通过 `A4Utils.showToast` 提示用户导出备份、清理词书或旧记录，同一分钟内只提示一次。
 ```javascript
 window.A4Storage = {
   STORAGE_KEY,         // "a4-memory:v1"
@@ -273,6 +276,8 @@ window.A4Utils = {
   showNoticeDialog(messageOrOpts),    // 应用内提示弹窗
   showChoiceDialog(options),          // 应用内单选底部面板
   showToast(messageOrOpts),           // 全局轻提示
+  createTimeoutSignal(ms),            // 网络请求超时信号；环境不支持 AbortSignal.timeout 时返回 undefined
+  isTimeoutError(error),              // 判断请求是否因超时或中止而失败
   getTauriInvoke(),                   // 统一获取 Tauri invoke 函数
   installMobileTapGuard(el),          // 移动端 300ms 延迟兼容
   installAndroidSelectPicker(root, selector),
@@ -341,8 +346,8 @@ App Shell 中所有视图共享一个底层控制器和一套 DOM 事件；每�
 | `js/app/review-swipe.js` | `reviewSwipe.createReviewSwipeController({ card, isReviewOpen, onCommit })`：复习卡指针拖动状态机，确认横向拖动后才捕获指针，轻点卡片单词仍可发音；返回 `resetToCenter`、`commit(direction)`、`isInteractionBlocked`、`destroy`；`commit` 供按钮与键盘标记复用离场动画（1 右飞已掌握、-1 左飞不会、0 下沉学习中），触屏设备提交时轻振一次，减少动态效果时直接提交。复习弹窗位于最上层时支持 ← / 1 不会、↓ / 2 学习中、→ / 3 已掌握、空格朗读，新卡片以独立的 `scale` / `translate` 属性进入而不干扰滑动变换 |
 | `js/app/wordbook-manager.js` | `wordbookManager.createWordbookManager({ appState, dom, persist, ... })`：词书选择（Android 使用应用内底部面板，其余平台保留原生 `<select>`）、本地文件/链接/GitHub 仓库在线导入、自定义词书管理与删除、已保存词书的名称迁移与去重；`bindEvents()` 绑定词书相关控件 |
 | `js/app/review-modal.js` | `reviewModal.createReviewModal({ appState, dom, persist, ... })`：手动复习（整轮、默认打乱）与「下一个单词」后的自动复习（新词置顶，普通轮按当前页）共用队列、卡片渲染、翻面与状态标记；状态写入 `lastReviewedAt` / `nextReviewAt` 并同步「不会」词表；`bindEvents()` 绑定标记按钮、点词发音、翻面、打乱与 `reviewSwipe` 滑动 |
-| `js/app/word-picker.js` | `wordPicker.createWordPicker({ appState, getCurrentRound, ... })`：按「不会」词优先、其余随机建立按 `term + meaning + language` 去重的词池，跳过本轮已有词条，词池用尽后重新洗牌；`pickNextWordPreferUnseenFirst` 优先挑选历史轮次未出现过的词条 |
-| `js/app/paper-layout.js` | `paperLayout.createPaperLayout({ paperInner, getPlaced })`：按显示释义时的完整尺寸批量测量单词，新词在纸面边距内随机取位、纸面已满时退回重叠面积最小的位置，恢复时限位并就近避让；只调整显示位置，不改写已保存的归一化坐标 |
+| `js/app/word-picker.js` | `wordPicker.createWordPicker({ appState, getCurrentRound, ... })`：按「不会」词优先、其余随机建立按 `term + meaning + language` 去重的词池，跳过本轮已有词条，词池用尽后重新洗牌；`pickNextWordPreferUnseenFirst` 优先挑选历史轮次未出现过的词条；`buildAllRoundsWordKeySet` 的结果在轮次列表与当前轮不变时复用 |
+| `js/app/paper-layout.js` | `paperLayout.createPaperLayout({ paperInner, getPlaced })`：按显示释义时的完整尺寸批量测量单词，新词在纸面边距内随机取位、纸面已满时退回重叠面积最小的位置，恢复时限位并就近避让；只调整显示位置，不改写已保存的归一化坐标；新落位的归一化坐标保留 4 位小数 |
 
 `js/app.js` 是学习视图控制器（UI 层，不含核心业务逻辑）。负责：
 - 按当前页渲染纸面：整页插入单词后交给 `paperLayout` 批量限位与避让，新词落位同样委托 `paperLayout`

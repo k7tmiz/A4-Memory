@@ -421,6 +421,19 @@ describe("study paper bounds and intro focus", () => {
     assert.match(sharedStyle, /\.word-item\[data-status="mastered"\]\s*\{[^}]*color:\s*var\(--word-mastered-ink\)/s)
   })
 
+  it("keeps learning words distinguishable from new words in every style", () => {
+    const themeStyle = fs.readFileSync(path.join(ROOT, "css", "theme.css"), "utf8")
+    assert.match(
+      sharedStyle,
+      /\.word-item\[data-status="learning"\] \.word-term\s*\{[^}]*text-decoration-style:\s*dotted;[^}]*text-decoration-color:\s*var\(--word-learning-line, transparent\)/s
+    )
+    // 纸本与瑞士继承基础令牌的琥珀色点线；极简用底色区分，关闭下划线
+    assert.match(themeStyle, /body,\s*body\.theme-style-paper\s*\{[^}]*--word-learning-line:\s*var\(--warning\)/s)
+    assert.match(themeStyle, /body\.theme-style-minimal\s*\{[^}]*--word-learning-bg:[^;]+;\s*--word-learning-line:\s*transparent/s)
+    assert.doesNotMatch(themeStyle, /body\.theme-style-swiss\s*\{[^}]*--word-learning-line/s)
+    assert.match(appCode, /\["new", "新词", counts\.fresh\]/)
+  })
+
   it("wraps round status counts only between items", () => {
     assert.match(appCode, /part\.className = "status-meta-part"/)
     assert.match(fs.readFileSync(path.join(ROOT, "css", "style.css"), "utf8"), /\.status-meta-part\s*\{\s*white-space:\s*nowrap;/)

@@ -438,6 +438,16 @@
     })
   }
 
+  // 网络请求的超时信号；运行环境不支持时返回 undefined，请求按无超时发出。
+  function createTimeoutSignal(ms) {
+    const AbortSignalRef = window.AbortSignal
+    return typeof AbortSignalRef?.timeout === "function" ? AbortSignalRef.timeout(ms) : undefined
+  }
+
+  function isTimeoutError(error) {
+    return error?.name === "TimeoutError" || error?.name === "AbortError"
+  }
+
   function showToast(messageOrOpts) {
     const opts = typeof messageOrOpts === "string" ? { message: messageOrOpts } : messageOrOpts || {}
     const message = String(opts.message || "").trim()
@@ -667,6 +677,8 @@
     showNoticeDialog,
     showChoiceDialog,
     showToast,
+    createTimeoutSignal,
+    isTimeoutError,
     getTauriInvoke,
     installMobileTapGuard,
     installAndroidSelectPicker,

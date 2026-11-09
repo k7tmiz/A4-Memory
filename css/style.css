@@ -439,7 +439,7 @@ select {
   background-repeat: no-repeat;
   width: 100%;
   max-width: 100%;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: border-color var(--motion-duration-fast) var(--motion-ease-out), background-color var(--motion-duration-fast) var(--motion-ease-out), box-shadow var(--motion-duration-fast) var(--motion-ease-out);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -975,6 +975,15 @@ body.android-wordbook-picker .wordbook-picker-btn {
   text-decoration-line: underline;
   text-decoration-color: var(--word-unknown-line, transparent);
   text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+}
+
+/* 学习中用点状线，与「不会」的实线在颜色之外再多一层区分 */
+.word-item[data-status="learning"] .word-term {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--word-learning-line, transparent);
+  text-decoration-thickness: 2px;
   text-underline-offset: 0.2em;
 }
 
@@ -3047,8 +3056,8 @@ body.android-wordbook-picker .wordbook-picker-btn {
 }
 
 .word-status-learning {
-  border-color: var(--border3);
-  color: var(--text);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+  color: var(--warning);
 }
 
 .word-status-unknown {

@@ -480,6 +480,7 @@
     ))
   }
 
+  let lastRenderedPaperSize = null
   function renderCurrentRound({ transition = "" } = {}) {
     ensureCurrentRound()
     const round = getCurrentRound()
@@ -488,6 +489,7 @@
     clearPaper()
     appState.placed = []
     const paper = getPaperInnerSize()
+    lastRenderedPaperSize = paper
 
     const pageCount = getRoundPageCount(round)
     appState.currentPageIndex = clamp(Math.floor(Number(appState.currentPageIndex) || 0), 0, Math.max(0, pageCount - 1))
@@ -558,7 +560,6 @@
     clearPaper()
     updateBadge()
     updateHint()
-    renderStats()
     persist()
   }
 
@@ -607,16 +608,19 @@
 
   function getRoundStatusCounts(round) {
     const items = Array.isArray(round?.items) ? round.items : []
+    let fresh = 0
     let mastered = 0
     let learning = 0
     let unknown = 0
     for (const it of items) {
-      const s = normalizeStatus(it?.status)
+      // 与纸面着色同一口径：尚未复习过的词算新词，不计入「不会」
+      const s = getPaperWordStatus(it)
       if (s === STATUS_MASTERED) mastered += 1
       else if (s === STATUS_LEARNING) learning += 1
-      else unknown += 1
+      else if (s === STATUS_UNKNOWN) unknown += 1
+      else fresh += 1
     }
-    return { mastered, learning, unknown, total: items.length }
+    return { fresh, mastered, learning, unknown, total: items.length }
   }
 
   function getDueTerms(nowMs) {
@@ -639,6 +643,7 @@
 
     if (dom.roundStatusCounts) {
       const parts = [
+        ["new", "新词", counts.fresh],
         ["mastered", "已掌握", counts.mastered],
         ["learning", "学习中", counts.learning],
         ["unknown", "不会", counts.unknown],
@@ -863,7 +868,6 @@
 
     updateBadge()
     updateHint()
-    renderStats()
     persist()
     refreshReviewList()
     openReviewModal()
@@ -925,7 +929,6 @@
     updatePageNav()
     updateBadge()
     updateHint()
-    renderStats()
     persist()
   }
 
@@ -1456,6 +1459,11 @@
   window.addEventListener("resize", () => {
     if (resizeDebounceTimer) clearTimeout(resizeDebounceTimer)
     resizeDebounceTimer = setTimeout(() => {
+      // 其他视图活动时纸面不可见，回到学习视图时会重新渲染；纸面尺寸未变（如手机地址栏收放）时无需重排
+      if (window.A4Router?.isActive && !window.A4Router.isActive("study")) return
+      const size = getPaperInnerSize()
+      const last = lastRenderedPaperSize
+      if (last && Math.abs(size.w - last.w) < 0.5 && Math.abs(size.h - last.h) < 0.5) return
       renderCurrentRound()
     }, 150)
   })

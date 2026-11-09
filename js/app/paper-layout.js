@@ -13,6 +13,12 @@
       getPlaced,
     } = deps
 
+    // 归一化坐标保留 4 位小数：A4 纸面上的误差不足 0.1px，持久化体积明显更小。
+    function toNormalizedPos(x, y, paperW, paperH) {
+      const round4 = (n) => Math.round(clamp(n, 0, 1) * 10000) / 10000
+      return { x: round4(x / paperW), y: round4(y / paperH) }
+    }
+
     function getPaperInnerSize() {
       const rect = paperInner.getBoundingClientRect()
       return { w: rect.width || 1, h: rect.height || 1 }
@@ -132,7 +138,7 @@
 
           el.style.left = `${candidate.x}px`
           el.style.top = `${candidate.y}px`
-          const pos = { x: clamp(candidate.x / m.paperW, 0, 1), y: clamp(candidate.y / m.paperH, 0, 1) }
+          const pos = toNormalizedPos(candidate.x, candidate.y, m.paperW, m.paperH)
           return { el, box: candidate, pos }
         }
 
@@ -161,7 +167,7 @@
       }
       el.style.left = `${candidate.x}px`
       el.style.top = `${candidate.y}px`
-      const pos = { x: clamp(candidate.x / m.paperW, 0, 1), y: clamp(candidate.y / m.paperH, 0, 1) }
+      const pos = toNormalizedPos(candidate.x, candidate.y, m.paperW, m.paperH)
       return { el, box: candidate, pos }
     }
 

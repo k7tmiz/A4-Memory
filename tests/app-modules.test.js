@@ -404,6 +404,22 @@ describe("word picker", () => {
     assert.equal(picker.pickNextWordPreferUnseenFirst({ globalSeenSet }).term, "delta")
   })
 
+  it("reuses the seen-word set until the round list or current round changes", () => {
+    const makeRound = (id, terms) => ({ id, language: "en", items: terms.map((term) => ({ word: { term, meaning: `${term}-m` } })) })
+    const { picker, appState } = createPicker()
+    appState.rounds = [makeRound("r1", ["alpha"]), makeRound("r2", [])]
+    const first = picker.buildAllRoundsWordKeySet({ excludeRoundId: "r2" })
+    assert.equal(picker.buildAllRoundsWordKeySet({ excludeRoundId: "r2" }), first, "same rounds and current round reuse the set")
+
+    appState.rounds.push(makeRound("r3", []))
+    const afterNewRound = picker.buildAllRoundsWordKeySet({ excludeRoundId: "r3" })
+    assert.notEqual(afterNewRound, first)
+    assert.equal(afterNewRound.size, 1)
+
+    appState.rounds = [makeRound("r1", ["alpha", "beta"]), makeRound("r3", [])]
+    assert.equal(picker.buildAllRoundsWordKeySet({ excludeRoundId: "r3" }).size, 2, "a reloaded round list is rescanned")
+  })
+
   it("deduplicates repeated source words by term and meaning", () => {
     const { picker, appState } = createPicker({ sourceWords: [...words, { ...words[0] }] })
     picker.ensurePool()

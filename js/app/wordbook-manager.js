@@ -396,8 +396,9 @@
     async function importWordbookFromUrl({ url, name, language, description } = {}) {
       let res
       try {
-        res = await fetch(url, { cache: "no-store" })
+        res = await fetch(url, { cache: "no-store", signal: window.A4Utils?.createTimeoutSignal?.(20000) })
       } catch (e) {
+        if (window.A4Utils?.isTimeoutError?.(e)) throw new Error("下载超时，请检查网络后重试", { cause: e })
         throw new Error(`网络请求失败：${e?.message || "无法下载词书文件"}`, { cause: e })
       }
       if (res.status === 403 || res.status === 429) {

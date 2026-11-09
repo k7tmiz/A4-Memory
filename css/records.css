@@ -37,7 +37,7 @@ body.records-page .app.records {
 .records-focus-kicker {
   display: block;
   color: var(--muted);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   font-weight: var(--fw-bold);
 }
 
@@ -478,7 +478,7 @@ body.records-page .app.records {
   margin-top: 7px;
   overflow-wrap: anywhere;
   color: var(--muted);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   line-height: 1.45;
 }
 
@@ -499,7 +499,7 @@ body.records-page .app.records {
 }
 
 .round-count span {
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
 }
 
@@ -510,6 +510,13 @@ body.records-page .app.records {
 
 .round-progress::after {
   width: var(--round-progress, 0%);
+  background: linear-gradient(
+    to right,
+    var(--records-success) 0 var(--round-seg-mastered, 0%),
+    var(--records-warning) var(--round-seg-mastered, 0%) var(--round-seg-learning, 0%),
+    var(--mark) var(--round-seg-learning, 0%) var(--round-seg-unknown, 0%),
+    var(--progress) var(--round-seg-unknown, 0%) 100%
+  );
 }
 
 .round-status-line {
@@ -520,7 +527,7 @@ body.records-page .app.records {
   gap: 12px;
   flex-wrap: wrap;
   color: var(--muted);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
 }
 
 .round-status-item {
@@ -540,6 +547,10 @@ body.records-page .app.records {
 .round-status-item.is-due i {
   background: var(--faint);
   box-shadow: inset 0 0 0 1.5px var(--text);
+}
+
+.round-status-item.is-new i {
+  background: var(--progress);
 }
 
 .round-status-item.is-mastered i {
@@ -723,6 +734,7 @@ body.records-page .app.records {
 }
 
 .status-empty {
+  grid-column: 1 / -1;
   padding: 16px;
   border: 1px dashed var(--border3);
   border-radius: var(--radius-md);
@@ -810,7 +822,7 @@ body.records-page .app.records .empty {
   }
 
   .records-stat-card span {
-    font-size: var(--fs-3xs);
+    font-size: var(--fs-2xs);
   }
 
   .records-stat-card strong {
@@ -820,7 +832,7 @@ body.records-page .app.records .empty {
 
   .records-stat-detail {
     margin-top: 7px;
-    font-size: var(--fs-2xs);
+    font-size: var(--fs-xs);
   }
 
   .records-focus {
