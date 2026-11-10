@@ -1,7 +1,7 @@
 {
   "name": "a4-memory",
   "private": true,
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "A4 纸随机排版背单词",
   "engines": {
     "node": ">=22"
