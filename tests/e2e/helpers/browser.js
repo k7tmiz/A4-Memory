@@ -224,7 +224,7 @@ async function launchBrowser() {
   async function freshApp(page, { query = "", width = 1440, height = 900, skipIntro = true, state = null } = {}) {
     await page.setViewport(width, height)
     await page.goto("about:blank")
-    await page.send("Storage.clearDataForOrigin", { origin, storageTypes: "local_storage" })
+    await page.send("Storage.clearDataForOrigin", { origin, storageTypes: "local_storage,indexeddb" })
     await page.goto(`${origin}/manifest.webmanifest`)
     await page.evaluate(`(() => {
       localStorage.clear()
@@ -233,7 +233,8 @@ async function launchBrowser() {
     })()`)
     page.errors.length = 0
     await page.goto(`${origin}/index.html${query}`)
-    await page.waitFor(`document.readyState === "complete" && !!window.A4Router`)
+    // 路由在存储层就绪后才进入首个视图
+    await page.waitFor(`document.readyState === "complete" && !!window.A4Router?.getCurrentView?.()`)
   }
 
   async function close() {

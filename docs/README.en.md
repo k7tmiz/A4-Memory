@@ -38,7 +38,7 @@ A pure front-end vocabulary tool built around randomly placing words on A4 pages
 |-----------|------------|
 | Frontend | Pure static HTML/CSS/Vanilla JS, no framework |
 | Desktop / Android | Tauri v2 (Rust + WebView), shares frontend code with Web |
-| State storage | Browser localStorage |
+| State storage | Browser localStorage (study records and preferences) + IndexedDB (custom wordbooks) |
 | Cloud sync | Backend API + JWT (`js/cloud.js` private module) |
 | AI integration | OpenAI-style chat/completions API |
 
@@ -71,7 +71,7 @@ A4-Memory/
 │   ├── settings-page.js   # Settings view state and lifecycle wiring
 │   ├── settings.js        # Settings controller
 │   ├── speech.js          # Speech synthesis
-│   ├── storage.js         # localStorage wrapper
+│   ├── storage.js         # Persistent state wrapper (localStorage + IndexedDB wordbook store)
 │   ├── updater.js         # Version update checker
 │   └── utils.js           # Download utilities
 ├── src-tauri/             # Tauri desktop app (Rust)
@@ -133,6 +133,8 @@ npm run build
 Open: http://localhost:8080/ or http://localhost:5173/
 
 ## Data & Storage
+
+Custom wordbooks live in IndexedDB (database `a4-memory`) and do not count against the localStorage quota; when IndexedDB is unavailable they stay in localStorage with the main state. Backup export and cloud sync include the full state, wordbooks included.
 
 ### localStorage keys
 

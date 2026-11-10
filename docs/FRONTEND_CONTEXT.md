@@ -62,7 +62,7 @@ A4-Memory/
 │   ├── settings-page.js   # 设置视图状态与生命周期接线
 │   ├── settings.js        # 设置模块门面（组装 js/settings/ 子模块）
 │   ├── speech.js          # 语音合成封装
-│   ├── storage.js         # localStorage 读写封装
+│   ├── storage.js         # 持久化状态读写封装（localStorage + IndexedDB 词书库）
 │   ├── updater.js         # GitHub 版本更新检测、平台安装包选择与通知
 │   └── utils.js           # 文件下载与清洗工具
 ├── scripts/
@@ -216,7 +216,7 @@ window.A4State = {
 共享弹层控制器，暴露 `window.A4UI`。标准入口为 `setLayerVisible(layer, visible, { trigger, motion })`：`trigger` 保存实际触发元素与可用矩形；`motion: "origin"` 从来源控件展开并在关闭时按同一路径返回，`"sheet"` 自面板高度方向滑入（用于词书选择等底部面板，不从顶部触发点飞入），`"neutral"` 用于没有用户来源的自动弹层。它维护可嵌套的弹层栈，只允许最上层响应 `Escape` 和焦点循环；首个弹层打开时冻结并隔离页面，最后一个弹层关闭时恢复原滚动位置与触发控件焦点。动画可被快速反向、中断或立即清理，并在来源消失、Web Animations API 不可用或系统要求减少动态效果时安全降级。首页弹窗、查词、设置页内确认/预览、确认框、公告和 Android 下拉面板均通过该入口管理。视口宽度不超过 700px 时，除页面式设置根节点与 `.modal-centered`（复习弹窗）外的弹层由 CSS 呈现为带拖拽指示条的贴底面板，`setLayerVisible` 同时把动效统一改为 `sheet`；`.modal-centered` 在所有宽度均为略高于中心的浮起卡片。学习页手机「更多工具」与记录页工具菜单使用页面内 `details` 下拉，不进入弹层栈。可见入口把点击转发给隐藏的功能按钮时，通过 `withTriggerProxy(target, proxy, run)` 让弹层以可见入口作为来源控件。关闭最后一个弹层时先解除页面 `inert` 再恢复焦点（`preventScroll`），确保焦点回到触发控件。路由切换按从顶层到底层的顺序向弹层所有者发送 `a4-layer-dismiss`，由所有者执行取消、请求中止、Promise 收敛和 DOM 清理，再同步收尾所有已打开或正在退出的共享弹层；批量收尾不恢复旧焦点，由目标视图独占最终焦点。
 
 ### `js/ui/router.js`
-持久 App Shell 路由器，暴露 `window.A4Router`。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
+持久 App Shell 路由器，暴露 `window.A4Router`。默认路由在 `DOMContentLoaded` 后经 `startAfter(A4Storage.ready)` 启动：等待期间只挂载初始视图的 DOM，不触发生命周期、不安装文档退出监听，也不接受导航，视图不会在状态读全之前保存。它负责学习、记录、设置三个视图的 History API 地址、单一底栏状态、过渡方向、焦点/滚动恢复和视图生命周期。`isActive(view)` 是常驻控制器处理主题媒体查询、鉴权事件和异步结果时的活动所有权判断；`exit` 只在文档退出时分派给当前视图。动画执行期间到达的 `popstate` 会排队到当前切换结束，避免快速返回导致地址与可见视图不一致。
 
 ### `js/ui/dock-glass.js`
 悬浮底栏 Liquid Glass 交互层，暴露 `window.A4DockGlass`。按住底栏任意位置时胶囊浮起（放大、上浮、高光增强并附带轻微色差投影），整条底栏经 `--a4-dock-press` 轻微下沉贴合按压；横向拖动时胶囊跟手滑动且整条底栏按拖动方向小幅偏移，并以 `--a4-dock-sweep` / `--a4-dock-dir` / `--a4-dock-motion` 暴露拖动的高光位移、方向与幅度，驱动 shell.css 与 settings.css 中镜面高光扫过、拖动前缘厚度与边缘色散装饰层。拖动边界按当前选中项到首末项的距离计算；超出边界的位移经渐进阻力衰减，弹性余量最多 8px，`is-clamped` 状态增亮接触边缘。已处于端点时向外拖动，松手回到原端点；从其他项拖到边界外时，松手选中对应端点。松手后按位移与甩动速度决定切换相邻视图或阻尼回弹；甩动时底栏产生速度形变并快速复位。拖动产生的点击由捕获阶段拦截，避免与 `data-a4-route` 链接默认导航冲突；`prefers-reduced-motion: reduce` 下不做速度形变并隐藏装饰光学层，直接拖动与点击仍可用。
@@ -254,12 +254,21 @@ window.A4Sanitize = {
 ```
 
 ### `js/storage.js`
-`localStorage` 读写封装，暴露 `window.A4Storage`。写入时自动清除 `apiKey` 等敏感字段，防止旧版本数据或导入数据中的 API Key 被持久化到 localStorage。写入失败（通常是本机存储空间已满）时 `saveState` 返回 `false`，并通过 `A4Utils.showToast` 提示用户导出备份、清理词书或旧记录，同一分钟内只提示一次。
+持久化状态读写封装，暴露 `window.A4Storage`。学习记录与偏好存放在 `localStorage` 的主状态键，自定义词书（`customWordbooks`）单独存放在 IndexedDB（库 `a4-memory`、对象仓库 `state`、记录 `customWordbooks`，值为 JSON 字符串）。`loadState` / `saveState` 对外保持同步：启动时把词书读入内存，`loadState` 把内存中的词书合并进返回值（每次返回独立副本），`saveState` 把词书从主状态中剥离，仅在词书内容变化时写入 IndexedDB。视图、备份导入导出与云同步都通过这两个函数读写完整状态，不直接访问底层存储。
+
+- `ready`：存储层就绪后兑现的 Promise，结果为 `true` 表示词书已由 IndexedDB 承载。路由在首个视图进入前等待它；就绪前不读写完整状态。
+- 迁移：主状态里仍带有 `customWordbooks` 时，启动阶段按 `id` 合并进 IndexedDB（主状态中的条目覆盖同 `id` 条目），写入成功后才从 `localStorage` 移除。
+- 降级：IndexedDB 不可用、打开失败或 1.5 秒内未就绪时，本次运行的词书随主状态存放在 `localStorage`，`ready` 兑现为 `false`。
+- 敏感字段：读写时清除 `aiConfig.apiKey`，防止旧版本数据或导入数据中的 API Key 被持久化。
+- 写入失败：`localStorage` 写入失败时 `saveState` 返回 `false`；任一存储写入失败都会通过 `A4Utils.showToast` 提示用户导出备份、清理词书或旧记录，同一分钟内只提示一次。词书写入失败后，下一次保存会重试。
+- 多标签页：词书的内存副本只在页面加载时读取，其他标签页对词书的修改在刷新后可见。
+
 ```javascript
 window.A4Storage = {
   STORAGE_KEY,         // "a4-memory:v1"
-  loadState(),         // 返回解析后的 JSON 或 null；读取时清除 apiKey
-  saveState(state),   // 序列化后写入 localStorage；写入时强制清除 apiKey
+  ready,               // Promise<boolean>：存储层就绪
+  loadState(),         // 返回合并词书后的完整状态或 null；读取时清除 apiKey
+  saveState(state),    // 主状态写入 localStorage，词书变化时写入 IndexedDB；写入时强制清除 apiKey
   readStateRaw(),      // alias for loadState
   writeStateRaw(state) // alias for saveState
 }
@@ -433,9 +442,11 @@ Android 构建执行 `scripts/prepare-android-tts.mjs`：官方 sherpa-onnx v1.1
 
 ---
 
-## 6. localStorage 数据结构
+## 6. 本地数据结构
 
 ### 主状态键 `a4-memory:v1`
+
+`A4Storage.loadState()` 返回的完整状态如下；其中 `customWordbooks` 实际存放在 IndexedDB，其余字段存放在 `localStorage`。
 
 偏好字段的默认值与合法范围以 `js/core/state-schema.js` 的 `PREFERENCE_DEFAULTS` / `normalizePreferences` 为准。
 

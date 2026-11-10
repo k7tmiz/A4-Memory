@@ -53,6 +53,7 @@
     let pending = false
     let queuedNavigation = null
     let started = false
+    let startHeld = false
     let listenersInstalled = false
 
     function resolveView(value) {
@@ -194,7 +195,10 @@
 
     function navigate(view, options = {}) {
       const target = resolveView(view)
-      if (!started) start()
+      if (!started) {
+        if (startHeld) return false
+        start()
+      }
       if (!target) return false
       if (pending) {
         if (options.queue === true) {
@@ -253,7 +257,7 @@
     }
 
     function start() {
-      if (started) return false
+      if (started || startHeld) return false
       started = true
       installListeners()
       const initialView = resolveView(windowRef.location)
@@ -270,6 +274,20 @@
       return true
     }
 
+    // 首个视图进入前等待异步前置条件（存储层就绪）。等待期间只挂载初始视图的 DOM，
+    // 不触发任何生命周期，也不接受导航，避免视图在状态读全之前保存。
+    function startAfter(ready) {
+      if (started || startHeld) return false
+      startHeld = true
+      setMountedView(resolveView(windowRef.location))
+      const release = () => {
+        startHeld = false
+        start()
+      }
+      Promise.resolve(ready).then(release, release)
+      return true
+    }
+
     return Object.freeze({
       createRouter,
       getCurrentView: () => currentView,
@@ -279,14 +297,21 @@
       register,
       resolveView,
       start,
+      startAfter,
     })
   }
 
   const router = createRouter()
   window.A4Router = router
+  // storage.js 在本文件之后加载，等全部脚本就位再取它的就绪信号
+  const startRouter = () => {
+    const storageReady = window.A4Storage?.ready
+    if (typeof storageReady?.then === "function") router.startAfter(storageReady)
+    else router.start()
+  }
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => router.start(), { once: true })
+    document.addEventListener("DOMContentLoaded", startRouter, { once: true })
   } else {
-    router.start()
+    startRouter()
   }
 })()

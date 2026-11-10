@@ -369,4 +369,41 @@ describe("A4Router persistent application shell", () => {
     assert.equal(events[0][1].immediate, true)
     assert.equal(harness.A4Router.getCurrentView(), "records")
   })
+
+  it("holds the first enter and all navigation until storage is ready", async () => {
+    const harness = loadRouter({ pathname: "/records.html" })
+    const events = []
+    harness.A4Router.register("records", { enter: () => events.push("enter:records"), leave: () => events.push("leave:records") })
+    harness.A4Router.register("study", { enter: () => events.push("enter:study") })
+    let release
+    const ready = new Promise((resolve) => { release = resolve })
+
+    assert.equal(harness.A4Router.startAfter(ready), true)
+    assert.equal(harness.body.dataset.a4CurrentView, "records", "the initial view is mounted while waiting")
+    assert.equal(harness.A4Router.getCurrentView(), "")
+    assert.equal(harness.A4Router.start(), false)
+    assert.equal(harness.A4Router.navigate("study"), false, "navigation is refused before the first enter")
+    assert.equal(harness.windowListeners.has("pagehide"), false, "no exit handler can save before the first enter")
+    assert.deepEqual(events, [])
+
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    assert.deepEqual(events, ["enter:records"])
+    assert.equal(harness.A4Router.getCurrentView(), "records")
+    assert.equal(harness.A4Router.navigate("study"), true)
+  })
+
+  it("waits for the storage layer before starting the default router", async () => {
+    const harness = loadRouter()
+    let release
+    harness.window.A4Storage = { ready: new Promise((resolve) => { release = resolve }) }
+
+    harness.documentListeners.get("DOMContentLoaded")()
+    assert.equal(harness.window.A4Router.getCurrentView(), "")
+
+    release()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    assert.equal(harness.window.A4Router.getCurrentView(), "study")
+  })
 })

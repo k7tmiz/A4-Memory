@@ -837,7 +837,10 @@
           updateAccountUi()
         } else {
           saveAccountSyncMeta({ label: "上传失败", at: new Date().toISOString() })
-          if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "上传失败：" + (result?.error || "未知错误")
+          // 词书存入 IndexedDB 后本机不再受 localStorage 容量限制，状态可能超过云端单次上传上限
+          const uploadError =
+            Number(result?.status) === 413 ? "数据超过云端单次上传上限，请删除不用的自定义词书后重试" : result?.error || "未知错误"
+          if (dom.cloudSyncStatus) dom.cloudSyncStatus.textContent = "上传失败：" + uploadError
           handleTokenError(result)
           updateAccountUi()
         }

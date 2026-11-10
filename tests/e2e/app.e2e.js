@@ -201,4 +201,45 @@ describe("A4 Memory end-to-end", { skip: findChrome() ? false : "未找到 Chrom
     await page.waitFor(`document.readyState === "complete" && document.body.classList.contains("theme-dark")`)
     assert.deepEqual(page.errors, [])
   })
+
+  it("moves custom wordbooks out of localStorage and keeps them across reloads", async () => {
+    const readStoredWordbooks = `new Promise((resolve, reject) => {
+      const open = indexedDB.open("a4-memory")
+      open.onerror = () => reject(open.error)
+      open.onsuccess = () => {
+        const get = open.result.transaction("state").objectStore("state").get("customWordbooks")
+        get.onerror = () => reject(get.error)
+        get.onsuccess = () => resolve(JSON.parse(get.result || "[]").map((book) => book.name))
+      }
+    })`
+    const hasWordbookOption = `[...document.getElementById("wordbookSelect").options].some((option) => option.textContent.includes("E2E 词书"))`
+    const mainStateHasWordbooks = `"customWordbooks" in JSON.parse(localStorage.getItem("a4-memory:v1"))`
+
+    await browser.freshApp(page, {
+      state: {
+        version: 2,
+        roundCap: 25,
+        customWordbooks: [{
+          id: "import-e2e",
+          name: "E2E 词书",
+          language: "en",
+          words: [{ term: "lantern", meaning: "灯笼" }, { term: "harbor", meaning: "港口" }],
+        }],
+      },
+    })
+    await page.waitFor(hasWordbookOption)
+    assert.equal(await page.evaluate(mainStateHasWordbooks), false, "the migrated main state carries no wordbooks")
+    assert.deepEqual(await page.evaluate(readStoredWordbooks), ["E2E 词书"])
+
+    await addWordAndCloseReview()
+    assert.equal(await page.evaluate(mainStateHasWordbooks), false, "saving progress keeps wordbooks out of localStorage")
+
+    await page.goto(`${browser.origin}/index.html`)
+    await page.waitFor(`!!window.A4Router?.getCurrentView?.()`)
+    await page.waitFor(hasWordbookOption)
+    await page.waitFor(`${wordCount} === 1`)
+    assert.equal(await page.evaluate(`window.A4Storage.loadState().customWordbooks.length`), 1)
+    assert.equal(await page.evaluate(`window.A4Storage.loadState().roundCap`), 25)
+    assert.deepEqual(page.errors, [])
+  })
 })

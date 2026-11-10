@@ -39,7 +39,7 @@ Demo：https://k7tmiz.com/words
 |-----------|------|
 | 前端 | 纯静态 HTML/CSS/Vanilla JS，无框架 |
 | 桌面端 / Android | Tauri v2（Rust + WebView），与 Web 版共享前端代码 |
-| 状态存储 | 浏览器 localStorage |
+| 状态存储 | 浏览器 localStorage（学习记录与偏好）+ IndexedDB（自定义词书） |
 | 云同步 | 后端 API + JWT（私有模块 `js/cloud.js`） |
 | AI 接入 | OpenAI 风格 chat/completions API |
 
@@ -72,7 +72,7 @@ A4-Memory/
 │   ├── settings-page.js   # 设置视图状态与生命周期接线
 │   ├── settings.js        # 设置控制器
 │   ├── speech.js          # 语音合成
-│   ├── storage.js         # localStorage 封装
+│   ├── storage.js         # 持久化状态封装（localStorage + IndexedDB 词书库）
 │   ├── updater.js         # 版本更新检测
 │   └── utils.js           # 下载工具
 ├── src-tauri/             # Tauri 桌面端（Rust）
@@ -134,6 +134,8 @@ npm run build
 打开：http://localhost:8080/ 或 http://localhost:5173/
 
 ## 数据与存储
+
+自定义词书存放在 IndexedDB（库 `a4-memory`），不占用 localStorage 容量；IndexedDB 不可用时随主状态存放在 localStorage。备份导出与云同步包含完整状态（含词书）。
 
 ### localStorage keys
 
